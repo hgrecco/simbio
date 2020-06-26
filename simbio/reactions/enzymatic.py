@@ -23,21 +23,54 @@ class MichaelisMenten(CompoundReaction):
             Dissociation(AB=ES, A=E, B=P, rate=catalytic_rate),
         )
 
+    def to_eq_approx(self):
+        # Should we generate a new S reactant or modify the concentration to add ES
+        # Should we invalidate this reaction (self) because we are using these elsewhere
+        michaelis_constant = self.reverse_rate / self.forward_rate
+        return MichaelisMentenEqApprox(
+            S=self.S,
+            P=self.P,
+            maximum_velocity=self.catalytic_rate
+            * (self.E.concentration + self.ES.concentration),
+            michaelis_constant=michaelis_constant,
+        )
 
-class MichaelisMentenReduced(SingleReaction):
+    def to_qss_approx(self):
+        # Should we generate a new S reactant or modify the concentration to add ES
+        # Should we invalidate this reaction (self) because we are using these elsewhere
+        michaelis_constant = (
+            self.reverse_rate + self.catalytic_rate
+        ) / self.forward_rate
+        return MichaelisMentenEqApprox(
+            S=self.S,
+            P=self.P,
+            maximum_velocity=self.catalytic_rate
+            * (self.E.concentration + self.ES.concentration),
+            michaelis_constant=michaelis_constant,
+        )
+
+
+class MichaelisMentenEqApprox(SingleReaction):
 
     S: Reactant
     P: Reactant
 
-    enzyme_concentration: float
-    michaelis_constant: float
-    catalytic_rate: float
+    maximum_velocity: float
+    dissociation_constante: float
 
     def _rhs(self, t, S, P):
-        delta = (
-            self.catalytic_rate
-            * self.enzyme_concentration
-            * S
-            / (self.michaelis_constant + S)
-        )
+        delta = self.maximum_velocity * S / (self.maximum_velocity + S)
+        return -delta, delta
+
+
+class MichaelisMentenQuasiSSAprox(SingleReaction):
+
+    S: Reactant
+    P: Reactant
+
+    maximum_velocity: float
+    michaelis_constant: float
+
+    def _rhs(self, t, S, P):
+        delta = self.maximum_velocity * S / (self.michaelis_constant + S)
         return -delta, delta
