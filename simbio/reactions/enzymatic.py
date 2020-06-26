@@ -14,13 +14,13 @@ class MichaelisMenten(CompoundReaction):
     reverse_rate: float
     catalytic_rate: float
 
-    def __init__(self, *, E, S, ES, P, forward_rate, reverse_rate, enzymatic_rate):
+    def __init__(self, *, E, S, ES, P, forward_rate, reverse_rate, catalytic_rate):
         super().__init__()
         self._reactions = (
             ReversibleSynthesis(
                 A=E, B=S, AB=ES, forward_rate=forward_rate, reverse_rate=reverse_rate
             ),
-            Dissociation(AB=ES, A=E, B=P, rate=enzymatic_rate),
+            Dissociation(AB=ES, A=E, B=P, rate=catalytic_rate),
         )
 
 
