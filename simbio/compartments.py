@@ -68,12 +68,9 @@ class Compartment:
         """
         if "." in fullname:
             reactant, state = fullname.split(".")
-            raise Exception("Not implemented yet")
-        else:
-            reactant = fullname
-            state = None  # noqa: F841
+            return getattr(self._reactants[reactant], state)
 
-        return self._reactants[reactant]
+        return self._reactants[fullname]
 
     def add_reactant(self, reactant: Union[str, Reactant], concentration=0) -> Reactant:
         """Add reactant to this compartment.

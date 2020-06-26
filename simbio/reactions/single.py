@@ -90,6 +90,7 @@ class SingleReaction(BaseReaction):
         if self.__class__ is SingleReaction:
             return
 
+        # It would be nice to check this on class construction.
         rhs_args = inspect.signature(self._rhs).parameters
         reactant_attrs = set(
             k for k, v in self.__class__.__annotations__.items() if v is Reactant
@@ -105,6 +106,10 @@ class SingleReaction(BaseReaction):
                 if isinstance(value, InReactionReactant):
                     self.st_numbers[self._reactant_names.index(key)] = value.st_number
                     value = value.reactant
+                if isinstance(value, Reactant) and value.has_sites:
+                    raise ValueError(
+                        f"The state of {value.name} must be specified to link a this reaction."
+                    )
                 setattr(self, key, value)
             else:
                 raise ValueError(
