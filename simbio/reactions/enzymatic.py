@@ -59,7 +59,7 @@ class MichaelisMentenEqApprox(SingleReaction):
     dissociation_constante: float
 
     def _rhs(self, t, S, P):
-        delta = self.maximum_velocity * S / (self.maximum_velocity + S)
+        delta = self.maximum_velocity * S / (self.dissociation_constante + S)
         return -delta, delta
 
 
