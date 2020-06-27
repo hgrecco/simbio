@@ -15,6 +15,7 @@ from typing import Dict, List, Union
 import numpy as np
 from simbio.reactions.single import BaseReaction
 
+from .parameters import Parameter
 from .reactants import Reactant
 
 
@@ -39,16 +40,23 @@ class Compartment:
     #: Mapping from reactant name to Reactant object.
     _reactants: Dict[str, Reactant]
 
+    #: Mapping from parameter name to Parameter object.
+    _parameters: Dict[str, Parameter]
+
     #: Reactions within this compartment.
     _reactions: List[BaseReaction]
 
     def __init__(self, name: str = "default"):
         self.name = name
         self._reactants = {}
+        self._parameters = {}
         self._reactions = []
 
     def __getattr__(self, item):
-        return self._reactants[item]
+        value = self._reactants.get(item) or self._parameters.get(item)
+        if value is None:
+            raise KeyError
+        return value
 
     def get_reactant_by_fullname(self, fullname: str):
         """Obtain the a reactant or reactant state.
@@ -75,7 +83,7 @@ class Compartment:
     def add_reactant(self, reactant: Union[str, Reactant], concentration=0) -> Reactant:
         """Add reactant to this compartment.
 
-        If the reactant is a string, a Rreactant object will be automatically created.
+        If the reactant is a string, a Reactant object will be automatically created.
 
         Parameters
         ----------
@@ -98,13 +106,39 @@ class Compartment:
 
         return reactant
 
+    def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
+        """Add parameter to this compartment.
+
+        If the parameter is a string, a Parameter object will be automatically created.
+
+        Parameters
+        ----------
+        parameter : str or Parameter
+        value : float
+
+        Returns
+        -------
+        parameter
+        """
+        if isinstance(parameter, str):
+            parameter = Parameter(name=parameter, value=value)
+
+        if parameter.name in self._parameters:
+            raise ValueError(
+                f"{parameter.name} already exists in compartment {self.name}"
+            )
+
+        self._parameters[parameter.name] = parameter
+
+        return parameter
+
     def add_reaction(self, reaction: BaseReaction):
         self._reactions.append(reaction)
 
     def names(self):
         out = []
 
-        # We do it like this instead of using a set to guaranty the order.
+        # We do it like this instead of using a set to guarantee the order.
         for reaction in self._reactions:
             for name in reaction.names():
                 if name not in out:

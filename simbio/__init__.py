@@ -10,6 +10,7 @@
 
 
 from .compartments import Compartment, Universe
+from .parameters import Parameter
 from .reactants import Reactant
 
-__all__ = ["reactions", "Reactant", "Compartment", "Universe"]
+__all__ = ["reactions", "Reactant", "Parameter", "Compartment", "Universe"]
