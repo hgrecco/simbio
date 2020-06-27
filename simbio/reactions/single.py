@@ -9,9 +9,10 @@
 """
 
 import inspect
-from typing import Callable, Generator, Tuple
+from typing import Callable, Dict, Generator, Tuple
 
 import numpy as np
+from simbio.parameters import Parameter
 from simbio.reactants import InReactionReactant, Reactant
 
 ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
@@ -50,6 +51,7 @@ class BaseReaction:
     """
 
     _reactant_names: Tuple[str, ...] = ()
+    _parameter_names: Tuple[str, ...] = ()
     st_numbers: np.ndarray
 
     def names(self) -> Tuple[str, ...]:
@@ -57,10 +59,9 @@ class BaseReaction:
         """
         return tuple(getattr(self, attr).name for attr in self._reactant_names)
 
-    def rhs(self, t: float, y: np.ndarray) -> np.ndarray:
-        """Right hand side of the ODE, compatible with scipy.integrators
-        """
-        return np.asarray(self._rhs(t, *(y ** self.st_numbers)))
+    @property
+    def parameters(self) -> Dict[str, float]:
+        return {name: getattr(self, name).value for name in self._parameter_names}
 
     def yield_ip_rhs(
         self, global_names: Tuple[str, ...]
