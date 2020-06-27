@@ -1,3 +1,4 @@
+from .. import Parameter
 from ..reactants import Reactant
 from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
 from .single import SingleReaction
@@ -51,26 +52,26 @@ class MichaelisMenten(CompoundReaction):
 
 
 class MichaelisMentenEqApprox(SingleReaction):
-
-    S: Reactant
-    P: Reactant
-
-    maximum_velocity: float
-    dissociation_constante: float
-
-    def _rhs(self, t, S, P):
-        delta = self.maximum_velocity * S / (self.dissociation_constante + S)
+    @staticmethod
+    def rhs(
+        t,
+        S: Reactant,
+        P: Reactant,
+        maximum_velocity: Parameter,
+        dissociation_constant: Parameter,
+    ):
+        delta = maximum_velocity * S / (dissociation_constant + S)
         return -delta, delta
 
 
 class MichaelisMentenQuasiSSAprox(SingleReaction):
-
-    S: Reactant
-    P: Reactant
-
-    maximum_velocity: float
-    michaelis_constant: float
-
-    def _rhs(self, t, S, P):
-        delta = self.maximum_velocity * S / (self.michaelis_constant + S)
+    @staticmethod
+    def rhs(
+        t,
+        S: Reactant,
+        P: Reactant,
+        maximum_velocity: Parameter,
+        michaelis_constant: Parameter,
+    ):
+        delta = maximum_velocity * S / (michaelis_constant + S)
         return -delta, delta

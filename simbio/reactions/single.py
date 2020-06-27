@@ -9,6 +9,8 @@
 """
 
 import inspect
+from dataclasses import dataclass
+from functools import partial
 from typing import Callable, Dict, Generator, Tuple
 
 import numpy as np
@@ -16,32 +18,6 @@ from simbio.parameters import Parameter
 from simbio.reactants import InReactionReactant, Reactant
 
 ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
-
-
-def _err_check(reactant_attrs, rhs_args):
-    rhs_args = dict(rhs_args)
-    try:
-        rhs_args.pop("t")
-    except KeyError:
-        raise TypeError("_rhs must include t as the first argument.")
-
-    names = tuple(rhs_args.keys())
-
-    rhs_args = set(names)
-
-    if reactant_attrs - rhs_args:
-        raise TypeError(
-            "_rhs arguments must include all Reactants but name, "
-            "but %r not found." % (reactant_attrs - rhs_args)
-        )
-
-    if rhs_args - reactant_attrs:
-        raise TypeError(
-            "_rhs arguments must only include t and Reactants, "
-            "but %r is not." % (rhs_args - reactant_attrs)
-        )
-
-    return names
 
 
 class BaseReaction:
@@ -77,59 +53,110 @@ class BaseReaction:
         """
         raise NotImplementedError
 
-    def _rhs(self, t, *args):
-        """Right hand side of the ODE, compatible with scipy.integrators
-        """
-        raise NotImplementedError
-
 
 class SingleReaction(BaseReaction):
     """Base class for all single reactions.
     """
 
-    def __init__(self, **kwargs):
+    def __init_subclass__(cls, **kwargs):
+        """Initialize class from rhs method.
+
+        Check if rhs method is well-defined. It must:
+        - be a staticmethod
+        - have an ordered signature (t, *Reactants, *Parameters)
+
+        Set class annotations from rhs, and create init and others with dataclass.
+        Set (ordered) tuples of reactions and parameters names.
+        """
+
+        # Check if staticmethod
+        if not isinstance(inspect.getattr_static(cls, "rhs"), staticmethod):
+            raise TypeError(
+                f"{cls.__name__}.rhs must be a staticmethod. Use @staticmethod decorator."
+            )
+
+        # Check signature order
+        rhs_params = iter(inspect.signature(cls.rhs).parameters.values())
+
+        v = next(rhs_params)
+        if not v.name == "t":
+            raise TypeError(
+                f"{cls.__name__}.rhs first parameter is {v.name}, but must be t"
+            )
+
+        for v in rhs_params:
+            if issubclass(v.annotation, Reactant):
+                continue
+            elif issubclass(v.annotation, Parameter):
+                break
+            else:
+                raise TypeError(
+                    f"{cls.__name__}.rhs parameter {v.name} is neither Reactant nor Parameter"
+                )
+
+        for v in rhs_params:
+            if issubclass(v.annotation, Reactant):
+                raise TypeError(
+                    f"{cls.__name__}.rhs are in the wrong order. Reactant {v.name} found after Parameter."
+                )
+            elif not issubclass(v.annotation, Parameter):
+                raise TypeError(
+                    f"{cls.__name__}.rhs parameter {v.name} is not Parameter"
+                )
+
+        # Set class annotations from rhs
+        rhs_annotations = cls.rhs.__annotations__
+        if "t" in rhs_annotations:
+            rhs_annotations.pop("t")
+        setattr(cls, "__annotations__", rhs_annotations)
+
+        # Save tuples of names
+        cls._reactant_names = tuple(
+            k for k, v in rhs_annotations.items() if issubclass(v, Reactant)
+        )
+        cls._parameter_names = tuple(
+            k for k, v in rhs_annotations.items() if issubclass(v, Parameter)
+        )
+
+        return dataclass(cls)
+
+    def __post_init__(self):
         if self.__class__ is SingleReaction:
             return
 
-        # It would be nice to check this on class construction.
-        rhs_args = inspect.signature(self._rhs).parameters
-        reactant_attrs = set(
-            k for k, v in self.__class__.__annotations__.items() if v is Reactant
-        )
-
-        self._reactant_names = _err_check(reactant_attrs, rhs_args)
-
         self.st_numbers = np.ones(len(self._reactant_names))
 
-        while kwargs:
-            key, value = kwargs.popitem()
-            if key in self.__class__.__annotations__:
-                if isinstance(value, InReactionReactant):
-                    self.st_numbers[self._reactant_names.index(key)] = value.st_number
-                    value = value.reactant
-                if isinstance(value, Reactant) and value.has_sites:
-                    raise ValueError(
-                        f"The state of {value.name} must be specified to link a this reaction."
-                    )
+        for i, key in enumerate(self._reactant_names):
+            value = getattr(self, key)
+
+            if isinstance(value, InReactionReactant):
+                self.st_numbers[i] = value.st_number
+                value = value.reactant
                 setattr(self, key, value)
-            else:
+
+            if isinstance(value, Reactant) and value.has_sites:
                 raise ValueError(
-                    f"{key} attribute not found in {self.__class__.__name__}"
+                    f"The state of {value.name} must be specified to link a this reaction."
                 )
+
+    def build_rhs(self) -> Callable:
+        """Right hand side of the ODE, compatible with scipy.integrators"""
+        return partial(self.rhs, **self.parameters)
 
     def yield_ip_rhs(self, global_names=None):
         if global_names is None:
-
-            def fun(t, y, out):
-                out += self.rhs(t, y)
-
+            pos = slice()
         else:
             pos = np.asarray(tuple(global_names.index(var) for var in self.names()))
 
-            def fun(t, y, out):
-                out[pos] += self.rhs(t, y[pos])
+        def fun(t, y, out):
+            out[pos] += self.build_rhs()(t, *(y[pos] ** self.st_numbers))
 
         yield fun
+
+    @staticmethod
+    def rhs(t, *args):
+        raise NotImplementedError
 
 
 class Conversion(SingleReaction):
@@ -138,13 +165,10 @@ class Conversion(SingleReaction):
     A -> B
     """
 
-    A: Reactant
-    B: Reactant
-
-    rate: float
-
-    def _rhs(self, t, A, B):
-        return -self.rate * A, self.rate * A
+    @staticmethod
+    def rhs(t, A: Reactant, B: Reactant, rate: Parameter):
+        delta = rate * A
+        return -delta, delta
 
 
 class Synthesis(SingleReaction):
@@ -153,14 +177,9 @@ class Synthesis(SingleReaction):
     A + B -> AB
     """
 
-    A: Reactant
-    B: Reactant
-    AB: Reactant
-
-    rate: float
-
-    def _rhs(self, t, A, B, AB):
-        delta = self.rate * A * B
+    @staticmethod
+    def rhs(t, A: Reactant, B: Reactant, AB: Reactant, rate: Parameter):
+        delta = rate * A * B
         return -delta, -delta, delta
 
 
@@ -170,14 +189,9 @@ class Dissociation(SingleReaction):
     AB -> A + B
     """
 
-    AB: Reactant
-    A: Reactant
-    B: Reactant
-
-    rate: float
-
-    def _rhs(self, t, AB, A, B):
-        delta = self.rate * AB
+    @staticmethod
+    def rhs(t, AB: Reactant, A: Reactant, B: Reactant, rate: Parameter):
+        delta = rate * AB
         return -delta, delta, delta
 
 
@@ -187,16 +201,9 @@ class SingleReplacement(SingleReaction):
     A + BC -> AC + B
     """
 
-    A: Reactant
-    BC: Reactant
-    AC: Reactant
-    B: Reactant
-
-    rate: float
-
-    def _rhs(self, t, y):
-        raise Exception("Not Implemented")
-        return 0, 0, 0, 0
+    @staticmethod
+    def rhs(t, A: Reactant, BC: Reactant, AC: Reactant, B: Reactant, rate: Parameter):
+        raise NotImplementedError
 
 
 class DoubleReplacement(SingleReaction):
@@ -205,13 +212,6 @@ class DoubleReplacement(SingleReaction):
     AB + CD -> AD + CB
     """
 
-    AB: Reactant
-    CD: Reactant
-    AD: Reactant
-    CB: Reactant
-
-    rate: float
-
-    def _rhs(self, t, y):
-        raise Exception("Not Implemented")
-        return 0, 0, 0, 0
+    @staticmethod
+    def rhs(t, AB: Reactant, CD: Reactant, AD: Reactant, CB: Reactant, rate: Parameter):
+        raise NotImplementedError
