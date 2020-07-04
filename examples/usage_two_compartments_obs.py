@@ -25,7 +25,7 @@ uni.add_compartment(cytosol)
 uni.add_compartment(nucleus)
 
 
-sim = SimulatorDataFrame(uni)
+sim = SimulatorDataFrame(uni, observed_names=("nucleus.C", "cytosol.C"))
 df = sim.run(100)
 
 df.plot(x="time")
