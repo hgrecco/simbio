@@ -10,7 +10,8 @@
     :license: BSD, see LICENSE for more details.
 """
 
-from typing import Dict, List, Union
+from collections import defaultdict
+from typing import Collection, Dict, List, Union
 
 import numpy as np
 from simbio.reactions.single import BaseReaction
@@ -146,10 +147,11 @@ class Compartment:
 
         return tuple(out)
 
-    def build_concentration_vector(self, **concentrations):
+    def build_concentration_vector(self, concentrations=None):
         names = self.names()
         out = np.zeros(len(names))
 
+        concentrations = concentrations or {}
         for ndx, name in enumerate(names):
             if name in concentrations:
                 out[ndx] = concentrations[name]
@@ -173,6 +175,13 @@ class Compartment:
             return out
 
         return fun
+
+    def get_names_ndx(self, *names: Collection[str]):
+        try:
+            all_names = self.names()
+            return tuple(all_names.index(name) for name in names)
+        except ValueError as ex:
+            raise ValueError("Reactant name not found in compartment: %s" % ex)
 
 
 class Universe:
@@ -202,19 +211,34 @@ class Universe:
 
         return tuple(out)
 
-    def build_concentration_vector(self, **concentrations_by_compartment):
+    def build_concentration_vector_nested(self, concentrations_by_compartment=None):
         names = self.names()
         out = np.zeros(len(names))
 
         ndx = 0
+        concentrations_by_compartment = concentrations_by_compartment or {}
         for cname, compartment in self._compartments.items():
             cc = compartment.build_concentration_vector(
-                **concentrations_by_compartment.get(cname, {})
+                concentrations_by_compartment.get(cname, {})
             )
             out[ndx : (ndx + len(cc))] = cc
             ndx += len(cc)
 
         return out
+
+    def build_concentration_vector(self, concentrations_by_fullname=None):
+        cnames = set(self._compartments.keys())
+        d = defaultdict(dict)
+        concentrations_by_fullname = concentrations_by_fullname or {}
+        for key, value in concentrations_by_fullname.items():
+            if "." not in key:
+                raise ValueError(f"Compartment name not specified for: {key}")
+            cname, rest = key.split(".", 1)
+            if cname not in cnames:
+                raise ValueError(f"Compartment name {cname} not in {cnames}")
+            d[cname][rest] = value
+
+        return self.build_concentration_vector_nested(d)
 
     def yield_ip_rhs(self, global_names=None):
 
@@ -236,3 +260,14 @@ class Universe:
             return out
 
         return fun
+
+    def get_names_ndx(self, *names: Collection[str]) -> np.ndarray:
+        out = []
+        all_names = self.names()
+        try:
+            for name in names:
+                out.append(all_names.index(name))
+        except ValueError:
+            raise ValueError(f"Reactant name {name} not found in universe: {all_names}")
+
+        return np.asarray(out, dtype=np.int)
