@@ -11,6 +11,7 @@
 import inspect
 from dataclasses import dataclass
 from functools import partial
+from string import Template
 from typing import Callable, Dict, Generator, Tuple
 
 import numpy as np
@@ -51,6 +52,33 @@ class BaseReaction:
 
         Applying all functions sequentially it is posiblle
         """
+        raise NotImplementedError
+
+    def _yield_using_template(self, tmpls, *, use_brackets=True):
+        for tmpl in tmpls:
+            yield self._template_replace(tmpl, use_brackets=use_brackets)
+
+    def _template_replace(self, tmpl, *, use_brackets=True):
+        if use_brackets:
+            c = "[%s]"
+        else:
+            c = "%s"
+        return Template(tmpl).substitute(
+            **{name: c % getattr(self, name).name for name in self._reactant_names},
+            **{name: getattr(self, name).name for name in self._parameter_names},
+        )
+
+    def yield_latex_equations(self, *, use_brackets=True):
+        raise NotImplementedError
+
+    def yield_latex_reaction(self):
+        # Use \usepackage{mhchem}
+        raise NotImplementedError
+
+    def yield_latex_reactant_values(self):
+        raise NotImplementedError
+
+    def yield_latex_parameter_values(self):
         raise NotImplementedError
 
 
@@ -158,6 +186,18 @@ class SingleReaction(BaseReaction):
     def rhs(t, *args):
         raise NotImplementedError
 
+    def yield_latex_reactant_values(self, column_separator="&"):
+        for name in self._reactant_names:
+            yield getattr(self, name).name
+            yield column_separator
+            yield getattr(self, name).value
+
+    def yield_latex_parameter_values(self, column_separator="&"):
+        for name in self._parameter_names:
+            yield getattr(self, name).name
+            yield column_separator
+            yield getattr(self, name).value
+
 
 class Conversion(SingleReaction):
     """A substance convert to another.
@@ -169,6 +209,15 @@ class Conversion(SingleReaction):
     def rhs(t, A: Reactant, B: Reactant, rate: Parameter):
         delta = rate * A
         return -delta, delta
+
+    def yield_latex_equations(self, *, use_brackets=True):
+        yield from self._yield_using_template(
+            (r"\frac{d$A}{dt} = -$rate $B", r"\frac{d$B}{dt} = $rate $A"),
+            use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ %s ->[%s] %s }")
 
 
 class Synthesis(SingleReaction):
@@ -182,6 +231,19 @@ class Synthesis(SingleReaction):
         delta = rate * A * B
         return -delta, -delta, delta
 
+    def yield_latex_equations(self, *, use_brackets=True):
+        yield from self._yield_using_template(
+            (
+                r"\frac{d$A}{dt} = -$rate $A $B",
+                r"\frac{d$B}{dt} = -$rate $A $B",
+                r"\frac{d$AB}{dt} = $rate $A $B",
+            ),
+            use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ $A + %B ->[$rate] $AB }")
+
 
 class Dissociation(SingleReaction):
     """A more complex substance breaks down into its more simple parts.
@@ -194,6 +256,19 @@ class Dissociation(SingleReaction):
         delta = rate * AB
         return -delta, delta, delta
 
+    def yield_latex_equations(self, *, use_brackets=True):
+        yield from self._yield_using_template(
+            (
+                r"\frac{d$AB}{dt} = -$rate $AB",
+                r"\frac{d$A}{dt} = $rate $AB",
+                r"\frac{d$B}{dt} = $rate $AB",
+            ),
+            use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ $AB ->[$rate] $A + $B }")
+
 
 class SingleReplacement(SingleReaction):
     """A single uncombined element replaces another in a compound.
@@ -205,6 +280,21 @@ class SingleReplacement(SingleReaction):
     def rhs(t, A: Reactant, BC: Reactant, AC: Reactant, B: Reactant, rate: Parameter):
         raise NotImplementedError
 
+    def yield_latex_equations(self, use_brackets=True):
+
+        yield from self._yield_using_template(
+            (
+                r"\frac{d$A}{dt} = -$rate $A $BC",
+                r"\frac{d$BC}{dt} = -$rate $A $BC",
+                r"\frac{d$AC}{dt} = $rate $A $BC",
+                r"\frac{d$B}{dt} = $rate $A $BC",
+            ),
+            use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ $A + $BC ->[$rate] $AC + $B }")
+
 
 class DoubleReplacement(SingleReaction):
     """The anions and cations of two compounds switch places and form two entirely different compounds.
@@ -215,3 +305,18 @@ class DoubleReplacement(SingleReaction):
     @staticmethod
     def rhs(t, AB: Reactant, CD: Reactant, AD: Reactant, CB: Reactant, rate: Parameter):
         raise NotImplementedError
+
+    def yield_latex_equations(self, use_brackets=True):
+
+        yield from self._yield_using_template(
+            (
+                r"\frac{d$AB}{dt} = -$rate $AB $CD",
+                r"\frac{d$CD}{dt} = -$rate $AB $CD",
+                r"\frac{d$AD}{dt} = $rate $AB $CD",
+                r"\frac{d$CB}{dt} = $rate $AB $CD",
+            ),
+            use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ $AB + $CD ->[$rate] $AD + $CB }")

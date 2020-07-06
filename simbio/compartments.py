@@ -183,6 +183,22 @@ class Compartment:
         except ValueError as ex:
             raise ValueError("Reactant name not found in compartment: %s" % ex)
 
+    def yield_latex_equations(self, *, use_brackets=True):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_equations(use_brackets=use_brackets)
+
+    def yield_latex_reaction(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_reaction()
+
+    def yield_latex_reactant_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_reactant_values()
+
+    def yield_latex_parameter_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_parameter_values()
+
 
 class Universe:
     def __init__(self):
@@ -271,3 +287,31 @@ class Universe:
             raise ValueError(f"Reactant name {name} not found in universe: {all_names}")
 
         return np.asarray(out, dtype=np.int)
+
+    def yield_latex_equations(self, *, use_brackets=True):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_equations(use_brackets=use_brackets)
+        for name, c in self._compartments.items():
+            yield r"\subsubsection{%s}" % name
+            yield from c.yield_latex_equations()
+
+    def yield_latex_reaction(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_equations()
+        for name, c in self._compartments.items():
+            yield r"\subsubsection{%s}" % name
+            yield from c.yield_latex_equations()
+
+    def yield_latex_reactant_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_reactant_values()
+        for name, c in self._compartments.items():
+            yield r"\subsubsection{%s}" % name
+            yield from c.yield_latex_reactant_values()
+
+    def yield_latex_parameter_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_parameter_values()
+        for name, c in self._compartments.items():
+            yield r"\subsubsection{%s}" % name
+            yield from c.yield_latex_parameter_values()

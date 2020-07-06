@@ -35,6 +35,22 @@ class CompoundReaction(BaseReaction):
         for reaction in self._reactions:
             yield from reaction.yield_ip_rhs(global_names)
 
+    def yield_latex_equations(self, *, use_brackets=True):
+        for reaction in self._reactions:
+            yield reaction.yield_latex_equations(use_brackets=use_brackets)
+
+    def yield_latex_reaction(self):
+        for reaction in self._reactions:
+            yield reaction.yield_latex_reaction()
+
+    def yield_latex_reactant_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_reactant_values()
+
+    def yield_latex_parameter_values(self):
+        for reaction in self._reactions:
+            yield from reaction.yield_latex_parameter_values()
+
 
 class ReversibleSynthesis(CompoundReaction):
     """A Synthesis and Dissociation reactions.
@@ -54,4 +70,9 @@ class ReversibleSynthesis(CompoundReaction):
         self._reactions = (
             Synthesis(A=A, B=B, AB=AB, rate=forward_rate),
             Dissociation(A=A, B=B, AB=AB, rate=reverse_rate),
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(
+            r"\ce{ $A + $B <=>[$forward_rate][$reverse_rate] $AB"
         )
