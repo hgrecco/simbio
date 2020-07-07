@@ -68,15 +68,6 @@ class MichaelisMentenEqApprox(SingleReaction):
         delta = maximum_velocity * S / (dissociation_constant + S)
         return -delta, delta
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$S}{dt} = -$maximum_velocity \frac{$S}{$dissociation_constant + $S}",
-                r"\frac{d$P}{dt} = $maximum_velocity \frac{$s}{$dissociation_constant + $S}",
-            ),
-            use_brackets=use_brackets,
-        )
-
     def yield_latex_reaction(self):
         yield self._template_replace(
             r"\ce{ $S ->[MMEq($maximum_velocity, $dissociation_constant)] $P }"
@@ -94,15 +85,6 @@ class MichaelisMentenQuasiSSAprox(SingleReaction):
     ):
         delta = maximum_velocity * S / (michaelis_constant + S)
         return -delta, delta
-
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$S}{dt} = -$maximum_velocity \frac{$S}{michaelis_constant + $S}",
-                r"\frac{d$P}{dt} = $maximum_velocity \frac{$s}{michaelis_constant + $S}",
-            ),
-            use_brackets=use_brackets,
-        )
 
     def yield_latex_reaction(self):
         yield self._template_replace(
