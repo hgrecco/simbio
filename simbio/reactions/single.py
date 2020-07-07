@@ -199,6 +199,44 @@ class SingleReaction(BaseReaction):
             yield getattr(self, name).value
 
 
+class Creation(SingleReaction):
+    """A substance is created from nothing.
+
+      -> A
+    """
+
+    @staticmethod
+    def rhs(t, A: Reactant, rate: Parameter):
+        return rate * A
+
+    def yield_latex_equations(self, *, use_brackets=True):
+        yield from self._yield_using_template(
+            (r"\frac{d$A}{dt} = $rate $A",), use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ \varnothing ->[$rate] $A }")
+
+
+class Destruction(SingleReaction):
+    """A substance degrades into nothing.
+
+    A ->
+    """
+
+    @staticmethod
+    def rhs(t, A: Reactant, rate: Parameter):
+        return -rate * A
+
+    def yield_latex_equations(self, *, use_brackets=True):
+        yield from self._yield_using_template(
+            (r"\frac{d$A}{dt} = -$rate $A",), use_brackets=use_brackets,
+        )
+
+    def yield_latex_reaction(self):
+        yield self._template_replace(r"\ce{ $A ->[$rate] \varnothing }")
+
+
 class Conversion(SingleReaction):
     """A substance convert to another.
 
@@ -217,7 +255,7 @@ class Conversion(SingleReaction):
         )
 
     def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ %s ->[%s] %s }")
+        yield self._template_replace(r"\ce{ $A ->[$rate] $B }")
 
 
 class Synthesis(SingleReaction):
@@ -242,7 +280,7 @@ class Synthesis(SingleReaction):
         )
 
     def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ $A + %B ->[$rate] $AB }")
+        yield self._template_replace(r"\ce{ $A + $B ->[$rate] $AB }")
 
 
 class Dissociation(SingleReaction):
