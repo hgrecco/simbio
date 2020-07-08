@@ -84,8 +84,12 @@ class BaseReaction:
 
     def yield_latex_equations(self, *, use_brackets=True):
         t = symbols("t")
-        reactants = list(map(symbols, self.names()))
+        names = self.names()
+        if use_brackets:
+            names = (f'[{x}]' for x in names)
+        reactants = tuple(map(symbols, names))
         parameters = map(symbols, self.parameters)
+        
         for lhs, rhs in zip(reactants, self.rhs(t, *reactants, *parameters)):
             yield Equality(Derivative(lhs, t), rhs)
 
