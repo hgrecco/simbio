@@ -69,7 +69,13 @@ class BaseReaction:
         )
 
     def yield_latex_equations(self, *, use_brackets=True):
-        raise NotImplementedError
+        from sympy import symbols, Derivative, Equality
+
+        t = symbols("t")
+        reactants = list(map(symbols, self.names()))
+        parameters = map(symbols, self.parameters)
+        for lhs, rhs in zip(reactants, self.rhs(t, *reactants, *parameters)):
+            yield Equality(Derivative(lhs, t), rhs)
 
     def yield_latex_reaction(self):
         # Use \usepackage{mhchem}
@@ -209,11 +215,6 @@ class Creation(SingleReaction):
     def rhs(t, A: Reactant, rate: Parameter):
         return rate * A
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (r"\frac{d$A}{dt} = $rate $A",), use_brackets=use_brackets,
-        )
-
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ \varnothing ->[$rate] $A }")
 
@@ -227,11 +228,6 @@ class Destruction(SingleReaction):
     @staticmethod
     def rhs(t, A: Reactant, rate: Parameter):
         return -rate * A
-
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (r"\frac{d$A}{dt} = -$rate $A",), use_brackets=use_brackets,
-        )
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A ->[$rate] \varnothing }")
@@ -248,12 +244,6 @@ class Conversion(SingleReaction):
         delta = rate * A
         return -delta, delta
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (r"\frac{d$A}{dt} = -$rate $B", r"\frac{d$B}{dt} = $rate $A"),
-            use_brackets=use_brackets,
-        )
-
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A ->[$rate] $B }")
 
@@ -268,16 +258,6 @@ class Synthesis(SingleReaction):
     def rhs(t, A: Reactant, B: Reactant, AB: Reactant, rate: Parameter):
         delta = rate * A * B
         return -delta, -delta, delta
-
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$A}{dt} = -$rate $A $B",
-                r"\frac{d$B}{dt} = -$rate $A $B",
-                r"\frac{d$AB}{dt} = $rate $A $B",
-            ),
-            use_brackets=use_brackets,
-        )
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A + $B ->[$rate] $AB }")
@@ -294,16 +274,6 @@ class Dissociation(SingleReaction):
         delta = rate * AB
         return -delta, delta, delta
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$AB}{dt} = -$rate $AB",
-                r"\frac{d$A}{dt} = $rate $AB",
-                r"\frac{d$B}{dt} = $rate $AB",
-            ),
-            use_brackets=use_brackets,
-        )
-
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $AB ->[$rate] $A + $B }")
 
@@ -318,18 +288,6 @@ class SingleReplacement(SingleReaction):
     def rhs(t, A: Reactant, BC: Reactant, AC: Reactant, B: Reactant, rate: Parameter):
         raise NotImplementedError
 
-    def yield_latex_equations(self, use_brackets=True):
-
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$A}{dt} = -$rate $A $BC",
-                r"\frac{d$BC}{dt} = -$rate $A $BC",
-                r"\frac{d$AC}{dt} = $rate $A $BC",
-                r"\frac{d$B}{dt} = $rate $A $BC",
-            ),
-            use_brackets=use_brackets,
-        )
-
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A + $BC ->[$rate] $AC + $B }")
 
@@ -343,18 +301,6 @@ class DoubleReplacement(SingleReaction):
     @staticmethod
     def rhs(t, AB: Reactant, CD: Reactant, AD: Reactant, CB: Reactant, rate: Parameter):
         raise NotImplementedError
-
-    def yield_latex_equations(self, use_brackets=True):
-
-        yield from self._yield_using_template(
-            (
-                r"\frac{d$AB}{dt} = -$rate $AB $CD",
-                r"\frac{d$CD}{dt} = -$rate $AB $CD",
-                r"\frac{d$AD}{dt} = $rate $AB $CD",
-                r"\frac{d$CB}{dt} = $rate $AB $CD",
-            ),
-            use_brackets=use_brackets,
-        )
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $AB + $CD ->[$rate] $AD + $CB }")
