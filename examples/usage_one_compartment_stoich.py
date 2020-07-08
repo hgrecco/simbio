@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, SimulatorDataFrame
+from simbio import Compartment, Simulator
 from simbio.reactions import Synthesis
 
 ##############
@@ -14,8 +14,8 @@ step1 = Synthesis(A=2 * cell.C, B=2 * cell.O2, AB=2 * cell.CO2, rate=cell.rate)
 cell.add_reaction(step1)
 
 
-sim = SimulatorDataFrame(cell)
-df = sim.run(100)
+sim = Simulator(cell)
+df = sim.df_run(100)
 
 df.plot(x="time")
 plt.show()

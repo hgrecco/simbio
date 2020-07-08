@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, SimulatorDataFrame, Universe
+from simbio import Compartment, Simulator, Universe
 from simbio.reactions import Dissociation, Synthesis
 
 ##############
@@ -25,8 +25,8 @@ uni.add_compartment(cytosol)
 uni.add_compartment(nucleus)
 
 
-sim = SimulatorDataFrame(uni)
-df = sim.run(100)
+sim = Simulator(uni)
+df = sim.df_run(100)
 
 df.plot(x="time")
 plt.show()

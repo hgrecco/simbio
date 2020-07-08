@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, Simulator
+from simbio import Compartment, Simulator, algo
 from simbio.reactions import Synthesis
 
 ##############
@@ -20,7 +20,7 @@ t_values, y_values = sim.run(100)
 plt.plot(t_values, y_values)
 plt.legend(sim.names)
 
-t, y = sim.find_steady_state(200, 1)
+t, y = algo.find_steady_state(sim, 200, 1)
 for a in y:
     plt.axhline(a, 0, max(t, t_values[-1]), c="k", ls=":")
 plt.show()

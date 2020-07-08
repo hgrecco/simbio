@@ -62,10 +62,19 @@ class Simulator:
         return {**self.default_parameters, **parameters}
 
     @property
-    def observed_names(self) -> Tuple[str]:
-        """Names of the observed variables
-        """
-        return tuple(self.names[self.observed_ndx])
+    def observed_names(self) -> Tuple[str, ...]:
+        names = self.names
+        if self.observed_ndx is None:
+            return names
+
+        return tuple(names[ndx] for ndx in self.observed_ndx)
+
+    @observed_names.setter
+    def observed_names(self, value):
+        if value is None:
+            self.observed_ndx = None
+        else:
+            self.observed_ndx = self.model.get_names_ndx(*value)
 
     def _reset_rhs(self, parameters: dict = None):
         parameters = self._build_parameters_dict(parameters)
@@ -280,83 +289,6 @@ class Simulator:
         yield observed_ndx
         self.observed_ndx = observed_ndx
 
-    def find_steady_state(
-        self, t_window, r_tol=0.1, rounds=None
-    ) -> (np.ndarray, np.ndarray):
-        # TODO: better param names
-        t_0, y_0 = self.resume1(t_window / 10)
-
-        rounds = rounds or 5
-
-        diff = 0
-        for _ in range(rounds):
-            t_end, y_end = self.resume1(t_0 + t_window)
-            diff = np.abs((y_end - y_0) / (y_end + y_0))
-            if np.any(diff > r_tol):
-                t_0 = t_end
-                y_0 = y_end
-                t_window *= 2
-            else:
-                return t_end, y_end
-
-        raise Exception(
-            f"Steady state not found after {rounds} rounds."
-            f"(time: {t_end}, window: {t_window}, max. dif. {np.max(diff):.2f}). "
-        )
-
-    def dose_response(
-        self, name, values, find_ss_kwargs=None
-    ) -> (np.ndarray, np.ndarray):
-
-        if find_ss_kwargs is None:
-            find_ss_kwargs = dict(t_window=100)
-
-        out = []
-        values = np.asarray(values)
-        for sim in Scanner.from_single(name, values, self.model):
-            _, y = sim.find_steady_state(**find_ss_kwargs)
-            out.append(y[self.observed_ndx])
-
-        return values, np.asarray(out)
-
-    def going_up_and_down(
-        self, name, values, find_ss_kwargs=None
-    ) -> (np.ndarray, np.ndarray):
-
-        ups = list(values)
-        downs = reversed(ups[:-1])
-        values_up, y_up = self.dose_response(name, ups, find_ss_kwargs)
-        values_down, y_down = self.dose_response(name, downs, find_ss_kwargs)
-
-        return np.stack((values_up, values_down)), np.stack((y_up, y_down))
-
-
-class SimulatorDataFrame(Simulator):
-    def __init__(
-        self,
-        model: Union[Universe, Compartment],
-        observed_names: Collection[str] = None,
-    ):
-        super().__init__(model, None)
-        self.observed_names = observed_names
-
-    @property
-    def observed_names(self):
-        if self.observed_ndx is None:
-            return self.names
-
-        return self._observed_names
-
-    @observed_names.setter
-    def observed_names(self, value):
-        names = self.names
-        if value is None:
-            self.observed_ndx = None
-            self._observed_names = names
-        else:
-            self.observed_ndx = self.model.get_names_ndx(*value)
-            self._observed_names = tuple(names[ndx] for ndx in self.observed_ndx)
-
     def _to_df(
         self, first: Union[float, np.ndarray], y: np.ndarray, first_name="time"
     ) -> pd.DataFrame:
@@ -367,62 +299,29 @@ class SimulatorDataFrame(Simulator):
     def _to_y_df(self, y: np.ndarray) -> pd.DataFrame:
         return pd.DataFrame(y, columns=self.observed_names)
 
-    def resume(
+    def df_run(
+        self,
+        time: Union[float, Iterable],
+        concentrations: dict = None,
+        parameters: dict = None,
+    ) -> pd.DataFrame:
+        t, y = self.run(time, concentrations, parameters)
+        return self._to_df(t, y)
+
+    def df_run1(
+        self, time: float, concentrations: dict = None, parameters: dict = None
+    ) -> pd.DataFrame:
+        t, y = self.run1(time, concentrations, parameters)
+        return self._to_df(t, y)
+
+    def df_resume(
         self, time: Union[float, np.ndarray], concentrations: dict = None
     ) -> pd.DataFrame:
-        t, y = super().resume(time, concentrations)
+        t, y = self.resume(time, concentrations)
         return self._to_df(t, y)
 
-    def resume1(
+    def df_resume1(
         self, t_bound: Union[float, np.ndarray], concentrations: dict = None
     ) -> pd.DataFrame:
-        t, y = super().resume1(t_bound, concentrations)
+        t, y = self.resume1(t_bound, concentrations)
         return self._to_df(t, y)
-
-    def find_steady_state(self, t_window, r_tol=0.1, rounds=None) -> pd.DataFrame:
-        t, y = super().find_steady_state(t_window, r_tol, rounds)
-        return self._to_df(t, y)
-
-    def dose_response(self, name, values, find_ss_kwargs=None) -> pd.DataFrame:
-        values, y = super().dose_response(name, values, find_ss_kwargs)
-        return self._to_df(values, y, first_name=name)
-
-    def going_up_and_down(self, name, values, find_ss_kwargs=None) -> pd.DataFrame:
-        values, y = super().going_up_and_down(name, values, find_ss_kwargs)
-        return self._to_df(values, y, first_name=name)
-
-
-class Scanner:
-    def __init__(self, scan_values, model):
-        self.scan_values = scan_values
-        self.model = model
-
-    @classmethod
-    def from_single(cls, name, values, model):
-        if True:  # TODO: check if name is reactant or parater
-            return cls.from_single_concentration(name, values, model)
-        else:
-            return cls.from_single_parameter(name, values, model)
-
-    @classmethod
-    def from_single_concentration(cls, name, values, model):
-        return cls((({name: value}, None) for value in values), model)
-
-    @classmethod
-    def from_single_parameter(cls, name, values, model):
-        return cls(((None, {name: value}) for value in values), model)
-
-    @classmethod
-    def from_lhs(cls):
-        # TODO:
-        pass
-
-    def __iter__(self):
-        def fun():
-            for c, p in self.scan_values:
-                sim = Simulator(
-                    self.model, default_concentrations=c, default_parameters=p
-                )
-                yield sim
-
-        return fun

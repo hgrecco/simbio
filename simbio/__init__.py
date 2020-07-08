@@ -12,7 +12,7 @@
 from .compartments import Compartment, Universe
 from .parameters import Parameter
 from .reactants import Reactant
-from .simulator import Simulator, SimulatorDataFrame
+from .simulator import Simulator
 
 __all__ = [
     "reactions",
@@ -21,5 +21,4 @@ __all__ = [
     "Compartment",
     "Universe",
     "Simulator",
-    "SimulatorDataFrame",
 ]

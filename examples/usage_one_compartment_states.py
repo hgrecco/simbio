@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, Reactant, SimulatorDataFrame
+from simbio import Compartment, DataFrame, Reactant
 from simbio.reactions.enzymatic import MichaelisMentenEqApprox
 
 ##############
@@ -20,8 +20,8 @@ cell.add_reaction(step1)
 cell.add_reaction(step2)
 
 
-sim = SimulatorDataFrame(cell)
-df = sim.run(100)
+sim = DataFrame(cell)
+df = sim.df_run(100)
 
 df.plot(x="time")
 plt.show()
