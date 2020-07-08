@@ -18,6 +18,20 @@ import numpy as np
 from simbio.parameters import Parameter
 from simbio.reactants import InReactionReactant, Reactant
 
+try:
+    from sympy import symbols, Derivative, Equality
+except ImportError:
+
+    def symbols(*args, **kwargs):
+        raise Exception(
+            "This function requires sympy. Please install it:\n"
+            "\tpip install sympy\n"
+            "\t\t\tor\n"
+            "\tconda install sympy\n"
+        )
+
+    Derivative = Equality = symbols
+
 ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 
 
@@ -69,8 +83,6 @@ class BaseReaction:
         )
 
     def yield_latex_equations(self, *, use_brackets=True):
-        from sympy import symbols, Derivative, Equality
-
         t = symbols("t")
         reactants = list(map(symbols, self.names()))
         parameters = map(symbols, self.parameters)
