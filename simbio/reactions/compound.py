@@ -8,11 +8,13 @@
     :license: BSD, see LICENSE for more details.
 """
 
-from typing import Tuple
+from itertools import chain
+from typing import Dict, Tuple
 
-from simbio.reactants import Reactant
-
-from .single import BaseReaction, Dissociation, Synthesis
+from ..parameters import Parameter
+from ..reactants import Reactant
+from .core import BaseReaction
+from .single import Dissociation, Synthesis
 
 
 class CompoundReaction(BaseReaction):
@@ -22,18 +24,27 @@ class CompoundReaction(BaseReaction):
 
     _reactions: Tuple[BaseReaction, ...]
 
-    def names(self) -> Tuple[str, ...]:
-        out = []
-        for reaction in self._reactions:
-            for name in reaction.names():
-                if name not in out:
-                    out.append(name)
+    @property
+    def reactants(self) -> Tuple[Reactant, ...]:
+        """Return a tuple of the reactants in this reaction."""
+        return tuple(chain.from_iterable(r.reactants for r in self._reactions))
 
-        return tuple(out)
+    @property
+    def parameters(self) -> Tuple[Parameter, ...]:
+        """Return a tuple of the reactants in this reaction."""
+        return tuple(chain.from_iterable(r.parameters for r in self._reactions))
 
-    def yield_ip_rhs(self, global_names=None):
+    @property
+    def _parameters(self) -> Dict[str, float]:
+        """Return a dict of {_name: value} of the parameters in this reaction."""
+        out = {}
         for reaction in self._reactions:
-            yield from reaction.yield_ip_rhs(global_names)
+            out.update(reaction._parameters)
+        return out
+
+    def yield_ip_rhs(self, global_reactants=None):
+        for reaction in self._reactions:
+            yield from reaction.yield_ip_rhs()
 
     def yield_latex_equations(self, *, use_brackets=True):
         for reaction in self._reactions:

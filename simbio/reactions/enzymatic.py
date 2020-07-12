@@ -1,4 +1,4 @@
-from .. import Parameter
+from ..parameters import Parameter
 from ..reactants import Reactant
 from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
 from .single import SingleReaction

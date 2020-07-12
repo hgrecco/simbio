@@ -10,98 +10,40 @@
 
 import inspect
 from dataclasses import dataclass
-from functools import partial
-from string import Template
-from typing import Callable, Dict, Generator, Tuple
 
 import numpy as np
-from simbio.parameters import Parameter
-from simbio.reactants import InReactionReactant, Reactant
 
-try:
-    from sympy import symbols, Derivative, Equality
-except ImportError:
+from ..parameters import Parameter
+from ..reactants import InReactionReactant, Reactant
+from .core import BaseReaction
 
-    def symbols(*args, **kwargs):
-        raise Exception(
-            "This function requires sympy. Please install it:\n"
-            "\tpip install sympy\n"
-            "\t\t\tor\n"
-            "\tconda install sympy\n"
+
+def _check_signature_order(cls):
+    rhs_params = iter(inspect.signature(cls.rhs).parameters.values())
+
+    v = next(rhs_params)
+    if not v.name == "t":
+        raise TypeError(
+            f"{cls.__name__}.rhs first parameter is {v.name}, but must be t"
         )
 
-    Derivative = Equality = symbols
-
-ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
-
-
-class BaseReaction:
-    """Base class of all single and compound reactions.
-
-    The constructor automatically assign the kwargs to the attribute value.
-    """
-
-    _reactant_names: Tuple[str, ...] = ()
-    _parameter_names: Tuple[str, ...] = ()
-    st_numbers: np.ndarray
-
-    def names(self) -> Tuple[str, ...]:
-        """Return the name of the reactants in this reaction.
-        """
-        return tuple(getattr(self, attr).name for attr in self._reactant_names)
-
-    @property
-    def parameters(self) -> Dict[str, float]:
-        return {name: getattr(self, name).value for name in self._parameter_names}
-
-    def yield_ip_rhs(
-        self, global_names: Tuple[str, ...]
-    ) -> Generator[ODE_Fun, None, None]:
-        """Yield one or many functions representing the right hand side of the ODE equation.
-
-        The arguments of these functions are:
-            t: float, the time
-            y: ndarray, the input vector
-            out: ndarray, the calculated rhs of the equation which is modified inplace.
-
-        Applying all functions sequentially it is posiblle
-        """
-        raise NotImplementedError
-
-    def _yield_using_template(self, tmpls, *, use_brackets=True):
-        for tmpl in tmpls:
-            yield self._template_replace(tmpl, use_brackets=use_brackets)
-
-    def _template_replace(self, tmpl, *, use_brackets=True):
-        if use_brackets:
-            c = "[%s]"
+    for v in rhs_params:
+        if issubclass(v.annotation, Reactant):
+            continue
+        elif issubclass(v.annotation, Parameter):
+            break
         else:
-            c = "%s"
-        return Template(tmpl).substitute(
-            **{name: c % getattr(self, name).name for name in self._reactant_names},
-            **{name: getattr(self, name).name for name in self._parameter_names},
-        )
+            raise TypeError(
+                f"{cls.__name__}.rhs parameter {v.name} is neither Reactant nor Parameter"
+            )
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        t = symbols("t")
-        names = self.names()
-        if use_brackets:
-            names = (f'[{x}]' for x in names)
-        reactants = tuple(map(symbols, names))
-        parameters = map(symbols, self.parameters)
-        
-        for lhs, rhs in zip(reactants, self.rhs(t, *reactants, *parameters)):
-            yield Equality(Derivative(lhs, t), rhs)
-
-    def yield_latex_reaction(self):
-        # Use \usepackage{mhchem}
-        raise NotImplementedError
-
-    def yield_latex_reactant_values(self):
-        raise NotImplementedError
-
-    def yield_latex_parameter_values(self):
-        raise NotImplementedError
+    for v in rhs_params:
+        if issubclass(v.annotation, Reactant):
+            raise TypeError(
+                f"{cls.__name__}.rhs are in the wrong order. Reactant {v.name} found after Parameter."
+            )
+        elif not issubclass(v.annotation, Parameter):
+            raise TypeError(f"{cls.__name__}.rhs parameter {v.name} is not Parameter")
 
 
 class SingleReaction(BaseReaction):
@@ -126,33 +68,7 @@ class SingleReaction(BaseReaction):
             )
 
         # Check signature order
-        rhs_params = iter(inspect.signature(cls.rhs).parameters.values())
-
-        v = next(rhs_params)
-        if not v.name == "t":
-            raise TypeError(
-                f"{cls.__name__}.rhs first parameter is {v.name}, but must be t"
-            )
-
-        for v in rhs_params:
-            if issubclass(v.annotation, Reactant):
-                continue
-            elif issubclass(v.annotation, Parameter):
-                break
-            else:
-                raise TypeError(
-                    f"{cls.__name__}.rhs parameter {v.name} is neither Reactant nor Parameter"
-                )
-
-        for v in rhs_params:
-            if issubclass(v.annotation, Reactant):
-                raise TypeError(
-                    f"{cls.__name__}.rhs are in the wrong order. Reactant {v.name} found after Parameter."
-                )
-            elif not issubclass(v.annotation, Parameter):
-                raise TypeError(
-                    f"{cls.__name__}.rhs parameter {v.name} is not Parameter"
-                )
+        _check_signature_order(cls)
 
         # Set class annotations from rhs
         rhs_annotations = cls.rhs.__annotations__
@@ -182,25 +98,27 @@ class SingleReaction(BaseReaction):
             if isinstance(value, InReactionReactant):
                 self.st_numbers[i] = value.st_number
                 value = value.reactant
+
+            if not isinstance(value, Reactant):
+                raise TypeError(f"{value} is not a Reactant.")
+            else:
                 setattr(self, key, value)
 
-            if isinstance(value, Reactant) and value.has_sites:
-                raise ValueError(
-                    f"The state of {value.name} must be specified to link a this reaction."
-                )
+        for key in self._parameter_names:
+            value = getattr(self, key)
+            if not isinstance(value, Parameter):
+                raise TypeError(f"{value} is not a Parameter.")
 
-    def build_rhs(self) -> Callable:
-        """Right hand side of the ODE, compatible with scipy.integrators"""
-        return partial(self.rhs, **self.parameters)
-
-    def yield_ip_rhs(self, global_names=None):
-        if global_names is None:
-            pos = slice()
+    def yield_ip_rhs(self, global_reactants=None):
+        if global_reactants is None:
+            ix = slice(None)
         else:
-            pos = np.asarray(tuple(global_names.index(var) for var in self.names()))
+            local_reactants = self.reactants
+            ix = map(global_reactants.index, local_reactants)
+            ix = np.fromiter(ix, dtype=int, count=len(local_reactants))
 
         def fun(t, y, out):
-            out[pos] += self.build_rhs()(t, *(y[pos] ** self.st_numbers))
+            out[ix] += self.rhs(t, *(y[ix] ** self.st_numbers), **self._parameters)
 
         yield fun
 
