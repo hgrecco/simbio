@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
+from .core import Content
+
 
 @dataclass
-class Parameter:
-    name: str
+class Parameter(Content):
     value: float = 0
