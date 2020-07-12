@@ -109,7 +109,7 @@ class SingleReaction(BaseReaction):
             if not isinstance(value, Parameter):
                 raise TypeError(f"{value} is not a Parameter.")
 
-    def yield_ip_rhs(self, global_reactants=None):
+    def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         if global_reactants is None:
             ix = slice(None)
         else:
@@ -117,8 +117,13 @@ class SingleReaction(BaseReaction):
             ix = map(global_reactants.index, local_reactants)
             ix = np.fromiter(ix, dtype=int, count=len(local_reactants))
 
+        parameters = {
+            name: global_parameters.get(p, p.value)
+            for name, p in self._parameters.items()
+        }
+
         def fun(t, y, out):
-            out[ix] += self.rhs(t, *(y[ix] ** self.st_numbers), **self._parameters)
+            out[ix] += self.rhs(t, *(y[ix] ** self.st_numbers), **parameters)
 
         yield fun
 

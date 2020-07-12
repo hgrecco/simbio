@@ -42,9 +42,9 @@ class CompoundReaction(BaseReaction):
             out.update(reaction._parameters)
         return out
 
-    def yield_ip_rhs(self, global_reactants=None):
+    def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         for reaction in self._reactions:
-            yield from reaction.yield_ip_rhs()
+            yield from reaction.yield_ip_rhs(global_reactants, global_parameters)
 
     def yield_latex_equations(self, *, use_brackets=True):
         for reaction in self._reactions:

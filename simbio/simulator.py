@@ -78,9 +78,7 @@ class Simulator:
 
     def _reset_rhs(self, parameters: dict = None):
         parameters = self._build_parameters_dict(parameters)
-        self.__rhs = (
-            self.model.build_ip_rhs()
-        )  # parameters or {}) TODO: Allow model changing parameters
+        self.__rhs = self.model.build_ip_rhs(parameters)
         self.solver = None
 
     def _concentrations_to_y0(self, concentrations):

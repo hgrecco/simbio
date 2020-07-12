@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -114,9 +114,15 @@ class Compartment(Container):
         out = {}  # Using dict as an ordered set.
         for reaction in self.reactions:
             for reactant in reaction.reactants:
-                if reactant in out:
-                    continue
                 out[reactant] = 1
+        return tuple(out.keys())
+
+    @property
+    def in_reaction_parameters(self) -> Tuple[Parameter, ...]:
+        out = {}  # Using dict as an ordered set.
+        for reaction in self.reactions:
+            for parameter in reaction.parameters:
+                out[parameter] = 1
         return tuple(out.keys())
 
     @property
@@ -133,9 +139,23 @@ class Compartment(Container):
         # TODO: Raise warning for unused concentrations?
         return out
 
-    def build_ip_rhs(self):
+    def build_parameters(self, parameters=None) -> Dict[Parameter, float]:
+        if parameters is None:
+            parameters = {}
+
+        out = {}
+        for p in self.in_reaction_parameters:
+            out[p] = parameters.pop(p.name, p.value)
+
+        if len(parameters) > 0:
+            raise ValueError("Some parameters were not used:", parameters)
+
+        return out
+
+    def build_ip_rhs(self, parameters=None):
         reactants = self.in_reaction_reactants
-        funcs = (r.yield_ip_rhs(reactants) for r in self.reactions)
+        parameters = self.build_parameters(parameters)
+        funcs = (r.yield_ip_rhs(reactants, parameters) for r in self.reactions)
         funcs = tuple(chain.from_iterable(funcs))
 
         def fun(t, y):

@@ -3,6 +3,7 @@ from typing import Callable, Dict, Generator, Tuple
 
 import numpy as np
 
+from ..parameters import Parameter
 from ..reactants import Reactant
 
 try:
@@ -38,14 +39,14 @@ class BaseReaction:
         return tuple(getattr(self, name) for name in self._reactant_names)
 
     @property
-    def parameters(self) -> Dict[str, float]:
+    def parameters(self) -> Tuple[Parameter, ...]:
         """Return a tuple of the parameters in this reaction."""
         return tuple(getattr(self, name) for name in self._parameter_names)
 
     @property
-    def _parameters(self) -> Dict[str, float]:
-        """Return a dict of {_name: value} of the parameters in this reaction."""
-        return {name: getattr(self, name).value for name in self._parameter_names}
+    def _parameters(self) -> Dict[str, Parameter]:
+        """Return a dict of {_name: Parameter} of the parameters in this reaction."""
+        return {name: getattr(self, name) for name in self._parameter_names}
 
     def yield_ip_rhs(
         self, global_names: Tuple[str, ...]
