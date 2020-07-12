@@ -35,7 +35,7 @@ class Simulator:
         default_parameters: dict = None,
     ):
         self.model = model
-        self.names = model.names()
+        self.names = model.in_reaction_rectant_names
         self.solver = None
         self.__rhs = None
         self.observed_ndx = observed_ndx

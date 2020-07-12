@@ -94,6 +94,9 @@ class Container(Content):
                     out[f"{con.name}.{subcon.name}"] = subcon
         return out
 
+    def filter_contents(self, cls):
+        return tuple(c for c in self.contents.values() if isinstance(c, cls))
+
     def relative_name(self, content: Content) -> str:
         """Name relative to this Container."""
         if content is self:
