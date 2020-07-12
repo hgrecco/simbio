@@ -9,16 +9,11 @@
 """
 
 
-from .compartments import Compartment, Universe
-from .parameters import Parameter
-from .reactants import Reactant
+from .compartments import Universe
 from .simulator import Simulator
 
 __all__ = [
     "reactions",
-    "Reactant",
-    "Parameter",
-    "Compartment",
     "Universe",
     "Simulator",
 ]
