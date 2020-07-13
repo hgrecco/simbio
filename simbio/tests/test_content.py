@@ -116,3 +116,16 @@ def _(data=data):
 
     with raises(TypeError):
         main["sub.subcont.not_here"]
+
+
+@test("Copy container")
+def _(data=data):
+    main, d = data
+
+    new_main = main.copy()
+
+    for c, nc in zip(main.contents.values(), new_main.contents.values()):
+        assert c.name == nc.name
+        assert c.belongs_to.name == nc.belongs_to.name
+        assert c is not nc
+        assert c.belongs_to is not nc.belongs_to

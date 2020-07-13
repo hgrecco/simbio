@@ -51,6 +51,9 @@ class Content:
         self.__inmutable_if_assigned(name)
         super().__delattr__(name)
 
+    def copy(self, name: str = None, belongs_to: Container = None) -> Content:
+        return self.__class__(name=name or self.name, belongs_to=belongs_to)
+
 
 @dataclass(repr=False)
 class Container(Content):
@@ -148,3 +151,9 @@ class Container(Content):
 
     def __repr__(self):
         return self.name
+
+    def copy(self, name: str = None, belongs_to: Container = None) -> Container:
+        new = self.__class__(name=name or self.name, belongs_to=belongs_to)
+        for content in self.__contents.values():
+            new.add(content.copy(belongs_to=new))
+        return new

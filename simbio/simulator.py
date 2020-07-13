@@ -34,7 +34,7 @@ class Simulator:
         default_concentrations: dict = None,
         default_parameters: dict = None,
     ):
-        self.model = model
+        self.model = model.copy()  # Else, the model might get modified outside.
         self.names = model.in_reaction_rectant_names
         self.solver = None
         self.__rhs = None
@@ -113,7 +113,7 @@ class Simulator:
         time: Union[float, Iterable],
         concentrations: dict = None,
         parameters: dict = None,
-    ) -> (np.ndarray, np.ndarray):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Run the simulation
 
         Parameters

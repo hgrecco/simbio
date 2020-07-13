@@ -109,6 +109,31 @@ class Compartment(Container):
             parameter = Parameter(name=parameter, belongs_to=self, value=value)
         return self.add(parameter)
 
+    def copy(self, name: str = None, belongs_to: Container = None) -> Compartment:
+        # __contents copy is handled by Container.copy
+        new = super().copy(name=name, belongs_to=belongs_to)
+
+        # We have to handle __reactions copy
+        # For each reaction, we get the relative names of its reactants
+        # and parameters, which will be the same in the new Compartment.
+        # Then we instantiate another reaction searching corresponding
+        # reactants and parameters from the new compartment.
+        for reaction in self.__reactions:
+            kwargs = {}
+
+            for name, reactant, st_number in zip(
+                reaction._reactant_names, reaction.reactants, reaction.st_numbers
+            ):
+                rel_name = self.relative_name(reactant)
+                kwargs[name] = st_number * new[rel_name]
+
+            for name, parameter in zip(reaction._parameter_names, reaction.parameters):
+                rel_name = self.relative_name(parameter)
+                kwargs[name] = new[rel_name]
+
+            new.add_reaction(reaction.__class__(**kwargs))
+        return new
+
     @property
     def in_reaction_reactants(self) -> Tuple[Reactant, ...]:
         out = {}  # Using dict as an ordered set.
@@ -170,5 +195,5 @@ class Compartment(Container):
 class Universe(Compartment):
     """Universe is a Compartment that belongs to None."""
 
-    def __init__(self, name: str):
-        super().__init__(name=name, belongs_to=None)
+    def __init__(self, name: str, belongs_to=None):
+        super().__init__(name=name, belongs_to=belongs_to)

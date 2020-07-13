@@ -5,6 +5,7 @@
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Union
@@ -26,6 +27,13 @@ class Reactant(Content):
 
     def __hash__(self) -> int:
         return id(self)
+
+    def copy(self, name: str = None, belongs_to: Container = None) -> Reactant:
+        return self.__class__(
+            name=name or self.name,
+            belongs_to=belongs_to,
+            concentration=self.concentration,
+        )
 
 
 @dataclass
