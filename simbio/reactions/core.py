@@ -1,5 +1,5 @@
 from string import Template
-from typing import Callable, Dict, Generator, Tuple
+from typing import Callable, Generator, Tuple
 
 import numpy as np
 
@@ -42,11 +42,6 @@ class BaseReaction:
     def parameters(self) -> Tuple[Parameter, ...]:
         """Return a tuple of the parameters in this reaction."""
         return tuple(getattr(self, name) for name in self._parameter_names)
-
-    @property
-    def _parameters(self) -> Dict[str, Parameter]:
-        """Return a dict of {_name: Parameter} of the parameters in this reaction."""
-        return {name: getattr(self, name) for name in self._parameter_names}
 
     def yield_ip_rhs(
         self, global_names: Tuple[str, ...]

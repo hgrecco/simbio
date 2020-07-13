@@ -8,11 +8,10 @@
     :license: BSD, see LICENSE for more details.
 """
 
-from itertools import chain
-from typing import Dict, Tuple
+from typing import Tuple
 
 from ..parameters import Parameter
-from ..reactants import Reactant
+from ..reactants import InReactionReactant, Reactant
 from .core import BaseReaction
 from .single import Dissociation, Synthesis
 
@@ -24,23 +23,27 @@ class CompoundReaction(BaseReaction):
 
     _reactions: Tuple[BaseReaction, ...]
 
-    @property
-    def reactants(self) -> Tuple[Reactant, ...]:
-        """Return a tuple of the reactants in this reaction."""
-        return tuple(chain.from_iterable(r.reactants for r in self._reactions))
+    def __init__(self, **kwargs):
+        self._reactant_names = []
+        self._parameter_names = []
+        self.st_numbers = []
 
-    @property
-    def parameters(self) -> Tuple[Parameter, ...]:
-        """Return a tuple of the reactants in this reaction."""
-        return tuple(chain.from_iterable(r.parameters for r in self._reactions))
+        for key, value in kwargs.items():
+            if isinstance(value, InReactionReactant):
+                self.st_numbers.append(value.st_number)
+                value = value.reactant
+                self._reactant_names.append(key)
+            elif isinstance(value, Reactant):
+                self.st_numbers.append(1)
+                self._reactant_names.append(key)
+            elif isinstance(value, Parameter):
+                self._parameter_names.append(key)
+            else:
+                raise TypeError(f"{value} is not a Reactant or Parameter.")
+            setattr(self, key, value)
 
-    @property
-    def _parameters(self) -> Dict[str, float]:
-        """Return a dict of {_name: value} of the parameters in this reaction."""
-        out = {}
-        for reaction in self._reactions:
-            out.update(reaction._parameters)
-        return out
+        for name in ("_reactant_names", "_parameter_names", "st_numbers"):
+            setattr(self, name, tuple(getattr(self, name)))
 
     def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         for reaction in self._reactions:
@@ -77,7 +80,9 @@ class ReversibleSynthesis(CompoundReaction):
     reverse_rate: float
 
     def __init__(self, *, A, B, AB, forward_rate, reverse_rate):
-        super().__init__()
+        super().__init__(
+            A=A, B=B, AB=AB, forward_rate=forward_rate, reverse_rate=reverse_rate
+        )
         self._reactions = (
             Synthesis(A=A, B=B, AB=AB, rate=forward_rate),
             Dissociation(A=A, B=B, AB=AB, rate=reverse_rate),

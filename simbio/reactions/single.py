@@ -119,7 +119,7 @@ class SingleReaction(BaseReaction):
 
         parameters = {
             name: global_parameters.get(p, p.value)
-            for name, p in self._parameters.items()
+            for name, p in zip(self._parameter_names, self.parameters)
         }
 
         def fun(t, y, out):
