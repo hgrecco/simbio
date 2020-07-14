@@ -1,6 +1,8 @@
 from .compound import CompoundReaction, ReversibleSynthesis
 from .single import (
-    BaseReaction,
+    Conversion,
+    Creation,
+    Destruction,
     Dissociation,
     DoubleReplacement,
     SingleReplacement,
@@ -8,11 +10,13 @@ from .single import (
 )
 
 __all__ = [
-    "BaseReaction",
-    "Synthesis",
+    "Conversion",
+    "Creation",
+    "Destruction",
     "Dissociation",
-    "SingleReplacement",
     "DoubleReplacement",
+    "SingleReplacement",
+    "Synthesis",
     "CompoundReaction",
     "ReversibleSynthesis",
 ]

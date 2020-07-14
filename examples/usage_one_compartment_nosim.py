@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 from scipy.integrate import RK45
-from simbio import Compartment
+from simbio import Universe
 from simbio.reactions import Synthesis
 
 ##############
 
-cell = Compartment("cell")
+cell = Universe("cell")
 cell.add_reactant("C", concentration=2)
 cell.add_reactant("O2", concentration=1)
 cell.add_reactant("CO2", concentration=0)
@@ -16,7 +16,7 @@ cell.add_reaction(step1)
 
 initial = cell.build_concentration_vector()
 rhs = cell.build_ip_rhs()
-names = cell.names()
+names = cell.in_reaction_rectant_names
 # Just a stupid test
 assert rhs(0, initial).shape == initial.shape
 

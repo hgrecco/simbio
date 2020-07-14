@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, Simulator, algo
+from simbio import Simulator, Universe, algo
 from simbio.reactions import Synthesis
 
 ##############
 
-cell = Compartment("cell")
+cell = Universe("cell")
 cell.add_reactant("C", concentration=2)
 cell.add_reactant("O2", concentration=1)
 cell.add_reactant("CO2", concentration=0)

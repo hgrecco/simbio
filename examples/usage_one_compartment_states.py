@@ -1,12 +1,15 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, DataFrame, Reactant
+from simbio import Simulator, Universe
 from simbio.reactions.enzymatic import MichaelisMentenEqApprox
 
 ##############
 
-cell = Compartment("cell")
-C = Reactant("C", concentration=1, states="u p pp")
-cell.add_reactant(C)
+cell = Universe("cell")
+C = cell.add_compartment("C")
+C.add_reactant("u", concentration=1)
+C.add_reactant("p", concentration=0)
+C.add_reactant("pp", concentration=1)
+
 cell.add_parameter("K", 0.1)
 cell.add_parameter("D", 0.1)
 step1 = MichaelisMentenEqApprox(
@@ -20,7 +23,7 @@ cell.add_reaction(step1)
 cell.add_reaction(step2)
 
 
-sim = DataFrame(cell)
+sim = Simulator(cell)
 df = sim.df_run(100)
 
 df.plot(x="time")

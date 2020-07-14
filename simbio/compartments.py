@@ -2,84 +2,74 @@
     simbio.compartments
     ~~~~~~~~~~~~~~~~~~~
 
-    This module provides the definition for:
-    - Compartment: contain reactants and reactions.
-    - Universe: contain compartments, and reactions connecting the reactants within them.
-
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
+from __future__ import annotations
 
-from collections import defaultdict
-from typing import Collection, Dict, List, Union
+from dataclasses import dataclass, field
+from itertools import chain
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
-from simbio.reactions.single import BaseReaction
 
+from .core import Container
 from .parameters import Parameter
 from .reactants import Reactant
+from .reactions.single import BaseReaction
 
 
-def _removeprefix_or_none(name: str, cname: str):
-    if name.startswith(cname + "."):
-        return name[(len(cname) + 1) :]
-    return None
+@dataclass(repr=False)
+class Compartment(Container):
+    __reactions: List[BaseReaction] = field(default_factory=list, repr=False)
 
+    @property
+    def compartments(self) -> Tuple[Compartment, ...]:
+        return self.filter_contents(Compartment)
 
-class Compartment:
-    """Contain reactants and reactions converting them.
+    @property
+    def reactants(self) -> Tuple[Reactant, ...]:
+        return self.filter_contents(Reactant)
 
-    Parameters
-    ----------
-    name : str
-        Name of the compartment.
-    """
+    @property
+    def parameters(self) -> Tuple[Parameter, ...]:
+        return self.filter_contents(Parameter)
 
-    #: Name of the compartment.
-    name: str
+    @property
+    def reactions(self) -> Tuple[BaseReaction, ...]:
+        out = list(self.__reactions)
+        for compartment in self.compartments:
+            out.extend(compartment.reactions)
+        return tuple(out)
 
-    #: Mapping from reactant name to Reactant object.
-    _reactants: Dict[str, Reactant]
+    def add_reaction(self, reaction: BaseReaction):
+        if not isinstance(reaction, BaseReaction):
+            raise TypeError(f"{reaction} is not a Reaction.")
 
-    #: Mapping from parameter name to Parameter object.
-    _parameters: Dict[str, Parameter]
+        out = [r for r in reaction.reactants if r not in self]
+        if out:
+            raise Exception(
+                "Some reactants are outside this compartment: %s", [r.name for r in out]
+            )
+        self.__reactions.append(reaction)
+        return reaction
 
-    #: Reactions within this compartment.
-    _reactions: List[BaseReaction]
+    def add_compartment(self, compartment: Union[str, Compartment]) -> Compartment:
+        """Add compartment to this compartment.
 
-    def __init__(self, name: str = "default"):
-        self.name = name
-        self._reactants = {}
-        self._parameters = {}
-        self._reactions = []
-
-    def __getattr__(self, item):
-        value = self._reactants.get(item) or self._parameters.get(item)
-        if value is None:
-            raise KeyError
-        return value
-
-    def get_reactant_by_fullname(self, fullname: str):
-        """Obtain the a reactant or reactant state.
-
-        The fullname can be:
-            <reactant>
-        or:
-            <reactant name>.<state>
+        If compartment is a string, a Compartment object will be automatically created.
 
         Parameters
         ----------
-        fullname : str
+        compartment : str or Compartment
 
         Returns
         -------
-        Reactant
+        comparment
         """
-        if "." in fullname:
-            reactant, state = fullname.split(".")
-            return getattr(self._reactants[reactant], state)
-
-        return self._reactants[fullname]
+        if isinstance(compartment, str):
+            compartment = Compartment(name=compartment, belongs_to=self)
+        return self.add(compartment)
 
     def add_reactant(self, reactant: Union[str, Reactant], concentration=0) -> Reactant:
         """Add reactant to this compartment.
@@ -96,16 +86,10 @@ class Compartment:
         reactant
         """
         if isinstance(reactant, str):
-            reactant = Reactant(reactant, concentration=concentration)
-
-        if reactant.name in self._reactions:
-            raise ValueError(
-                f"{reactant.name} already exists in compartment {self.name}"
+            reactant = Reactant(
+                name=reactant, belongs_to=self, concentration=concentration
             )
-
-        self._reactants[reactant.name] = reactant
-
-        return reactant
+        return self.add(reactant)
 
     def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
         """Add parameter to this compartment.
@@ -122,51 +106,82 @@ class Compartment:
         parameter
         """
         if isinstance(parameter, str):
-            parameter = Parameter(name=parameter, value=value)
+            parameter = Parameter(name=parameter, belongs_to=self, value=value)
+        return self.add(parameter)
 
-        if parameter.name in self._parameters:
-            raise ValueError(
-                f"{parameter.name} already exists in compartment {self.name}"
-            )
+    def copy(self, name: str = None, belongs_to: Container = None) -> Compartment:
+        # __contents copy is handled by Container.copy
+        new = super().copy(name=name, belongs_to=belongs_to)
 
-        self._parameters[parameter.name] = parameter
+        # We have to handle __reactions copy
+        # For each reaction, we get the relative names of its reactants
+        # and parameters, which will be the same in the new Compartment.
+        # Then we instantiate another reaction searching corresponding
+        # reactants and parameters from the new compartment.
+        for reaction in self.__reactions:
+            kwargs = {}
 
-        return parameter
+            for name, reactant, st_number in zip(
+                reaction._reactant_names, reaction.reactants, reaction.st_numbers
+            ):
+                rel_name = self.relative_name(reactant)
+                kwargs[name] = st_number * new[rel_name]
 
-    def add_reaction(self, reaction: BaseReaction):
-        self._reactions.append(reaction)
+            for name, parameter in zip(reaction._parameter_names, reaction.parameters):
+                rel_name = self.relative_name(parameter)
+                kwargs[name] = new[rel_name]
 
-    def names(self):
-        out = []
+            new.add_reaction(reaction.__class__(**kwargs))
+        return new
 
-        # We do it like this instead of using a set to guarantee the order.
-        for reaction in self._reactions:
-            for name in reaction.names():
-                if name not in out:
-                    out.append(name)
+    @property
+    def in_reaction_reactants(self) -> Tuple[Reactant, ...]:
+        out = {}  # Using dict as an ordered set.
+        for reaction in self.reactions:
+            for reactant in reaction.reactants:
+                out[reactant] = 1
+        return tuple(out.keys())
 
-        return tuple(out)
+    @property
+    def in_reaction_parameters(self) -> Tuple[Parameter, ...]:
+        out = {}  # Using dict as an ordered set.
+        for reaction in self.reactions:
+            for parameter in reaction.parameters:
+                out[parameter] = 1
+        return tuple(out.keys())
+
+    @property
+    def in_reaction_rectant_names(self) -> Tuple[str, ...]:
+        return tuple(map(self.relative_name, self.in_reaction_reactants))
 
     def build_concentration_vector(self, concentrations=None):
-        names = self.names()
+        if concentrations is None:
+            concentrations = {}
+        names = self.in_reaction_rectant_names
         out = np.zeros(len(names))
+        for i, name in enumerate(names):
+            out[i] = concentrations.get(name) or self[name].concentration
+        # TODO: Raise warning for unused concentrations?
+        return out
 
-        concentrations = concentrations or {}
-        for ndx, name in enumerate(names):
-            if name in concentrations:
-                out[ndx] = concentrations[name]
-            else:
-                out[ndx] = self.get_reactant_by_fullname(name).concentration
+    def build_parameters(self, parameters=None) -> Dict[Parameter, float]:
+        if parameters is None:
+            parameters = {}
+
+        out = {}
+        for p in self.in_reaction_parameters:
+            out[p] = parameters.pop(p.name, p.value)
+
+        if len(parameters) > 0:
+            raise ValueError("Some parameters were not used:", parameters)
 
         return out
 
-    def yield_ip_rhs(self, global_names=None):
-        for reaction in self._reactions:
-            yield from reaction.yield_ip_rhs(global_names)
-
-    def build_ip_rhs(self):
-
-        funcs = tuple(self.yield_ip_rhs(self.names()))
+    def build_ip_rhs(self, parameters=None):
+        reactants = self.in_reaction_reactants
+        parameters = self.build_parameters(parameters)
+        funcs = (r.yield_ip_rhs(reactants, parameters) for r in self.reactions)
+        funcs = tuple(chain.from_iterable(funcs))
 
         def fun(t, y):
             out = np.zeros_like(y)
@@ -176,142 +191,9 @@ class Compartment:
 
         return fun
 
-    def get_names_ndx(self, *names: Collection[str]):
-        try:
-            all_names = self.names()
-            return tuple(all_names.index(name) for name in names)
-        except ValueError as ex:
-            raise ValueError("Reactant name not found in compartment: %s" % ex)
 
-    def yield_latex_equations(self, *, use_brackets=True):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_equations(use_brackets=use_brackets)
+class Universe(Compartment):
+    """Universe is a Compartment that belongs to None."""
 
-    def yield_latex_reaction(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_reaction()
-
-    def yield_latex_reactant_values(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_reactant_values()
-
-    def yield_latex_parameter_values(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_parameter_values()
-
-
-class Universe:
-    def __init__(self):
-        self._reactions: List[BaseReaction] = []
-        self._compartments: Dict[str, Compartment] = {}
-
-    def get_reactant_by_fullname(self, fullname):
-        compartment, other = fullname.split(".", 1)
-        return self._compartments[compartment].get_reactant_by_fullname(other)
-
-    def add_compartment(self, compartment: Union[str, Compartment]) -> Compartment:
-        if isinstance(compartment, str):
-            compartment = Compartment(compartment)
-
-        self._compartments[compartment.name] = compartment
-
-        return compartment
-
-    def add_reaction(self, reaction: BaseReaction):
-        self._reactions.append(reaction)
-
-    def names(self):
-        out = []
-        for cname, compartment in self._compartments.items():
-            out.extend((cname + "." + name) for name in compartment.names())
-
-        return tuple(out)
-
-    def build_concentration_vector_nested(self, concentrations_by_compartment=None):
-        names = self.names()
-        out = np.zeros(len(names))
-
-        ndx = 0
-        concentrations_by_compartment = concentrations_by_compartment or {}
-        for cname, compartment in self._compartments.items():
-            cc = compartment.build_concentration_vector(
-                concentrations_by_compartment.get(cname, {})
-            )
-            out[ndx : (ndx + len(cc))] = cc
-            ndx += len(cc)
-
-        return out
-
-    def build_concentration_vector(self, concentrations_by_fullname=None):
-        cnames = set(self._compartments.keys())
-        d = defaultdict(dict)
-        concentrations_by_fullname = concentrations_by_fullname or {}
-        for key, value in concentrations_by_fullname.items():
-            if "." not in key:
-                raise ValueError(f"Compartment name not specified for: {key}")
-            cname, rest = key.split(".", 1)
-            if cname not in cnames:
-                raise ValueError(f"Compartment name {cname} not in {cnames}")
-            d[cname][rest] = value
-
-        return self.build_concentration_vector_nested(d)
-
-    def yield_ip_rhs(self, global_names=None):
-
-        for cname, compartment in self._compartments.items():
-            vnames = tuple(_removeprefix_or_none(name, cname) for name in global_names)
-            yield from compartment.yield_ip_rhs(vnames)
-
-        for reaction in self._reactions:
-            yield from reaction.yield_ip_rhs(global_names)
-
-    def build_ip_rhs(self):
-
-        funcs = tuple(self.yield_ip_rhs(self.names()))
-
-        def fun(t, y):
-            out = np.zeros_like(y)
-            for func in funcs:
-                func(t, y, out)
-            return out
-
-        return fun
-
-    def get_names_ndx(self, *names: Collection[str]) -> np.ndarray:
-        out = []
-        all_names = self.names()
-        try:
-            for name in names:
-                out.append(all_names.index(name))
-        except ValueError:
-            raise ValueError(f"Reactant name {name} not found in universe: {all_names}")
-
-        return np.asarray(out, dtype=np.int)
-
-    def yield_latex_equations(self, *, use_brackets=True):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_equations(use_brackets=use_brackets)
-        for name, c in self._compartments.items():
-            yield r"\subsubsection{%s}" % name
-            yield from c.yield_latex_equations()
-
-    def yield_latex_reaction(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_equations()
-        for name, c in self._compartments.items():
-            yield r"\subsubsection{%s}" % name
-            yield from c.yield_latex_equations()
-
-    def yield_latex_reactant_values(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_reactant_values()
-        for name, c in self._compartments.items():
-            yield r"\subsubsection{%s}" % name
-            yield from c.yield_latex_reactant_values()
-
-    def yield_latex_parameter_values(self):
-        for reaction in self._reactions:
-            yield from reaction.yield_latex_parameter_values()
-        for name, c in self._compartments.items():
-            yield r"\subsubsection{%s}" % name
-            yield from c.yield_latex_parameter_values()
+    def __init__(self, name: str, belongs_to=None):
+        super().__init__(name=name, belongs_to=belongs_to)

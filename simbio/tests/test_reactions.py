@@ -1,4 +1,5 @@
-from simbio import Parameter, Reactant
+from simbio.parameters import Parameter
+from simbio.reactants import Reactant
 from simbio.reactions.single import SingleReaction
 from ward import raises, test
 
