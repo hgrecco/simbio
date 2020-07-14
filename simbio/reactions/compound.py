@@ -7,12 +7,12 @@
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
-
+import inspect
 from typing import Tuple
 
 from ..parameters import Parameter
-from ..reactants import InReactionReactant, Reactant
-from .core import BaseReaction
+from ..reactants import Reactant
+from .core import BaseReaction, _check_signature
 from .single import Dissociation, Synthesis
 
 
@@ -23,27 +23,37 @@ class CompoundReaction(BaseReaction):
 
     _reactions: Tuple[BaseReaction, ...]
 
-    def __init__(self, **kwargs):
-        self._reactant_names = []
-        self._parameter_names = []
-        self.st_numbers = []
+    def __init_subclass__(cls):
+        """Initialize class from yield_reactions method.
 
-        for key, value in kwargs.items():
-            if isinstance(value, InReactionReactant):
-                self.st_numbers.append(value.st_number)
-                value = value.reactant
-                self._reactant_names.append(key)
-            elif isinstance(value, Reactant):
-                self.st_numbers.append(1)
-                self._reactant_names.append(key)
-            elif isinstance(value, Parameter):
-                self._parameter_names.append(key)
-            else:
-                raise TypeError(f"{value} is not a Reactant or Parameter.")
-            setattr(self, key, value)
+        Check if yield_reactions method is well-defined. It must:
+        - be a staticmethod
+        - have an ordered signature (t, *Reactants, *Parameters)
 
-        for name in ("_reactant_names", "_parameter_names", "st_numbers"):
-            setattr(self, name, tuple(getattr(self, name)))
+        Continue class initialization with yield_reactions annotations in BaseReaction.
+        """
+        # Check if staticmethod
+        if not isinstance(inspect.getattr_static(cls, "yield_reactions"), staticmethod):
+            raise TypeError(
+                f"{cls.__name__}.yield_reactions must be a staticmethod. Use @staticmethod decorator."
+            )
+
+        _check_signature(cls.yield_reactions, t_first=False)
+        annotations = cls.yield_reactions.__annotations__
+        return super().__init_subclass__(annotations=annotations)
+
+    def __post_init__(self):
+        """Generates and saves the reactions from yield_reactions."""
+        reactants = dict(zip(self._reactant_names, self.reactants))
+        parameters = dict(zip(self._parameter_names, self.parameters))
+        self._reactions = tuple(self.yield_reactions(**reactants, **parameters))
+        # super().__post_init__() must be called after collecting reactants and
+        # parameters, and generating reactions, as it will unpack InReactionReactants.
+        super().__post_init__()
+
+    @staticmethod
+    def yield_reactions(self, **kwargs):
+        raise NotImplementedError
 
     def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         for reaction in self._reactions:
@@ -72,21 +82,16 @@ class ReversibleSynthesis(CompoundReaction):
     A + B <-> AB
     """
 
-    A: Reactant
-    B: Reactant
-    AB: Reactant
-
-    forward_rate: float
-    reverse_rate: float
-
-    def __init__(self, *, A, B, AB, forward_rate, reverse_rate):
-        super().__init__(
-            A=A, B=B, AB=AB, forward_rate=forward_rate, reverse_rate=reverse_rate
-        )
-        self._reactions = (
-            Synthesis(A=A, B=B, AB=AB, rate=forward_rate),
-            Dissociation(A=A, B=B, AB=AB, rate=reverse_rate),
-        )
+    @staticmethod
+    def yield_reactions(
+        A: Reactant,
+        B: Reactant,
+        AB: Reactant,
+        forward_rate: Parameter,
+        reverse_rate: Parameter,
+    ):
+        yield Synthesis(A=A, B=B, AB=AB, rate=forward_rate)
+        yield Dissociation(A=A, B=B, AB=AB, rate=reverse_rate)
 
     def yield_latex_reaction(self):
         yield self._template_replace(

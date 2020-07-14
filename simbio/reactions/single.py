@@ -7,58 +7,26 @@
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
-
 import inspect
-from dataclasses import dataclass
 
 import numpy as np
 
 from ..parameters import Parameter
-from ..reactants import InReactionReactant, Reactant
-from .core import BaseReaction
-
-
-def _check_signature_order(cls):
-    rhs_params = iter(inspect.signature(cls.rhs).parameters.values())
-
-    v = next(rhs_params)
-    if not v.name == "t":
-        raise TypeError(
-            f"{cls.__name__}.rhs first parameter is {v.name}, but must be t"
-        )
-
-    for v in rhs_params:
-        if issubclass(v.annotation, Reactant):
-            continue
-        elif issubclass(v.annotation, Parameter):
-            break
-        else:
-            raise TypeError(
-                f"{cls.__name__}.rhs parameter {v.name} is neither Reactant nor Parameter"
-            )
-
-    for v in rhs_params:
-        if issubclass(v.annotation, Reactant):
-            raise TypeError(
-                f"{cls.__name__}.rhs are in the wrong order. Reactant {v.name} found after Parameter."
-            )
-        elif not issubclass(v.annotation, Parameter):
-            raise TypeError(f"{cls.__name__}.rhs parameter {v.name} is not Parameter")
+from ..reactants import Reactant
+from .core import BaseReaction, _check_signature
 
 
 class SingleReaction(BaseReaction):
-    """Base class for all single reactions.
-    """
+    """Base class for all single reactions."""
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls):
         """Initialize class from rhs method.
 
         Check if rhs method is well-defined. It must:
         - be a staticmethod
         - have an ordered signature (t, *Reactants, *Parameters)
 
-        Set class annotations from rhs, and create init and others with dataclass.
-        Set (ordered) tuples of reactions and parameters names.
+        Continue class initialization with rhs annotations in BaseReaction.
         """
 
         # Check if staticmethod
@@ -68,46 +36,14 @@ class SingleReaction(BaseReaction):
             )
 
         # Check signature order
-        _check_signature_order(cls)
+        _check_signature(cls.rhs, t_first=True)
 
         # Set class annotations from rhs
         rhs_annotations = cls.rhs.__annotations__
         if "t" in rhs_annotations:
             rhs_annotations.pop("t")
-        setattr(cls, "__annotations__", rhs_annotations)
 
-        # Save tuples of names
-        cls._reactant_names = tuple(
-            k for k, v in rhs_annotations.items() if issubclass(v, Reactant)
-        )
-        cls._parameter_names = tuple(
-            k for k, v in rhs_annotations.items() if issubclass(v, Parameter)
-        )
-
-        return dataclass(cls)
-
-    def __post_init__(self):
-        if self.__class__ is SingleReaction:
-            return
-
-        self.st_numbers = np.ones(len(self._reactant_names))
-
-        for i, key in enumerate(self._reactant_names):
-            value = getattr(self, key)
-
-            if isinstance(value, InReactionReactant):
-                self.st_numbers[i] = value.st_number
-                value = value.reactant
-
-            if not isinstance(value, Reactant):
-                raise TypeError(f"{value} is not a Reactant.")
-            else:
-                setattr(self, key, value)
-
-        for key in self._parameter_names:
-            value = getattr(self, key)
-            if not isinstance(value, Parameter):
-                raise TypeError(f"{value} is not a Parameter.")
+        return super().__init_subclass__(annotations=rhs_annotations)
 
     def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         if global_reactants is None:
