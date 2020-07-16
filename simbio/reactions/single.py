@@ -45,7 +45,7 @@ class SingleReaction(BaseReaction):
 
         return super().__init_subclass__(annotations=rhs_annotations)
 
-    def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
+    def _yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         if global_reactants is None:
             ix = slice(None)
         else:

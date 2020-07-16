@@ -43,27 +43,27 @@ def _(cls=each(*classes)):
 @test("Add content")
 def _():
     main = Container("main", belongs_to=None)
-    main.add(Content("cont", belongs_to=main))
+    main._add(Content("cont", belongs_to=main))
 
     # Not Content
     with raises(TypeError):
-        main.add(1)
+        main._add(1)
 
     # Name collision
     with raises(ValueError):
-        main.add(Content("cont", belongs_to=main))
+        main._add(Content("cont", belongs_to=main))
 
     # Doesn't belong to Container
     with raises(Exception):
-        main.add(Content("cont2", belongs_to=None))
+        main._add(Content("cont2", belongs_to=None))
 
 
 @fixture
 def data():
     main = Container("main", belongs_to=None)
-    cont = main.add(Content("cont", belongs_to=main))
-    sub = main.add(Container("sub", belongs_to=main))
-    subcont = sub.add(Content("subcont", belongs_to=sub))
+    cont = main._add(Content("cont", belongs_to=main))
+    sub = main._add(Container("sub", belongs_to=main))
+    subcont = sub._add(Content("subcont", belongs_to=sub))
     return main, {"cont": cont, "sub": sub, "sub.subcont": subcont}
 
 
@@ -79,20 +79,20 @@ def _(data=data):
     main, d = data
 
     for name, content in d.items():
-        assert main.relative_name(content) == name
+        assert main._relative_name(content) == name
 
     cont, sub, subcont = d["cont"], d["sub"], d["sub.subcont"]
 
-    assert sub.relative_name(subcont) == "subcont"
+    assert sub._relative_name(subcont) == "subcont"
 
     # Cont is not in sub
     with raises(AttributeError):
-        sub.relative_name(cont)
+        sub._relative_name(cont)
 
     # Not implemented for self
     for c in (main, sub):
         with raises(NotImplementedError):
-            c.relative_name(c)
+            c._relative_name(c)
 
 
 @test("Get item or attribute")

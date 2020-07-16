@@ -55,9 +55,9 @@ class CompoundReaction(BaseReaction):
     def yield_reactions(self, **kwargs):
         raise NotImplementedError
 
-    def yield_ip_rhs(self, global_reactants=None, global_parameters=None):
+    def _yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         for reaction in self._reactions:
-            yield from reaction.yield_ip_rhs(global_reactants, global_parameters)
+            yield from reaction._yield_ip_rhs(global_reactants, global_parameters)
 
     def yield_latex_equations(self, *, use_brackets=True):
         for reaction in self._reactions:

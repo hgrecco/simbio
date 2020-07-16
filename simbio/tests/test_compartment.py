@@ -83,7 +83,7 @@ def _(d=data):
 @test("Build Compartment concentration vector")
 def _(data=data):
     cell = data["cell"]
-    assert np.allclose(cell.build_concentration_vector(), np.array([1.0, 3.0]))
+    assert np.allclose(cell._build_concentration_vector(), np.array([1.0, 3.0]))
 
     nucleus = data["nucleus"]
-    assert np.allclose(nucleus.build_concentration_vector(), np.array([3.0]))
+    assert np.allclose(nucleus._build_concentration_vector(), np.array([3.0]))

@@ -35,7 +35,7 @@ class Simulator:
         default_parameters: dict = None,
     ):
         self.model = model.copy()  # Else, the model might get modified outside.
-        self.names = model.in_reaction_rectant_names
+        self.names = model._in_reaction_rectant_names
         self.solver = None
         self.__rhs = None
         self.observed_ndx = observed_ndx
@@ -78,7 +78,7 @@ class Simulator:
 
     def _reset_rhs(self, parameters: dict = None):
         parameters = self._build_parameters_dict(parameters)
-        self.__rhs = self.model.build_ip_rhs(parameters)
+        self.__rhs = self.model._build_ip_rhs(parameters)
         self.solver = None
 
     def _concentrations_to_y0(self, concentrations):
@@ -173,7 +173,7 @@ class Simulator:
 
             if self.solver is None:
                 self._start_solver(
-                    self.model.build_concentration_vector(concentrations), t_bound
+                    self.model._build_concentration_vector(concentrations), t_bound
                 )
             else:
                 self._resume_solver(
@@ -243,7 +243,7 @@ class Simulator:
 
         if self.solver is None:
             self._start_solver(
-                self.model.build_concentration_vector(concentrations), time
+                self.model._build_concentration_vector(concentrations), time
             )
         else:
             self._resume_solver(self._concentrations_to_y0(concentrations), time, False)

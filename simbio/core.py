@@ -64,7 +64,7 @@ class Container(Content):
 
     __contents: Dict[str, Content] = field(default_factory=dict)
 
-    def add(self, content: Content) -> Content:
+    def _add(self, content: Content) -> Content:
         """Add content to this container.
 
         Only content belonging to this container may be added,
@@ -97,10 +97,10 @@ class Container(Content):
                     out[f"{con.name}.{subcon.name}"] = subcon
         return out
 
-    def filter_contents(self, cls):
+    def _filter_contents(self, cls):
         return tuple(c for c in self.contents.values() if isinstance(c, cls))
 
-    def relative_name(self, content: Content) -> str:
+    def _relative_name(self, content: Content) -> str:
         """Name relative to this Container."""
         if content is self:
             raise NotImplementedError("Relative name to self is not implemented.")
@@ -125,7 +125,7 @@ class Container(Content):
             return False
 
         try:
-            self.relative_name(item)
+            self._relative_name(item)
             return True
         except AttributeError:
             return False
@@ -155,5 +155,5 @@ class Container(Content):
     def copy(self, name: str = None, belongs_to: Container = None) -> Container:
         new = self.__class__(name=name or self.name, belongs_to=belongs_to)
         for content in self.__contents.values():
-            new.add(content.copy(belongs_to=new))
+            new._add(content.copy(belongs_to=new))
         return new

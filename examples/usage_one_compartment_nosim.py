@@ -14,9 +14,9 @@ cell.add_parameter("k", value=0.1)
 step1 = Synthesis(A=cell.C, B=cell.O2, AB=cell.CO2, rate=cell.k)
 cell.add_reaction(step1)
 
-initial = cell.build_concentration_vector()
-rhs = cell.build_ip_rhs()
-names = cell.in_reaction_rectant_names
+initial = cell._build_concentration_vector()
+rhs = cell._build_ip_rhs()
+names = cell._in_reaction_rectant_names
 # Just a stupid test
 assert rhs(0, initial).shape == initial.shape
 

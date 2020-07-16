@@ -87,7 +87,7 @@ class BaseReaction:
         """Return a tuple of the parameters in this reaction."""
         return tuple(getattr(self, name) for name in self._parameter_names)
 
-    def yield_ip_rhs(
+    def _yield_ip_rhs(
         self, global_names: Tuple[str, ...]
     ) -> Generator[ODE_Fun, None, None]:
         """Yield one or many functions representing the right hand side of the ODE equation.

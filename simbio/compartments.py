@@ -25,15 +25,15 @@ class Compartment(Container):
 
     @property
     def compartments(self) -> Tuple[Compartment, ...]:
-        return self.filter_contents(Compartment)
+        return self._filter_contents(Compartment)
 
     @property
     def reactants(self) -> Tuple[Reactant, ...]:
-        return self.filter_contents(Reactant)
+        return self._filter_contents(Reactant)
 
     @property
     def parameters(self) -> Tuple[Parameter, ...]:
-        return self.filter_contents(Parameter)
+        return self._filter_contents(Parameter)
 
     @property
     def reactions(self) -> Tuple[BaseReaction, ...]:
@@ -69,7 +69,7 @@ class Compartment(Container):
         """
         if isinstance(compartment, str):
             compartment = Compartment(name=compartment, belongs_to=self)
-        return self.add(compartment)
+        return self._add(compartment)
 
     def add_reactant(self, reactant: Union[str, Reactant], concentration=0) -> Reactant:
         """Add reactant to this compartment.
@@ -89,7 +89,7 @@ class Compartment(Container):
             reactant = Reactant(
                 name=reactant, belongs_to=self, concentration=concentration
             )
-        return self.add(reactant)
+        return self._add(reactant)
 
     def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
         """Add parameter to this compartment.
@@ -107,7 +107,7 @@ class Compartment(Container):
         """
         if isinstance(parameter, str):
             parameter = Parameter(name=parameter, belongs_to=self, value=value)
-        return self.add(parameter)
+        return self._add(parameter)
 
     def copy(self, name: str = None, belongs_to: Container = None) -> Compartment:
         # __contents copy is handled by Container.copy
@@ -124,18 +124,18 @@ class Compartment(Container):
             for name, reactant, st_number in zip(
                 reaction._reactant_names, reaction.reactants, reaction.st_numbers
             ):
-                rel_name = self.relative_name(reactant)
+                rel_name = self._relative_name(reactant)
                 kwargs[name] = st_number * new[rel_name]
 
             for name, parameter in zip(reaction._parameter_names, reaction.parameters):
-                rel_name = self.relative_name(parameter)
+                rel_name = self._relative_name(parameter)
                 kwargs[name] = new[rel_name]
 
             new.add_reaction(reaction.__class__(**kwargs))
         return new
 
     @property
-    def in_reaction_reactants(self) -> Tuple[Reactant, ...]:
+    def _in_reaction_reactants(self) -> Tuple[Reactant, ...]:
         out = {}  # Using dict as an ordered set.
         for reaction in self.reactions:
             for reactant in reaction.reactants:
@@ -143,7 +143,7 @@ class Compartment(Container):
         return tuple(out.keys())
 
     @property
-    def in_reaction_parameters(self) -> Tuple[Parameter, ...]:
+    def _in_reaction_parameters(self) -> Tuple[Parameter, ...]:
         out = {}  # Using dict as an ordered set.
         for reaction in self.reactions:
             for parameter in reaction.parameters:
@@ -151,25 +151,25 @@ class Compartment(Container):
         return tuple(out.keys())
 
     @property
-    def in_reaction_rectant_names(self) -> Tuple[str, ...]:
-        return tuple(map(self.relative_name, self.in_reaction_reactants))
+    def _in_reaction_rectant_names(self) -> Tuple[str, ...]:
+        return tuple(map(self._relative_name, self._in_reaction_reactants))
 
-    def build_concentration_vector(self, concentrations=None):
+    def _build_concentration_vector(self, concentrations=None):
         if concentrations is None:
             concentrations = {}
-        names = self.in_reaction_rectant_names
+        names = self._in_reaction_rectant_names
         out = np.zeros(len(names))
         for i, name in enumerate(names):
             out[i] = concentrations.get(name) or self[name].concentration
         # TODO: Raise warning for unused concentrations?
         return out
 
-    def build_parameters(self, parameters=None) -> Dict[Parameter, float]:
+    def _build_parameters(self, parameters=None) -> Dict[Parameter, float]:
         if parameters is None:
             parameters = {}
 
         out = {}
-        for p in self.in_reaction_parameters:
+        for p in self._in_reaction_parameters:
             out[p] = parameters.pop(p.name, p.value)
 
         if len(parameters) > 0:
@@ -177,10 +177,10 @@ class Compartment(Container):
 
         return out
 
-    def build_ip_rhs(self, parameters=None):
-        reactants = self.in_reaction_reactants
-        parameters = self.build_parameters(parameters)
-        funcs = (r.yield_ip_rhs(reactants, parameters) for r in self.reactions)
+    def _build_ip_rhs(self, parameters=None):
+        reactants = self._in_reaction_reactants
+        parameters = self._build_parameters(parameters)
+        funcs = (r._yield_ip_rhs(reactants, parameters) for r in self.reactions)
         funcs = tuple(chain.from_iterable(funcs))
 
         def fun(t, y):
