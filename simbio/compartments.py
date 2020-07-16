@@ -46,10 +46,12 @@ class Compartment(Container):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
 
-        out = [r for r in reaction.reactants if r not in self]
+        components = chain(reaction.reactants, reaction.parameters)
+        out = [c for c in components if c not in self]
         if out:
             raise Exception(
-                "Some reactants are outside this compartment: %s", [r.name for r in out]
+                "Some components are outside this compartment: %s",
+                [c.name for c in out],
             )
         self.__reactions.append(reaction)
         return reaction

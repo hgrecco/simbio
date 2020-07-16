@@ -1,7 +1,7 @@
 import numpy as np
 from simbio.compartments import Universe
 from simbio.reactions import Conversion, Creation
-from ward import fixture, test
+from ward import fixture, raises, test
 
 
 @fixture
@@ -78,6 +78,22 @@ def _(d=data):
 
     nucleus = d["nucleus"]
     assert nucleus.reactions == (d["reaction2"],)
+
+
+@test("Add reaction with non-compartment components")
+def _(d=data):
+    cell = d["cell"]
+    nucleus = cell.nucleus
+
+    nucleus.add_reaction(Creation(nucleus.reactant, nucleus.parameter))
+
+    # Reactant does not belong
+    with raises(Exception):
+        nucleus.add_reaction(Creation(cell.reactant, nucleus.parameter))
+
+    # Parameter does not belong
+    with raises(Exception):
+        nucleus.add_reaction(Creation(nucleus.reactant, cell.parameter))
 
 
 @test("Build Compartment concentration vector")
