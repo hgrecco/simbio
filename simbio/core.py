@@ -116,10 +116,10 @@ class Container(Content):
 
         return ".".join(names[::-1])
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: Content) -> bool:
         """Check if contained in this container or any subcontainers."""
         if not isinstance(item, Content):
-            return False
+            return False  # Shortcut
 
         if item is self:
             return False
@@ -143,7 +143,7 @@ class Container(Content):
         else:
             return self.__contents[item]
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Content:
         try:
             return self[item]
         except KeyError:
