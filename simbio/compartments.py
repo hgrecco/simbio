@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -156,7 +156,11 @@ class Compartment(Container):
     def _in_reaction_rectant_names(self) -> Tuple[str, ...]:
         return tuple(map(self._relative_name, self._in_reaction_reactants))
 
-    def _build_concentration_vector(self, concentrations=None):
+    @property
+    def _in_reaction_parameter_names(self) -> Tuple[str, ...]:
+        return tuple(map(self._relative_name, self._in_reaction_parameters))
+
+    def _build_concentration_vector(self, concentrations=None) -> np.ndarray:
         if concentrations is None:
             concentrations = {}
         names = self._in_reaction_rectant_names
@@ -166,29 +170,26 @@ class Compartment(Container):
         # TODO: Raise warning for unused concentrations?
         return out
 
-    def _build_parameters(self, parameters=None) -> Dict[Parameter, float]:
+    def _build_parameter_vector(self, parameters=None) -> np.ndarray:
         if parameters is None:
             parameters = {}
-
-        out = {}
-        for p in self._in_reaction_parameters:
-            out[p] = parameters.pop(p.name, p.value)
-
-        if len(parameters) > 0:
-            raise ValueError("Some parameters were not used:", parameters)
-
+        names = self._in_reaction_parameter_names
+        out = np.zeros(len(names))
+        for i, name in enumerate(names):
+            out[i] = parameters.get(name) or self[name].value
+        # TODO: Raise warning for unused parameters?
         return out
 
-    def _build_ip_rhs(self, parameters=None):
+    def _build_ip_rhs(self):
         reactants = self._in_reaction_reactants
-        parameters = self._build_parameters(parameters)
+        parameters = self._in_reaction_parameters
         funcs = (r._yield_ip_rhs(reactants, parameters) for r in self.reactions)
         funcs = tuple(chain.from_iterable(funcs))
 
-        def fun(t, y):
+        def fun(t, y, p):
             out = np.zeros_like(y)
             for func in funcs:
-                func(t, y, out)
+                func(t, y, p, out)
             return out
 
         return fun

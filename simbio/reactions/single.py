@@ -47,19 +47,21 @@ class SingleReaction(BaseReaction):
 
     def _yield_ip_rhs(self, global_reactants=None, global_parameters=None):
         if global_reactants is None:
-            ix = slice(None)
+            ix_y = slice(None)
         else:
             local_reactants = self.reactants
-            ix = map(global_reactants.index, local_reactants)
-            ix = np.fromiter(ix, dtype=int, count=len(local_reactants))
+            ix_y = map(global_reactants.index, local_reactants)
+            ix_y = np.fromiter(ix_y, dtype=int, count=len(local_reactants))
 
-        parameters = {
-            name: global_parameters.get(p, p.value)
-            for name, p in zip(self._parameter_names, self.parameters)
-        }
+        if global_parameters is None:
+            ix_p = slice(None)
+        else:
+            local_parameters = self.parameters
+            ix_p = map(global_parameters.index, local_parameters)
+            ix_p = np.fromiter(ix_p, dtype=int, count=len(local_parameters))
 
-        def fun(t, y, out):
-            out[ix] += self.rhs(t, *(y[ix] ** self.st_numbers), **parameters)
+        def fun(t, y, p, out):
+            out[ix_y] += self.rhs(t, *(y[ix_y] ** self.st_numbers), *p[ix_p])
 
         yield fun
 

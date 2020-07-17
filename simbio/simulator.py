@@ -37,7 +37,7 @@ class Simulator:
         self.model = model.copy()  # Else, the model might get modified outside.
         self.names = model._in_reaction_rectant_names
         self.solver = None
-        self.__rhs = None
+        self.__rhs = self.model._build_ip_rhs()
         self.observed_ndx = observed_ndx
 
         self.default_concentrations = default_concentrations
@@ -76,26 +76,25 @@ class Simulator:
         else:
             self.observed_ndx = self.model.get_names_ndx(*value)
 
-    def _reset_rhs(self, parameters: dict = None):
-        parameters = self._build_parameters_dict(parameters)
-        self.__rhs = self.model._build_ip_rhs(parameters)
+    def _reset_rhs(self):
         self.solver = None
 
     def _concentrations_to_y0(self, concentrations):
         if concentrations is None:
-            return concentrations
+            concentrations = {}
 
-        y0 = np.nan * np.ones(len(self.names))
-        ndxs = self.model.get_names_ndx(*concentrations.keys())
-        for ndx, value in zip(ndxs, concentrations.values()):
-            y0[ndx] = value
+        return self.model._build_concentration_vector(concentrations)
 
-        return y0
+    def _parameters_to_p0(self, parameters):
+        if parameters is None:
+            parameters = {}
 
-    def _start_solver(self, y0, t_bound):
-        self.solver = integrate.RK45(self.__rhs, 0, y0, t_bound)
+        return self.model._build_parameter_vector(parameters)
 
-    def _resume_solver(self, new_y0, t_bound, relative_time):
+    def _start_solver(self, y0, p, t_bound):
+        self.solver = integrate.RK45(lambda t, y: self.__rhs(t, y, p), 0, y0, t_bound)
+
+    def _resume_solver(self, new_y0, p, t_bound, relative_time):
         t0 = self.solver.t
         y0 = self.solver.y
         if relative_time:
@@ -106,7 +105,7 @@ class Simulator:
             sel = np.isfinite(new_y0)
             y0[sel] = new_y0[sel]
 
-        self.solver = integrate.RK45(self.__rhs, t0, y0, t_bound)
+        self.solver = integrate.RK45(lambda t, y: self.__rhs(t, y, p), t0, y0, t_bound)
 
     def run(
         self,
@@ -134,13 +133,16 @@ class Simulator:
             time vector (len N), concentrations matrix (shape N x M)
             where M is the number of observed variables
         """
-        self._reset_rhs(parameters)
+        self._reset_rhs()
 
-        return self.resume(time, concentrations)
+        return self.resume(time, concentrations, parameters)
 
     def resume(
-        self, time: Union[float, Iterable], concentrations: dict = None
-    ) -> (np.ndarray, np.ndarray):
+        self,
+        time: Union[float, Iterable],
+        concentrations: dict = None,
+        parameters: dict = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Resume the simulationm from the last point the simulation
 
          Parameters
@@ -173,11 +175,16 @@ class Simulator:
 
             if self.solver is None:
                 self._start_solver(
-                    self.model._build_concentration_vector(concentrations), t_bound
+                    self._concentrations_to_y0(concentrations),
+                    self._parameters_to_p0(parameters),
+                    t_bound,
                 )
             else:
                 self._resume_solver(
-                    self._concentrations_to_y0(concentrations), t_bound, False
+                    self._concentrations_to_y0(concentrations),
+                    self._parameters_to_p0(parameters),
+                    t_bound,
+                    False,
                 )
 
             return self._steps()
@@ -193,7 +200,7 @@ class Simulator:
 
     def run1(
         self, time: float, concentrations: dict = None, parameters: dict = None
-    ) -> (float, np.ndarray):
+    ) -> Tuple[float, np.ndarray]:
         """Run a simulation until a given time.
 
         Parameters
@@ -215,11 +222,14 @@ class Simulator:
         """
         self._reset_rhs(parameters)
 
-        return self.resume1(time, concentrations)
+        return self.resume1(time, concentrations, parameters)
 
     def resume1(
-        self, time: Union[float, np.ndarray], concentrations: dict = None
-    ) -> (np.ndarray, np.ndarray):
+        self,
+        time: Union[float, np.ndarray],
+        concentrations: dict = None,
+        parameters: dict = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Resume simulation.
 
         Parameters
@@ -243,14 +253,21 @@ class Simulator:
 
         if self.solver is None:
             self._start_solver(
-                self.model._build_concentration_vector(concentrations), time
+                self._concentrations_to_y0(concentrations),
+                self._parameters_to_p0(parameters),
+                time,
             )
         else:
-            self._resume_solver(self._concentrations_to_y0(concentrations), time, False)
+            self._resume_solver(
+                self._concentrations_to_y0(concentrations),
+                self._parameters_to_p0(parameters),
+                time,
+                False,
+            )
 
         return self._steps1()
 
-    def _steps(self) -> (np.ndarray, np.ndarray):
+    def _steps(self) -> Tuple[np.ndarray, np.ndarray]:
 
         solver = self.solver
 
@@ -267,7 +284,7 @@ class Simulator:
 
         return np.asarray(t_values), np.asarray(y_values)
 
-    def _steps1(self) -> (float, np.ndarray):
+    def _steps1(self) -> Tuple[float, np.ndarray]:
 
         solver = self.solver
 
