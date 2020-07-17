@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Union
 
-from .core import Content
+from .core import Container, Content
 
 
 class Reactant(Content):

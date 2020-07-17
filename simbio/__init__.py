@@ -8,12 +8,13 @@
     :license: BSD, see LICENSE for more details.
 """
 
-
+from . import reactions
 from .compartments import Universe
-from .simulator import Simulator
+from .simulator import PandasSimulator, Simulator
 
 __all__ = [
     "reactions",
-    "Universe",
     "Simulator",
+    "PandasSimulator",
+    "Universe",
 ]
