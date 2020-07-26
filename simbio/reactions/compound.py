@@ -7,8 +7,10 @@
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
+from __future__ import annotations
+
 import inspect
-from typing import Tuple
+from typing import Tuple, get_type_hints
 
 from ..parameters import Parameter
 from ..reactants import Reactant
@@ -38,8 +40,9 @@ class CompoundReaction(BaseReaction):
                 f"{cls.__name__}.yield_reactions must be a staticmethod. Use @staticmethod decorator."
             )
 
+        annotations = get_type_hints(cls.yield_reactions)
+        cls.yield_reactions.__annotations__ = annotations
         _check_signature(cls.yield_reactions, t_first=False)
-        annotations = cls.yield_reactions.__annotations__
         return super().__init_subclass__(annotations=annotations)
 
     def __post_init__(self):

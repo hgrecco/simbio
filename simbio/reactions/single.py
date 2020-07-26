@@ -7,7 +7,10 @@
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
+from __future__ import annotations
+
 import inspect
+from typing import get_type_hints
 
 import numpy as np
 
@@ -35,11 +38,13 @@ class SingleReaction(BaseReaction):
                 f"{cls.__name__}.rhs must be a staticmethod. Use @staticmethod decorator."
             )
 
+        # Evaluate annotations
+        rhs_annotations = cls.rhs.__annotations__ = get_type_hints(cls.rhs)
+
         # Check signature order
         _check_signature(cls.rhs, t_first=True)
 
         # Set class annotations from rhs
-        rhs_annotations = cls.rhs.__annotations__
         if "t" in rhs_annotations:
             rhs_annotations.pop("t")
 
