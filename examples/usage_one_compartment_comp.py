@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from simbio import Simulator, Universe
+from simbio import Universe
 from simbio.reactions import ReversibleSynthesis
+from simbio.simulator import Simulator
 
 ##############
 

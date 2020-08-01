@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from simbio import Simulator, Universe
+from simbio import Universe
 from simbio.reactions import Dissociation, Synthesis
+from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
@@ -23,7 +24,7 @@ react2 = Dissociation(A=nucleus.C, B=nucleus.O2, AB=nucleus.CO2, rate=nucleus.ra
 nucleus.add_reaction(react2)
 
 sim = Simulator(cell)
-df = sim.df_run(100)
+_, df = sim.run(100)
 
-df.plot(x="time")
+df.plot()
 plt.show()

@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from simbio import Simulator, Universe, algo
+from simbio import Universe, algo
 from simbio.reactions import Synthesis
+from simbio.simulator import Simulator
 
 ##############
 
@@ -20,7 +21,7 @@ t_values, y_values = sim.run(100)
 plt.plot(t_values, y_values)
 plt.legend(sim.names)
 
-t, y = algo.find_steady_state(sim, 200, 1)
+t, y = algo.find_steady_state(sim)
 for a in y:
     plt.axhline(a, 0, max(t, t_values[-1]), c="k", ls=":")
 plt.show()

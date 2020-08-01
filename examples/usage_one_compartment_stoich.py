@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from simbio import Simulator, Universe
+from simbio import Universe
 from simbio.reactions import Synthesis
+from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
@@ -15,7 +16,7 @@ cell.add_reaction(step1)
 
 
 sim = Simulator(cell)
-df = sim.df_run(100)
+_, df = sim.run(100)
 
-df.plot(x="time")
+df.plot()
 plt.show()
