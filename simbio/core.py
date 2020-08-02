@@ -12,57 +12,43 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict
+from dataclasses import dataclass, field, replace
+from typing import Dict
 
 
-@dataclass
+@dataclass(frozen=True, eq=False)
 class Content:
     """Base Content class.
 
-    Content have two protected attributes, name and belongs_to.
+    Content has two protected attributes, name and belongs_to.
     Name must be a valid Python identifier.
     """
 
     name: str
     belongs_to: Container
-    __protected_attrs = ("name", "belongs_to")
+
+    def __init_subclass__(cls) -> None:
+        return dataclass(cls, frozen=True, eq=False)
 
     def __post_init__(self) -> None:
         # Validate name
         if not self.name.isidentifier():
             raise ValueError("Name must be a valid Python identifier.")
 
-    def __inmutable_if_assigned(self, name) -> None:
-        """If a protected attribute is already assigned, raises AttributeError."""
-        if name in self.__protected_attrs:
-            try:
-                self.__getattribute__(name)
-            except AttributeError:
-                pass
-            else:
-                raise AttributeError(f"{self.__class__.__name__}.{name} is inmutable.")
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        self.__inmutable_if_assigned(name)
-        super().__setattr__(name, value)
-
-    def __delattr__(self, name: str) -> None:
-        self.__inmutable_if_assigned(name)
-        super().__delattr__(name)
+    def __hash__(self) -> int:
+        return id(self)
 
     def copy(self, name: str = None, belongs_to: Container = None) -> Content:
-        return self.__class__(name=name or self.name, belongs_to=belongs_to)
+        return replace(self, name=name or self.name, belongs_to=belongs_to)
 
 
-@dataclass(repr=False)
 class Container(Content):
     """Base Container class.
 
     Container is a Content that stores Content.
     """
 
-    __contents: Dict[str, Content] = field(default_factory=dict)
+    __contents: Dict[str, Content] = field(default_factory=dict, init=False, repr=False)
 
     def _add(self, content: Content) -> Content:
         """Add content to this container.
@@ -149,11 +135,8 @@ class Container(Content):
         except KeyError:
             raise AttributeError(f"{item} not found in {self}.")
 
-    def __repr__(self):
-        return self.name
-
     def copy(self, name: str = None, belongs_to: Container = None) -> Container:
-        new = self.__class__(name=name or self.name, belongs_to=belongs_to)
+        new = super().copy(name=name, belongs_to=belongs_to)
         for content in self.__contents.values():
             new._add(content.copy(belongs_to=new))
         return new

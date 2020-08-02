@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from itertools import chain
 from typing import List, Tuple, Union
 
@@ -19,9 +19,10 @@ from .reactants import Reactant
 from .reactions.single import BaseReaction
 
 
-@dataclass(repr=False)
 class Compartment(Container):
-    __reactions: List[BaseReaction] = field(default_factory=list, repr=False)
+    __reactions: List[BaseReaction] = field(
+        default_factory=list, init=False, repr=False
+    )
 
     @property
     def compartments(self) -> Tuple[Compartment, ...]:

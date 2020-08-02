@@ -13,7 +13,6 @@ from typing import Union
 from .core import Content
 
 
-@dataclass
 class Reactant(Content):
     concentration: float = 0
 
@@ -25,18 +24,8 @@ class Reactant(Content):
 
     __rmul__ = __mul__
 
-    def __hash__(self) -> int:
-        return id(self)
 
-    def copy(self, name: str = None, belongs_to: Container = None) -> Reactant:
-        return self.__class__(
-            name=name or self.name,
-            belongs_to=belongs_to,
-            concentration=self.concentration,
-        )
-
-
-@dataclass
+@dataclass(frozen=True)
 class InReactionReactant:
     reactant: Reactant
     st_number: Union[int, float] = 1
