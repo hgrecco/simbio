@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Dict
+from typing import Dict, Tuple
 
 
 @dataclass(frozen=True, eq=False)
@@ -76,14 +76,14 @@ class Container(Content):
         Includes contents from stored Containers.
         """
         out = {}
-        for con in self.__contents.values():
-            out[con.name] = con
-            if isinstance(con, Container):
-                for subcon in con.contents.values():
-                    out[f"{con.name}.{subcon.name}"] = subcon
+        for name, content in self.__contents.items():
+            out[name] = content
+            if isinstance(content, Container):
+                for subname, subcontent in content.contents.items():
+                    out[f"{name}.{subname}"] = subcontent
         return out
 
-    def _filter_contents(self, cls):
+    def _filter_contents(self, cls) -> Tuple[Content, ...]:
         return tuple(c for c in self.contents.values() if isinstance(c, cls))
 
     def _relative_name(self, content: Content) -> str:
@@ -92,13 +92,11 @@ class Container(Content):
             raise NotImplementedError("Relative name to self is not implemented.")
 
         names = []
-        while True:
+        while content is not self:
             names.append(content.name)
             content = content.belongs_to
             if content is None:
                 raise AttributeError(f"{content} does not belong to this Container.")
-            elif content is self:
-                break
 
         return ".".join(names[::-1])
 
@@ -125,15 +123,18 @@ class Container(Content):
             try:
                 return sub[item]
             except TypeError:
-                raise ("Content {sub} of {c} is not a Container.")
+                raise TypeError(f"Content {sub} of {c} is not a Container.")
         else:
-            return self.__contents[item]
+            try:
+                return self.__contents[item]
+            except KeyError:
+                raise KeyError(f"{item} not found in {self}.") from None
 
     def __getattr__(self, item: str) -> Content:
         try:
             return self[item]
         except KeyError:
-            raise AttributeError(f"{item} not found in {self}.")
+            raise AttributeError(f"{item} not found in {self}.") from None
 
     def copy(self, name: str = None, belongs_to: Container = None) -> Container:
         new = super().copy(name=name, belongs_to=belongs_to)
