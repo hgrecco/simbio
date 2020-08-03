@@ -92,12 +92,12 @@ class Simulator:
             rhs=self.model._build_ip_rhs(),
         )
 
-    def _to_single_output(self, y, *, y_names) -> np.ndarray:
+    @staticmethod
+    def _to_single_output(y, *, y_names) -> np.ndarray:
         return y
 
-    def _to_output(
-        self, t, y, *, t_name="time", y_names
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    @staticmethod
+    def _to_output(t, y, *, t_name="time", y_names) -> Tuple[np.ndarray, np.ndarray]:
         return t, y
 
     def run(
@@ -134,13 +134,13 @@ class Simulator:
 
 
 class PandasSimulator(Simulator):
-    def _to_single_output(self, y, *, y_names) -> pd.Series:
+    @staticmethod
+    def _to_single_output(y, *, y_names) -> pd.Series:
         y = pd.Series(y, index=y_names)
         return y
 
-    def _to_output(
-        self, t, y, *, t_name="time", y_names
-    ) -> Tuple[pd.Series, pd.DataFrame]:
+    @staticmethod
+    def _to_output(t, y, *, t_name="time", y_names) -> Tuple[pd.Series, pd.DataFrame]:
         t = pd.Series(t, name=t_name)
         y = pd.DataFrame(data=y, index=t, columns=y_names)
         return t, y
