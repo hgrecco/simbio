@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from simbio import Simulator, Universe
+from simbio import Universe
 from simbio.reactions import Dissociation, Synthesis
+from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
@@ -24,7 +25,7 @@ nucleus.add_reaction(react2)
 
 
 sim = Simulator(cell, observed_names=("nucleus.C", "cytosol.C"))
-df = sim.df_run(100)
+_, df = sim.run(100)
 
 df.plot(x="time")
 plt.show()

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import field
 from itertools import chain
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -154,31 +154,45 @@ class Compartment(Container):
         return tuple(out.keys())
 
     @property
-    def _in_reaction_rectant_names(self) -> Tuple[str, ...]:
+    def _in_reaction_reactant_names(self) -> Tuple[str, ...]:
         return tuple(map(self._relative_name, self._in_reaction_reactants))
 
     @property
     def _in_reaction_parameter_names(self) -> Tuple[str, ...]:
         return tuple(map(self._relative_name, self._in_reaction_parameters))
 
-    def _build_concentration_vector(self, concentrations=None) -> np.ndarray:
-        if concentrations is None:
-            concentrations = {}
-        names = self._in_reaction_rectant_names
-        out = np.zeros(len(names))
-        for i, name in enumerate(names):
-            out[i] = concentrations.get(name) or self[name].concentration
-        # TODO: Raise warning for unused concentrations?
+    def _build_concentration_vector(
+        self, concentrations: Dict[Union[str, Reactant], float] = None
+    ) -> np.ndarray:
+
+        reactants = self._in_reaction_reactants
+        out = np.fromiter(
+            (r.concentration for r in reactants), dtype=float, count=len(reactants)
+        )
+
+        if concentrations is not None:
+            for reactant, concentration in concentrations.items():
+                if isinstance(reactant, str):
+                    reactant = self[reactant]
+                out[reactants.index(reactant)] = concentration
+
         return out
 
-    def _build_parameter_vector(self, parameters=None) -> np.ndarray:
-        if parameters is None:
-            parameters = {}
-        names = self._in_reaction_parameter_names
-        out = np.zeros(len(names))
-        for i, name in enumerate(names):
-            out[i] = parameters.get(name) or self[name].value
-        # TODO: Raise warning for unused parameters?
+    def _build_parameter_vector(
+        self, parameters: Dict[Union[str, Parameter], float] = None
+    ) -> np.ndarray:
+
+        _parameters = self._in_reaction_parameters
+        out = np.fromiter(
+            (r.value for r in _parameters), dtype=float, count=len(_parameters)
+        )
+
+        if parameters is not None:
+            for parameter, value in parameters.items():
+                if isinstance(parameter, str):
+                    parameter = self[parameter]
+                out[_parameters.index(parameter)] = value
+
         return out
 
     def _build_ip_rhs(self):

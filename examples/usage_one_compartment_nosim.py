@@ -19,7 +19,7 @@ cell.add_reaction(step1)
 initial = cell._build_concentration_vector()
 parameters = cell._build_parameter_vector()
 rhs = cell._build_ip_rhs()
-names = cell._in_reaction_rectant_names
+names = cell._in_reaction_reactant_names
 # Just a stupid test
 assert rhs(0, initial, parameters).shape == initial.shape
 

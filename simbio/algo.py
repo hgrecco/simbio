@@ -1,119 +1,84 @@
-from typing import Tuple
+from __future__ import annotations
+
+from typing import Tuple, Union
 
 import numpy as np
-import pandas as pd
 
+from .parameters import Parameter
+from .reactants import Reactant
 from .simulator import Simulator
+from .solvers.core import BaseSolver
 
 
-def _to_df(
-    first, y: np.ndarray, columns: Tuple[str, ...], first_name="time"
-) -> pd.DataFrame:
-    df = pd.DataFrame(y, columns=columns)
-    df.insert(0, first_name, first)
-    return df
+def _find_steady_state(
+    solver: BaseSolver, *, atol=1e-4, rtol=1e-4, max_iter=1000
+) -> Tuple[float, np.ndarray]:
+    for _ in range(max_iter):
+        dy = np.abs(solver.rhs(solver.t, solver.y, solver.p))
+        y = np.abs(solver.y)
+
+        adiff = dy.max()
+        cond = y > atol
+        rdiff = (dy[cond] / y[cond]).max()
+
+        if (adiff < atol) and (rdiff < rtol):
+            return solver.t, solver.y
+        else:
+            solver.step()
+    else:
+        raise Exception(
+            f"Maximum iterations ({max_iter}) reached at time {solver.t:.3f}."
+        )
 
 
-def _to_y_df(y: np.ndarray, columns: Tuple[str, ...]) -> pd.DataFrame:
-    return pd.DataFrame(y, columns=columns)
+def find_steady_state(simulator: Simulator, **kwargs):
+    t, y = _find_steady_state(simulator.create_solver(), **kwargs)
+    return t, simulator._to_single_output(y, y_names=simulator.names)
 
 
-def find_steady_state(
-    sim: Simulator, t_window: float, r_tol: float = 0.1, rounds=None
-) -> (np.ndarray, np.ndarray):
-    # TODO: better param names
-    t_0, y_0 = sim.resume1(t_window / 10)
+def _dose_response(
+    simulator: Simulator, name: Union[str, Reactant, Parameter], values, **kwargs
+):
+    values = np.asarray(values)
+    response = []
+    for solver in Scanner.from_single(simulator, name, values):
+        _, y = _find_steady_state(solver, **kwargs)
+        response.append(y)
 
-    rounds = rounds or 5
+    return values, np.asarray(response)
 
-    diff = 0
-    with sim.observe_all() as ndx:
-        for _ in range(rounds):
-            t_end, y_end = sim.resume1(t_0 + t_window)
-            diff = np.abs((y_end - y_0) / (y_end + y_0))
-            if np.any(diff > r_tol):
-                t_0 = t_end
-                y_0 = y_end
-                t_window *= 2
-            else:
-                if ndx is None:
-                    return t_end, y_end
-                return t_end, y_end[ndx]
 
-    raise Exception(
-        f"Steady state not found after {rounds} rounds."
-        f"(time: {t_end}, window: {t_window}, max. dif. {np.max(diff):.2f}). "
+def dose_response(simulator, name: Union[str, Reactant, Parameter], values, **kwargs):
+    return simulator._to_output(
+        *_dose_response(simulator, name, values, **kwargs),
+        t_name="dose",
+        y_names=simulator.names,
     )
 
 
-def df_find_steady_state(
-    sim: Simulator, t_window: float, r_tol: float = 0.1, rounds=None
-) -> pd.DataFrame:
-    t, y = find_steady_state(sim, t_window, r_tol, rounds)
-    return _to_df(t, y, sim.observed_names)
-
-
-def dose_response(
-    sim: Simulator, name: str, values, find_ss_kwargs=None
-) -> (np.ndarray, np.ndarray):
-
-    if find_ss_kwargs is None:
-        find_ss_kwargs = dict(t_window=100)
-
-    out = []
-    values = np.asarray(values)
-    for sim in Scanner.from_single(name, values, sim.model):
-        _, y = sim.find_steady_state(**find_ss_kwargs)
-        out.append(y)
-
-    return values, np.asarray(out)
-
-
-def df_dose_response(
-    sim: Simulator, name: str, values, find_ss_kwargs=None
-) -> pd.DataFrame:
-
-    values, y = dose_response(sim, name, values, find_ss_kwargs)
-    return _to_df(values, y, sim.observed_names, name)
-
-
-def going_up_and_down(
-    sim, name, values, find_ss_kwargs=None
-) -> (np.ndarray, np.ndarray):
-
-    ups = list(values)
-    downs = reversed(ups[:-1])
-    values_up, y_up = sim.dose_response(name, ups, find_ss_kwargs)
-    values_down, y_down = sim.dose_response(name, downs, find_ss_kwargs)
-
-    return np.stack((values_up, values_down)), np.stack((y_up, y_down))
-
-
-def df_going_up_and_down(sim, name, values, find_ss_kwargs=None) -> pd.DataFrame:
-
-    values, y = going_up_and_down(sim, name, values, find_ss_kwargs)
-    return _to_df(values, y, sim.observed_names, name)
-
-
 class Scanner:
-    def __init__(self, scan_values, model):
+    def __init__(self, simulator, scan_values):
+        self.simulator = simulator
         self.scan_values = scan_values
-        self.model = model
 
     @classmethod
-    def from_single(cls, name, values, model):
-        if True:  # TODO: check if name is reactant or parater
-            return cls.from_single_concentration(name, values, model)
+    def from_single(cls, simulator, name, values):
+        if isinstance(name, str):
+            name = simulator.model[name]
+        if isinstance(name, Reactant):
+            return cls.from_single_concentration(simulator, name, values)
+        elif isinstance(name, Parameter):
+            return cls.from_single_parameter(simulator, name, values)
         else:
-            return cls.from_single_parameter(name, values, model)
+            raise ValueError(f"{name.name} is neither a Reactant nor a Parameter.")
 
     @classmethod
-    def from_single_concentration(cls, name, values, model):
-        return cls((({name: value}, None) for value in values), model)
+    def from_single_concentration(cls, simulator, name, values):
+        return cls(simulator, ({"concentrations": {name: value}} for value in values))
 
     @classmethod
-    def from_single_parameter(cls, name, values, model):
-        return cls(((None, {name: value}) for value in values), model)
+    def from_single_parameter(cls, simulator, name, values):
+        return cls(simulator, ({"parameters": {name: value}} for value in values))
 
     @classmethod
     def from_lhs(cls):
@@ -121,11 +86,5 @@ class Scanner:
         pass
 
     def __iter__(self):
-        def fun():
-            for c, p in self.scan_values:
-                sim = Simulator(
-                    self.model, default_concentrations=c, default_parameters=p
-                )
-                yield sim
-
-        return fun
+        for scan_value in self.scan_values:
+            yield self.simulator.create_solver(**scan_value)
