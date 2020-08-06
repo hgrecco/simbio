@@ -26,6 +26,7 @@ class MichaelisMenten(CompoundReaction):
         )
 
     def to_eq_approx(self):
+        raise NotImplementedError
         # Should we generate a new S reactant or modify the concentration to add ES
         # Should we invalidate this reaction (self) because we are using these elsewhere
         michaelis_constant = self.reverse_rate / self.forward_rate
@@ -38,6 +39,7 @@ class MichaelisMenten(CompoundReaction):
         )
 
     def to_qss_approx(self):
+        raise NotImplementedError
         # Should we generate a new S reactant or modify the concentration to add ES
         # Should we invalidate this reaction (self) because we are using these elsewhere
         michaelis_constant = (
