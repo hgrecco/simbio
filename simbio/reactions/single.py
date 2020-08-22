@@ -2,7 +2,7 @@
     simbio.reactions
     ~~~~~~~~~~~~~~~~
 
-    A reaction connects reactants to their rate of change.
+    A reaction connects species to their rate of change.
 
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
@@ -15,7 +15,7 @@ from typing import get_type_hints
 import numpy as np
 
 from ..parameters import Parameter
-from ..reactants import Reactant
+from ..species import Species
 from .core import BaseReaction, _check_signature
 
 
@@ -27,7 +27,7 @@ class SingleReaction(BaseReaction):
 
         Check if rhs method is well-defined. It must:
         - be a staticmethod
-        - have an ordered signature (t, *Reactants, *Parameters)
+        - have an ordered signature (t, *Species, *Parameters)
 
         Continue class initialization with rhs annotations in BaseReaction.
         """
@@ -50,13 +50,13 @@ class SingleReaction(BaseReaction):
 
         return super().__init_subclass__(annotations=rhs_annotations)
 
-    def _yield_ip_rhs(self, global_reactants=None, global_parameters=None):
-        if global_reactants is None:
+    def _yield_ip_rhs(self, global_species=None, global_parameters=None):
+        if global_species is None:
             ix_y = slice(None)
         else:
-            local_reactants = self.reactants
-            ix_y = map(global_reactants.index, local_reactants)
-            ix_y = np.fromiter(ix_y, dtype=int, count=len(local_reactants))
+            local_species = self.species
+            ix_y = map(global_species.index, local_species)
+            ix_y = np.fromiter(ix_y, dtype=int, count=len(local_species))
 
         if global_parameters is None:
             ix_p = slice(None)
@@ -74,8 +74,8 @@ class SingleReaction(BaseReaction):
     def rhs(t, *args):
         raise NotImplementedError
 
-    def yield_latex_reactant_values(self, column_separator="&"):
-        for name in self._reactant_names:
+    def yield_latex_species_values(self, column_separator="&"):
+        for name in self._species_names:
             yield getattr(self, name).name
             yield column_separator
             yield getattr(self, name).value
@@ -94,7 +94,7 @@ class Creation(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, A: Reactant, rate: Parameter):
+    def rhs(t, A: Species, rate: Parameter):
         return rate * A
 
     def yield_latex_reaction(self):
@@ -108,7 +108,7 @@ class Destruction(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, A: Reactant, rate: Parameter):
+    def rhs(t, A: Species, rate: Parameter):
         return -rate * A
 
     def yield_latex_reaction(self):
@@ -122,7 +122,7 @@ class Conversion(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, A: Reactant, B: Reactant, rate: Parameter):
+    def rhs(t, A: Species, B: Species, rate: Parameter):
         delta = rate * A
         return -delta, delta
 
@@ -137,7 +137,7 @@ class Synthesis(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, A: Reactant, B: Reactant, AB: Reactant, rate: Parameter):
+    def rhs(t, A: Species, B: Species, AB: Species, rate: Parameter):
         delta = rate * A * B
         return -delta, -delta, delta
 
@@ -152,7 +152,7 @@ class Dissociation(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, AB: Reactant, A: Reactant, B: Reactant, rate: Parameter):
+    def rhs(t, AB: Species, A: Species, B: Species, rate: Parameter):
         delta = rate * AB
         return -delta, delta, delta
 
@@ -167,7 +167,7 @@ class SingleReplacement(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, A: Reactant, BC: Reactant, AC: Reactant, B: Reactant, rate: Parameter):
+    def rhs(t, A: Species, BC: Species, AC: Species, B: Species, rate: Parameter):
         raise NotImplementedError
 
     def yield_latex_reaction(self):
@@ -181,7 +181,7 @@ class DoubleReplacement(SingleReaction):
     """
 
     @staticmethod
-    def rhs(t, AB: Reactant, CD: Reactant, AD: Reactant, CB: Reactant, rate: Parameter):
+    def rhs(t, AB: Species, CD: Species, AD: Species, CB: Species, rate: Parameter):
         raise NotImplementedError
 
     def yield_latex_reaction(self):

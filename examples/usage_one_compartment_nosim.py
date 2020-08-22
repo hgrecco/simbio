@@ -8,9 +8,9 @@ from simbio.reactions import Synthesis
 ##############
 
 cell = Universe("cell")
-cell.add_reactant("C", concentration=2)
-cell.add_reactant("O2", concentration=1)
-cell.add_reactant("CO2", concentration=0)
+cell.add_species("C", concentration=2)
+cell.add_species("O2", concentration=1)
+cell.add_species("CO2", concentration=0)
 cell.add_parameter("k", value=0.1)
 
 step1 = Synthesis(A=cell.C, B=cell.O2, AB=cell.CO2, rate=cell.k)
@@ -19,7 +19,7 @@ cell.add_reaction(step1)
 initial = cell._build_concentration_vector()
 parameters = cell._build_parameter_vector()
 rhs = cell._build_ip_rhs()
-names = cell._in_reaction_reactant_names
+names = cell._in_reaction_species_names
 # Just a stupid test
 assert rhs(0, initial, parameters).shape == initial.shape
 

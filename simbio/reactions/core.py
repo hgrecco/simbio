@@ -6,7 +6,7 @@ from typing import Callable, Generator, Tuple
 import numpy as np
 
 from ..parameters import Parameter
-from ..reactants import InReactionReactant, Reactant
+from ..species import InReactionSpecies, Species
 
 try:
     from sympy import symbols, Derivative, Equality
@@ -28,7 +28,7 @@ ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 class BaseReaction:
     """Base class of all single and compound reactions."""
 
-    _reactant_names: Tuple[str, ...]
+    _species_names: Tuple[str, ...]
     _parameter_names: Tuple[str, ...]
     st_numbers: np.ndarray
 
@@ -44,8 +44,8 @@ class BaseReaction:
         setattr(cls, "__annotations__", annotations)
 
         # Save tuples of names
-        cls._reactant_names = tuple(
-            k for k, v in annotations.items() if issubclass(v, Reactant)
+        cls._species_names = tuple(
+            k for k, v in annotations.items() if issubclass(v, Species)
         )
         cls._parameter_names = tuple(
             k for k, v in annotations.items() if issubclass(v, Parameter)
@@ -56,20 +56,20 @@ class BaseReaction:
     def __post_init__(self):
         """Initializes and validates arguments.
 
-        Validates that instance arguments are Reactants and Parameters.
-        Unpacks InReactionReactants, saving the st_number.
+        Validates that instance arguments are Species and Parameters.
+        Unpacks InReactionSpecies, saving the st_number.
         """
-        self.st_numbers = np.ones(len(self._reactant_names))
+        self.st_numbers = np.ones(len(self._species_names))
 
-        # Validate expected Reactants
-        for i, key in enumerate(self._reactant_names):
+        # Validate expected Species
+        for i, key in enumerate(self._species_names):
             value = getattr(self, key)
 
-            if isinstance(value, InReactionReactant):
+            if isinstance(value, InReactionSpecies):
                 self.st_numbers[i] = value.st_number
-                setattr(self, key, value.reactant)
-            elif not isinstance(value, Reactant):
-                raise TypeError(f"{value} is not a Reactant.")
+                setattr(self, key, value.species)
+            elif not isinstance(value, Species):
+                raise TypeError(f"{value} is not a Species.")
 
         # Validate expected Parameters
         for key in self._parameter_names:
@@ -78,9 +78,9 @@ class BaseReaction:
                 raise TypeError(f"{value} is not a Parameter.")
 
     @property
-    def reactants(self) -> Tuple[Reactant, ...]:
-        """Return a tuple of the reactants in this reaction."""
-        return tuple(getattr(self, name) for name in self._reactant_names)
+    def species(self) -> Tuple[Species, ...]:
+        """Return a tuple of the species in this reaction."""
+        return tuple(getattr(self, name) for name in self._species_names)
 
     @property
     def parameters(self) -> Tuple[Parameter, ...]:
@@ -112,26 +112,26 @@ class BaseReaction:
         else:
             c = "%s"
         return Template(tmpl).substitute(
-            **{name: c % getattr(self, name).name for name in self._reactant_names},
+            **{name: c % getattr(self, name).name for name in self._species_names},
             **{name: getattr(self, name).name for name in self._parameter_names},
         )
 
     def yield_latex_equations(self, *, use_brackets=True):
         t = symbols("t")
-        reactants = self.reactants
+        species = self.species
         if use_brackets:
-            reactants = (f"[{x}]" for x in reactants)
-        reactants = tuple(map(symbols, reactants))
+            species = (f"[{x}]" for x in species)
+        species = tuple(map(symbols, species))
         parameters = map(symbols, self.parameters)
 
-        for lhs, rhs in zip(reactants, self.rhs(t, *reactants, *parameters)):
+        for lhs, rhs in zip(species, self.rhs(t, *species, *parameters)):
             yield Equality(Derivative(lhs, t), rhs)
 
     def yield_latex_reaction(self):
         # Use \usepackage{mhchem}
         raise NotImplementedError
 
-    def yield_latex_reactant_values(self):
+    def yield_latex_species_values(self):
         raise NotImplementedError
 
     def yield_latex_parameter_values(self):
@@ -141,7 +141,7 @@ class BaseReaction:
 def _check_signature(method, t_first: bool):
     """Validates type and order of signature arguments.
 
-    Signature should be (t, *Reactant, *Parameter)
+    Signature should be (t, *Species, *Parameter)
 
     Parameters
     ----------
@@ -156,19 +156,19 @@ def _check_signature(method, t_first: bool):
             raise TypeError(f"{method} first parameter is {v.name}, but must be t")
 
     for v in params:
-        if issubclass(v.annotation, Reactant):
+        if issubclass(v.annotation, Species):
             continue
         elif issubclass(v.annotation, Parameter):
             break
         else:
             raise TypeError(
-                f"{method} parameter {v.name} is neither Reactant nor Parameter"
+                f"{method} parameter {v.name} is neither Species nor Parameter"
             )
 
     for v in params:
-        if issubclass(v.annotation, Reactant):
+        if issubclass(v.annotation, Species):
             raise TypeError(
-                f"{method} are in the wrong order. Reactant {v.name} found after Parameter."
+                f"{method} are in the wrong order. Species {v.name} found after Parameter."
             )
         elif not issubclass(v.annotation, Parameter):
             raise TypeError(f"{method} parameter {v.name} is not Parameter")

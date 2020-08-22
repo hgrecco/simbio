@@ -3,10 +3,10 @@ from dataclasses import FrozenInstanceError
 from simbio.compartments import Compartment, Universe
 from simbio.core import Container, Content
 from simbio.parameters import Parameter
-from simbio.reactants import Reactant
+from simbio.species import Species
 from ward import each, raises, test, xfail
 
-classes = (Content, Container, Reactant, Parameter, Compartment, Universe)
+classes = (Content, Container, Species, Parameter, Compartment, Universe)
 
 
 @test("Set or del protected attributes in {cls.__name__}")

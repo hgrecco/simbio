@@ -7,9 +7,9 @@ from simbio.simulator import PandasSimulator as Simulator
 
 cell = Universe("cell")
 C = cell.add_compartment("C")
-C.add_reactant("u", concentration=1)
-C.add_reactant("p", concentration=0)
-C.add_reactant("pp", concentration=1)
+C.add_species("u", concentration=1)
+C.add_species("p", concentration=0)
+C.add_species("pp", concentration=1)
 
 cell.add_parameter("K", 0.1)
 cell.add_parameter("D", 0.1)

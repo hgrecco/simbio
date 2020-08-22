@@ -5,9 +5,9 @@ from typing import Tuple, Union
 import numpy as np
 
 from .parameters import Parameter
-from .reactants import Reactant
 from .simulator import Simulator
 from .solvers.core import BaseSolver
+from .species import Species
 
 
 def _find_steady_state(
@@ -37,7 +37,7 @@ def find_steady_state(simulator: Simulator, **kwargs):
 
 
 def _dose_response(
-    simulator: Simulator, name: Union[str, Reactant, Parameter], values, **kwargs
+    simulator: Simulator, name: Union[str, Species, Parameter], values, **kwargs
 ):
     values = np.asarray(values)
     response = []
@@ -48,7 +48,7 @@ def _dose_response(
     return values, np.asarray(response)
 
 
-def dose_response(simulator, name: Union[str, Reactant, Parameter], values, **kwargs):
+def dose_response(simulator, name: Union[str, Species, Parameter], values, **kwargs):
     return simulator._to_output(
         *_dose_response(simulator, name, values, **kwargs),
         t_name="dose",
@@ -65,12 +65,12 @@ class Scanner:
     def from_single(cls, simulator, name, values):
         if isinstance(name, str):
             name = simulator.model[name]
-        if isinstance(name, Reactant):
+        if isinstance(name, Species):
             return cls.from_single_concentration(simulator, name, values)
         elif isinstance(name, Parameter):
             return cls.from_single_parameter(simulator, name, values)
         else:
-            raise ValueError(f"{name.name} is neither a Reactant nor a Parameter.")
+            raise ValueError(f"{name.name} is neither a Species nor a Parameter.")
 
     @classmethod
     def from_single_concentration(cls, simulator, name, values):

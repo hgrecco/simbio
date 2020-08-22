@@ -15,8 +15,8 @@ import numpy as np
 
 from .core import Container
 from .parameters import Parameter
-from .reactants import Reactant
 from .reactions.single import BaseReaction
+from .species import Species
 
 
 class Compartment(Container):
@@ -29,8 +29,8 @@ class Compartment(Container):
         return self._filter_contents(Compartment)
 
     @property
-    def reactants(self) -> Tuple[Reactant, ...]:
-        return self._filter_contents(Reactant)
+    def species(self) -> Tuple[Species, ...]:
+        return self._filter_contents(Species)
 
     @property
     def parameters(self) -> Tuple[Parameter, ...]:
@@ -47,7 +47,7 @@ class Compartment(Container):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
 
-        components = chain(reaction.reactants, reaction.parameters)
+        components = chain(reaction.species, reaction.parameters)
         out = [c for c in components if c not in self]
         if out:
             raise Exception(
@@ -74,25 +74,25 @@ class Compartment(Container):
             compartment = Compartment(name=compartment, belongs_to=self)
         return self._add(compartment)
 
-    def add_reactant(self, reactant: Union[str, Reactant], concentration=0) -> Reactant:
-        """Add reactant to this compartment.
+    def add_species(self, species: Union[str, Species], concentration=0) -> Species:
+        """Add species to this compartment.
 
-        If the reactant is a string, a Reactant object will be automatically created.
+        If the species is a string, a Species object will be automatically created.
 
         Parameters
         ----------
-        reactant : str or Reactant
+        species : str or Species
         concentration : float
 
         Returns
         -------
-        reactant
+        species
         """
-        if isinstance(reactant, str):
-            reactant = Reactant(
-                name=reactant, belongs_to=self, concentration=concentration
+        if isinstance(species, str):
+            species = Species(
+                name=species, belongs_to=self, concentration=concentration
             )
-        return self._add(reactant)
+        return self._add(species)
 
     def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
         """Add parameter to this compartment.
@@ -117,17 +117,17 @@ class Compartment(Container):
         new = super().copy(name=name, belongs_to=belongs_to)
 
         # We have to handle __reactions copy
-        # For each reaction, we get the relative names of its reactants
+        # For each reaction, we get the relative names of its species
         # and parameters, which will be the same in the new Compartment.
         # Then we instantiate another reaction searching corresponding
-        # reactants and parameters from the new compartment.
+        # species and parameters from the new compartment.
         for reaction in self.__reactions:
             kwargs = {}
 
-            for name, reactant, st_number in zip(
-                reaction._reactant_names, reaction.reactants, reaction.st_numbers
+            for name, species, st_number in zip(
+                reaction._species_names, reaction.species, reaction.st_numbers
             ):
-                rel_name = self._relative_name(reactant)
+                rel_name = self._relative_name(species)
                 kwargs[name] = st_number * new[rel_name]
 
             for name, parameter in zip(reaction._parameter_names, reaction.parameters):
@@ -138,11 +138,11 @@ class Compartment(Container):
         return new
 
     @property
-    def _in_reaction_reactants(self) -> Tuple[Reactant, ...]:
+    def _in_reaction_species(self) -> Tuple[Species, ...]:
         out = {}  # Using dict as an ordered set.
         for reaction in self.reactions:
-            for reactant in reaction.reactants:
-                out[reactant] = 1
+            for species in reaction.species:
+                out[species] = 1
         return tuple(out.keys())
 
     @property
@@ -154,27 +154,27 @@ class Compartment(Container):
         return tuple(out.keys())
 
     @property
-    def _in_reaction_reactant_names(self) -> Tuple[str, ...]:
-        return tuple(map(self._relative_name, self._in_reaction_reactants))
+    def _in_reaction_species_names(self) -> Tuple[str, ...]:
+        return tuple(map(self._relative_name, self._in_reaction_species))
 
     @property
     def _in_reaction_parameter_names(self) -> Tuple[str, ...]:
         return tuple(map(self._relative_name, self._in_reaction_parameters))
 
     def _build_concentration_vector(
-        self, concentrations: Dict[Union[str, Reactant], float] = None
+        self, concentrations: Dict[Union[str, Species], float] = None
     ) -> np.ndarray:
 
-        reactants = self._in_reaction_reactants
+        species = self._in_reaction_species
         out = np.fromiter(
-            (r.concentration for r in reactants), dtype=float, count=len(reactants)
+            (r.concentration for r in species), dtype=float, count=len(species)
         )
 
         if concentrations is not None:
-            for reactant, concentration in concentrations.items():
-                if isinstance(reactant, str):
-                    reactant = self[reactant]
-                out[reactants.index(reactant)] = concentration
+            for sp, concentration in concentrations.items():
+                if isinstance(sp, str):
+                    sp = self[sp]
+                out[species.index(sp)] = concentration
 
         return out
 
@@ -196,9 +196,9 @@ class Compartment(Container):
         return out
 
     def _build_ip_rhs(self):
-        reactants = self._in_reaction_reactants
+        species = self._in_reaction_species
         parameters = self._in_reaction_parameters
-        funcs = (r._yield_ip_rhs(reactants, parameters) for r in self.reactions)
+        funcs = (r._yield_ip_rhs(species, parameters) for r in self.reactions)
         funcs = tuple(chain.from_iterable(funcs))
 
         def fun(t, y, p):

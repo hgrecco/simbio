@@ -1,5 +1,5 @@
 from ..parameters import Parameter
-from ..reactants import Reactant
+from ..species import Species
 from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
 from .single import SingleReaction
 
@@ -7,10 +7,10 @@ from .single import SingleReaction
 class MichaelisMenten(CompoundReaction):
     @staticmethod
     def yield_reactions(
-        E: Reactant,
-        S: Reactant,
-        ES: Reactant,
-        P: Reactant,
+        E: Species,
+        S: Species,
+        ES: Species,
+        P: Species,
         forward_rate: Parameter,
         reverse_rate: Parameter,
         catalytic_rate: Parameter,
@@ -27,7 +27,7 @@ class MichaelisMenten(CompoundReaction):
 
     def to_eq_approx(self):
         raise NotImplementedError
-        # Should we generate a new S reactant or modify the concentration to add ES
+        # Should we generate a new S species or modify the concentration to add ES
         # Should we invalidate this reaction (self) because we are using these elsewhere
         michaelis_constant = self.reverse_rate / self.forward_rate
         return MichaelisMentenEqApprox(
@@ -40,7 +40,7 @@ class MichaelisMenten(CompoundReaction):
 
     def to_qss_approx(self):
         raise NotImplementedError
-        # Should we generate a new S reactant or modify the concentration to add ES
+        # Should we generate a new S species or modify the concentration to add ES
         # Should we invalidate this reaction (self) because we are using these elsewhere
         michaelis_constant = (
             self.reverse_rate + self.catalytic_rate
@@ -58,8 +58,8 @@ class MichaelisMentenEqApprox(SingleReaction):
     @staticmethod
     def rhs(
         t,
-        S: Reactant,
-        P: Reactant,
+        S: Species,
+        P: Species,
         maximum_velocity: Parameter,
         dissociation_constant: Parameter,
     ):
@@ -76,8 +76,8 @@ class MichaelisMentenQuasiSSAprox(SingleReaction):
     @staticmethod
     def rhs(
         t,
-        S: Reactant,
-        P: Reactant,
+        S: Species,
+        P: Species,
         maximum_velocity: Parameter,
         michaelis_constant: Parameter,
     ):

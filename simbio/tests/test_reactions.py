@@ -1,7 +1,7 @@
 from simbio.parameters import Parameter
-from simbio.reactants import Reactant
 from simbio.reactions.compound import CompoundReaction
 from simbio.reactions.single import SingleReaction
+from simbio.species import Species
 from ward import raises, test
 
 
@@ -9,12 +9,12 @@ from ward import raises, test
 def _():
     class Reaction1(SingleReaction):
         @staticmethod
-        def rhs(t, A: Reactant, B: Reactant, p: Parameter):
+        def rhs(t, A: Species, B: Species, p: Parameter):
             pass
 
     class Reaction2(SingleReaction):
         @staticmethod
-        def rhs(t, A: Reactant):
+        def rhs(t, A: Species):
             pass
 
 
@@ -22,12 +22,12 @@ def _():
 def _():
     class Reaction1(CompoundReaction):
         @staticmethod
-        def yield_reactions(A: Reactant, B: Reactant, p: Parameter):
+        def yield_reactions(A: Species, B: Species, p: Parameter):
             pass
 
     class Reaction2(CompoundReaction):
         @staticmethod
-        def yield_reactions(A: Reactant):
+        def yield_reactions(A: Species):
             pass
 
 
@@ -79,14 +79,14 @@ def _():
 
         class Reaction1(SingleReaction):
             @staticmethod
-            def rhs(t, p: Parameter, A: Reactant, B: Reactant):
+            def rhs(t, p: Parameter, A: Species, B: Species):
                 pass
 
     with raises(TypeError):
 
         class Reaction2(SingleReaction):
             @staticmethod
-            def rhs(t, A: Reactant, p: Parameter, B: Reactant):
+            def rhs(t, A: Species, p: Parameter, B: Species):
                 pass
 
 
@@ -96,14 +96,14 @@ def _():
 
         class Reaction1(CompoundReaction):
             @staticmethod
-            def yield_reactions(p: Parameter, A: Reactant, B: Reactant):
+            def yield_reactions(p: Parameter, A: Species, B: Species):
                 pass
 
     with raises(TypeError):
 
         class Reaction2(CompoundReaction):
             @staticmethod
-            def yield_reactions(A: Reactant, p: Parameter, B: Reactant):
+            def yield_reactions(A: Species, p: Parameter, B: Species):
                 pass
 
 
@@ -113,14 +113,14 @@ def _():
 
         class Reaction1(SingleReaction):
             @staticmethod
-            def rhs(t, A: Reactant, k, p: Parameter):
+            def rhs(t, A: Species, k, p: Parameter):
                 pass
 
     with raises(TypeError):
 
         class Reaction2(SingleReaction):
             @staticmethod
-            def rhs(t, A: Reactant, p: Parameter, k):
+            def rhs(t, A: Species, p: Parameter, k):
                 pass
 
 
@@ -130,19 +130,19 @@ def _():
 
         class Reaction1(CompoundReaction):
             @staticmethod
-            def yield_reactions(A: Reactant, k, p: Parameter):
+            def yield_reactions(A: Species, k, p: Parameter):
                 pass
 
     with raises(TypeError):
 
         class Reaction2(CompoundReaction):
             @staticmethod
-            def yield_reactions(A: Reactant, p: Parameter, k):
+            def yield_reactions(A: Species, p: Parameter, k):
                 pass
 
     with raises(TypeError):
 
         class Reaction3(CompoundReaction):
             @staticmethod
-            def yield_reactions(t, A: Reactant, p: Parameter):
+            def yield_reactions(t, A: Species, p: Parameter):
                 pass

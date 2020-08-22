@@ -7,11 +7,11 @@ from ward import fixture, raises, test
 @fixture
 def data():
     cell = Universe(name="cell")
-    reactant = cell.add_reactant("reactant", 1)
+    reactant = cell.add_species("reactant", 1)
     parameter = cell.add_parameter("parameter", 2)
 
     nucleus = cell.add_compartment("nucleus")
-    nucleus_reactant = nucleus.add_reactant("reactant", 3)
+    nucleus_reactant = nucleus.add_species("reactant", 3)
     nucleus_parameter = nucleus.add_parameter("parameter", 4)
 
     reaction1 = cell.add_reaction(Creation(cell.reactant, cell.parameter))
@@ -33,7 +33,7 @@ def data():
     }
 
 
-@test("Retrieve reactants, parameters, and compartments")
+@test("Retrieve species, parameters, and compartments")
 def _(data=data):
     cell = data.pop("cell")
 
@@ -53,13 +53,13 @@ def _(d=data):
     assert nucleus.parameters == (d["nucleus.parameter"],)
 
 
-@test("Return all Compartment reactants")
+@test("Return all Compartment species")
 def _(d=data):
     cell = d["cell"]
-    assert cell.reactants == (d["reactant"], d["nucleus.reactant"])
+    assert cell.species == (d["reactant"], d["nucleus.reactant"])
 
     nucleus = d["nucleus"]
-    assert nucleus.reactants == (d["nucleus.reactant"],)
+    assert nucleus.species == (d["nucleus.reactant"],)
 
 
 @test("Return all Compartment compartments")
@@ -87,7 +87,7 @@ def _(d=data):
 
     nucleus.add_reaction(Creation(nucleus.reactant, nucleus.parameter))
 
-    # Reactant does not belong
+    # Species does not belong
     with raises(Exception):
         nucleus.add_reaction(Creation(cell.reactant, nucleus.parameter))
 
@@ -123,7 +123,7 @@ def _(data=data):
         nucleus._build_concentration_vector({cell.reactant: 3})
 
     with raises(ValueError):
-        # Not a reactant
+        # Not a species
         nucleus._build_concentration_vector({nucleus.parameter: 3})
 
 

@@ -2,7 +2,7 @@
     simbio.reactions
     ~~~~~~~~~~~~~~~~
 
-    A reaction connects reactants to their rate of change.
+    A reaction connects species to their rate of change.
 
     :copyright: 2020 by SimBio Authors, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
@@ -13,7 +13,7 @@ import inspect
 from typing import Tuple, get_type_hints
 
 from ..parameters import Parameter
-from ..reactants import Reactant
+from ..species import Species
 from .core import BaseReaction, _check_signature
 from .single import Dissociation, Synthesis
 
@@ -30,7 +30,7 @@ class CompoundReaction(BaseReaction):
 
         Check if yield_reactions method is well-defined. It must:
         - be a staticmethod
-        - have an ordered signature (t, *Reactants, *Parameters)
+        - have an ordered signature (t, *Species, *Parameters)
 
         Continue class initialization with yield_reactions annotations in BaseReaction.
         """
@@ -47,20 +47,20 @@ class CompoundReaction(BaseReaction):
 
     def __post_init__(self):
         """Generates and saves the reactions from yield_reactions."""
-        reactants = dict(zip(self._reactant_names, self.reactants))
+        species = dict(zip(self._species_names, self.species))
         parameters = dict(zip(self._parameter_names, self.parameters))
-        self._reactions = tuple(self.yield_reactions(**reactants, **parameters))
-        # super().__post_init__() must be called after collecting reactants and
-        # parameters, and generating reactions, as it will unpack InReactionReactants.
+        self._reactions = tuple(self.yield_reactions(**species, **parameters))
+        # super().__post_init__() must be called after collecting species and
+        # parameters, and generating reactions, as it will unpack InReactionSpecies.
         super().__post_init__()
 
     @staticmethod
     def yield_reactions(self, **kwargs):
         raise NotImplementedError
 
-    def _yield_ip_rhs(self, global_reactants=None, global_parameters=None):
+    def _yield_ip_rhs(self, global_species=None, global_parameters=None):
         for reaction in self._reactions:
-            yield from reaction._yield_ip_rhs(global_reactants, global_parameters)
+            yield from reaction._yield_ip_rhs(global_species, global_parameters)
 
     def yield_latex_equations(self, *, use_brackets=True):
         for reaction in self._reactions:
@@ -70,9 +70,9 @@ class CompoundReaction(BaseReaction):
         for reaction in self._reactions:
             yield reaction.yield_latex_reaction()
 
-    def yield_latex_reactant_values(self):
+    def yield_latex_species_values(self):
         for reaction in self._reactions:
-            yield from reaction.yield_latex_reactant_values()
+            yield from reaction.yield_latex_species_values()
 
     def yield_latex_parameter_values(self):
         for reaction in self._reactions:
@@ -87,9 +87,9 @@ class ReversibleSynthesis(CompoundReaction):
 
     @staticmethod
     def yield_reactions(
-        A: Reactant,
-        B: Reactant,
-        AB: Reactant,
+        A: Species,
+        B: Species,
+        AB: Species,
         forward_rate: Parameter,
         reverse_rate: Parameter,
     ):

@@ -7,10 +7,10 @@ from simbio.simulator import PandasSimulator as Simulator
 
 cell = Universe("cell")
 C = cell.add_compartment("C")
-C.add_reactant("u_u", concentration=1)
-C.add_reactant("u_p")
-C.add_reactant("p_u")
-C.add_reactant("p_p")
+C.add_species("u_u", concentration=1)
+C.add_species("u_p")
+C.add_species("p_u")
+C.add_species("p_p")
 cell.add_parameter("K", 0.1)
 cell.add_parameter("D", 0.1)
 step1 = MichaelisMentenEqApprox(

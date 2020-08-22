@@ -7,9 +7,9 @@ import pandas as pd
 
 from .compartments import Compartment
 from .parameters import Parameter
-from .reactants import Reactant
 from .solvers.core import BaseSolver
 from .solvers.scipy import ScipySolver
+from .species import Species
 
 
 class Simulator:
@@ -21,7 +21,7 @@ class Simulator:
 
     model: Compartment
     t0: float
-    concentrations: Dict[Union[str, Reactant], float]
+    concentrations: Dict[Union[str, Species], float]
     parameters: Dict[Union[str, Parameter], float]
     solver_factory: Type[BaseSolver]
     solver: BaseSolver
@@ -31,7 +31,7 @@ class Simulator:
         model: Compartment,
         *,
         t0: float = 0,
-        concentrations: Dict[Union[str, Reactant], float] = None,
+        concentrations: Dict[Union[str, Species], float] = None,
         parameters: Dict[Union[str, Parameter], float] = None,
         solver_factory: BaseSolver = ScipySolver,
     ):
@@ -44,11 +44,11 @@ class Simulator:
 
     @property
     def names(self) -> Tuple[str, ...]:
-        """Return reactant names."""
-        return self.model._in_reaction_reactant_names
+        """Return species names."""
+        return self.model._in_reaction_species_names
 
     def _y0(
-        self, concentrations: Dict[Union[str, Reactant], float] = None
+        self, concentrations: Dict[Union[str, Species], float] = None
     ) -> np.ndarray:
         """Build concentration vector.
 
@@ -105,7 +105,7 @@ class Simulator:
         time: Union[float, Iterable],
         *,
         t0: float = None,
-        concentrations: Dict[Union[str, Reactant], float] = None,
+        concentrations: Dict[Union[str, Species], float] = None,
         parameters: Dict[Union[str, Parameter], float] = None,
         resume=False,
     ) -> Tuple[np.ndarray, np.ndarray]:
