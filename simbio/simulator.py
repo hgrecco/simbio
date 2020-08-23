@@ -21,8 +21,7 @@ class Simulator:
 
     model: Compartment
     t0: float
-    concentrations: Dict[Union[str, Species], float]
-    parameters: Dict[Union[str, Parameter], float]
+    values: Dict[Union[str, Species, Parameter], float]
     solver_factory: Type[BaseSolver]
     solver: BaseSolver
 
@@ -31,14 +30,12 @@ class Simulator:
         model: Compartment,
         *,
         t0: float = 0,
-        concentrations: Dict[Union[str, Species], float] = None,
-        parameters: Dict[Union[str, Parameter], float] = None,
+        values: Dict[Union[str, Species, Parameter], float] = None,
         solver_factory: BaseSolver = ScipySolver,
     ):
         self.model = model
         # TODO: Validate concentrations and parameters?
-        self.concentrations = concentrations or {}
-        self.parameters = parameters or {}
+        self.values = values or {}
         self.t0 = t0
         self.solver_factory = solver_factory
 
@@ -47,37 +44,22 @@ class Simulator:
         """Return species names."""
         return self.model._in_reaction_species_names
 
-    def _y0(
-        self, concentrations: Dict[Union[str, Species], float] = None
-    ) -> np.ndarray:
-        """Build concentration vector.
+    def _initial_parameters(
+        self, values: Dict[Union[str, Species, Parameter], float] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Build concentration and parameter vector.
 
         Resolution order:
             - Input
             - Simulator defaults
             - Model defaults.
         """
-        if concentrations is None:
-            concentrations = {}
-        return self.model._build_concentration_vector(
-            {**self.concentrations, **concentrations}
-        )
+        if values is None:
+            values = {}
+        y, p = self.model._build_value_vectors({**self.values, **values})
+        return y, p
 
-    def _p(self, parameters: Dict[Union[str, Parameter], float] = None) -> np.ndarray:
-        """Build parameter vector.
-
-        Resolution order:
-            - Input
-            - Simulator defaults
-            - Model defaults.
-        """
-        if parameters is None:
-            parameters = {}
-        return self.model._build_parameter_vector({**self.parameters, **parameters})
-
-    def create_solver(
-        self, *, t0=None, concentrations=None, parameters=None
-    ) -> BaseSolver:
+    def create_solver(self, *, t0=None, values=None) -> BaseSolver:
         """Create a solver instance.
 
         Resolution order:
@@ -85,12 +67,10 @@ class Simulator:
             - Simulator defaults
             - Model defaults.
         """
-        return self.solver_factory(
-            t=t0 or self.t0,
-            y=self._y0(concentrations),
-            p=self._p(parameters),
-            rhs=self.model._build_ip_rhs(),
-        )
+        t = t0 or self.t0
+        y, p = self._initial_parameters(values)
+        rhs = self.model._build_ip_rhs()
+        return self.solver_factory(t=t, y=y, p=p, rhs=rhs,)
 
     @staticmethod
     def _to_single_output(y, *, y_names) -> np.ndarray:
@@ -105,8 +85,7 @@ class Simulator:
         time: Union[float, Iterable],
         *,
         t0: float = None,
-        concentrations: Dict[Union[str, Species], float] = None,
-        parameters: Dict[Union[str, Parameter], float] = None,
+        values: Dict[Union[str, Species, Parameter], float] = None,
         resume=False,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Run simulation.
@@ -115,7 +94,7 @@ class Simulator:
         If t is an array-like, return solution evaluated at t.
 
         If resume is False (default), create a new solver instance
-        with given t0, concentration and parameters.
+        with given t0, values.
         Resolution order:
         - Input
             - Simulator defaults
@@ -125,9 +104,7 @@ class Simulator:
             t0, concentrations and parameters are ignored.
         """
         if not resume:
-            self.solver = self.create_solver(
-                t0=t0, concentrations=concentrations, parameters=parameters
-            )
+            self.solver = self.create_solver(t0=t0, values=values)
 
         t, y = self.solver.run(time)
         return self._to_output(t, y, t_name="time", y_names=self.names)

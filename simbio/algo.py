@@ -4,7 +4,7 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from .parameters import Parameter
+from .parameters import BaseParameter, Parameter
 from .simulator import Simulator
 from .solvers.core import BaseSolver
 from .species import Species
@@ -41,7 +41,7 @@ def _dose_response(
 ):
     values = np.asarray(values)
     response = []
-    for solver in Scanner.from_single(simulator, name, values):
+    for solver in Scanner.from_single_value(simulator, name, values):
         _, y = _find_steady_state(solver, **kwargs)
         response.append(y)
 
@@ -62,23 +62,13 @@ class Scanner:
         self.scan_values = scan_values
 
     @classmethod
-    def from_single(cls, simulator, name, values):
+    def from_single_value(cls, simulator, name, values):
         if isinstance(name, str):
             name = simulator.model[name]
-        if isinstance(name, Species):
-            return cls.from_single_concentration(simulator, name, values)
-        elif isinstance(name, Parameter):
-            return cls.from_single_parameter(simulator, name, values)
-        else:
+        elif not isinstance(name, BaseParameter):
             raise ValueError(f"{name.name} is neither a Species nor a Parameter.")
 
-    @classmethod
-    def from_single_concentration(cls, simulator, name, values):
-        return cls(simulator, ({"concentrations": {name: value}} for value in values))
-
-    @classmethod
-    def from_single_parameter(cls, simulator, name, values):
-        return cls(simulator, ({"parameters": {name: value}} for value in values))
+        return cls(simulator, ({name: value} for value in values))
 
     @classmethod
     def from_lhs(cls):
@@ -87,4 +77,4 @@ class Scanner:
 
     def __iter__(self):
         for scan_value in self.scan_values:
-            yield self.simulator.create_solver(**scan_value)
+            yield self.simulator.create_solver(values=scan_value)

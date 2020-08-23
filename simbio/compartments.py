@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 
 from .core import Container
-from .parameters import Parameter
+from .parameters import BaseParameter, Parameter
 from .reactions.single import BaseReaction
 from .species import Species
 
@@ -159,41 +159,56 @@ class Compartment(Container):
     def _in_reaction_parameter_names(self) -> Tuple[str, ...]:
         return tuple(map(self._relative_name, self._in_reaction_parameters))
 
-    def _build_concentration_vector(
-        self, concentrations: Dict[Union[str, Species], float] = None
-    ) -> np.ndarray:
+    def _resolve_values(
+        self, values: Dict[Union[str, Species, Parameter], float] = None
+    ) -> Tuple[Dict, List]:
+        out, unexpected = {}, []
+        for name, value in values.items():
+            if isinstance(name, str):
+                try:
+                    name = self[name]
+                    out[name] = value
+                except (KeyError, TypeError):
+                    unexpected.append(name)
+            elif isinstance(name, BaseParameter):
+                if name not in self:
+                    unexpected.append(name)
+                else:
+                    out[name] = value
+            else:
+                unexpected.append(name)
+        return out, unexpected
+
+    def _build_value_vectors(
+        self,
+        values: Dict[Union[str, Species, Parameter], float] = None,
+        raise_on_unexpected: bool = True,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        if values is None:
+            values = {}
+        else:
+            values, unexpected = self._resolve_values(values)
+
+            if raise_on_unexpected and unexpected:
+                raise ValueError(
+                    f"Received unexpected values not found in Compartment: {unexpected}"
+                )
 
         species = self._in_reaction_species
-        out = np.fromiter((r.value for r in species), dtype=float, count=len(species))
-
-        if concentrations is not None:
-            for sp, concentration in concentrations.items():
-                if isinstance(sp, str):
-                    sp = self[sp]
-                out[species.index(sp)] = concentration
-
-        return out
-
-    def _build_parameter_vector(
-        self, parameters: Dict[Union[str, Parameter], float] = None
-    ) -> np.ndarray:
-
-        _parameters = self._in_reaction_parameters
-        out = np.fromiter(
-            (r.value for r in _parameters), dtype=float, count=len(_parameters)
+        species = np.fromiter(
+            (values.get(r, r.value) for r in species), dtype=float, count=len(species)
         )
 
-        if parameters is not None:
-            for parameter, value in parameters.items():
-                if isinstance(parameter, str):
-                    parameter = self[parameter]
-                out[_parameters.index(parameter)] = value
-
-        return out
+        parameters = self._in_reaction_parameters
+        parameters = np.fromiter(
+            (values.get(r, r.value) for r in parameters),
+            dtype=float,
+            count=len(parameters),
+        )
+        return species, parameters
 
     def _build_ip_rhs(self):
-        species = self._in_reaction_species
-        parameters = self._in_reaction_parameters
+        species, parameters = self._in_reaction_species, self._in_reaction_parameters
         funcs = (r._yield_ip_rhs(species, parameters) for r in self.reactions)
         funcs = tuple(chain.from_iterable(funcs))
 

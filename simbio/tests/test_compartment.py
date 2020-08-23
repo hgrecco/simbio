@@ -96,62 +96,39 @@ def _(d=data):
         nucleus.add_reaction(Creation(nucleus.reactant, cell.parameter))
 
 
-@test("Build Compartment concentration vector")
+@test("Build Compartment concentration and parameter vectors")
 def _(data=data):
-    cell = data["cell"]
-    assert np.allclose(cell._build_concentration_vector(), np.array([1.0, 3.0]))
+    cell, nucleus = data["cell"], data["nucleus"]
 
-    nucleus = data["nucleus"]
-    assert np.allclose(nucleus._build_concentration_vector(), np.array([3.0]))
+    # Cell
+    y0, p = cell._build_value_vectors()
+    assert np.allclose(y0, np.array([1.0, 3.0]))
+    assert np.allclose(p, np.array([2.0, 4.0]))
 
-    assert np.allclose(
-        cell._build_concentration_vector({cell.reactant: 2.0}), np.array([2.0, 3.0])
+    # Nucleus
+    y0, p = nucleus._build_value_vectors()
+    assert np.allclose(y0, np.array([3.0]))
+    assert np.allclose(p, np.array([4.0]))
+
+    # Override defaults in cell
+    y0, p = cell._build_value_vectors(
+        {
+            cell.reactant: 2.0,
+            "parameter": 3.0,
+            "nucleus.reactant": 4.0,
+            nucleus.parameter: 5.0,
+        }
     )
-    assert np.allclose(
-        cell._build_concentration_vector({"nucleus.reactant": 5.0}),
-        np.array([1.0, 5.0]),
-    )
-    assert np.allclose(
-        nucleus._build_concentration_vector({nucleus.reactant: 4.0}), np.array([4.0])
-    )
+    assert np.allclose(y0, np.array([2.0, 4.0]))
+    assert np.allclose(p, np.array([3.0, 5.0]))
 
-    with raises(KeyError):
-        cell._build_concentration_vector({"non_existing_reactant": 3})
-
+    # Non-existing
     with raises(ValueError):
-        # Outside compartment
-        nucleus._build_concentration_vector({cell.reactant: 3})
+        cell._build_value_vectors({"non_existing": 3})
+    cell._build_value_vectors({"non_existing": 3}, raise_on_unexpected=False)
 
+    # Outside compartment
+    values = {cell.reactant: 3, cell.parameter: 3}
     with raises(ValueError):
-        # Not a species
-        nucleus._build_concentration_vector({nucleus.parameter: 3})
-
-
-@test("Build Compartment parameter vector")
-def _(data=data):
-    cell = data["cell"]
-    assert np.allclose(cell._build_parameter_vector(), np.array([2.0, 4.0]))
-
-    nucleus = data["nucleus"]
-    assert np.allclose(nucleus._build_parameter_vector(), np.array([4.0]))
-
-    assert np.allclose(
-        cell._build_parameter_vector({cell.parameter: 3.0}), np.array([3.0, 4.0])
-    )
-    assert np.allclose(
-        cell._build_parameter_vector({"nucleus.parameter": 5.0}), np.array([2.0, 5.0]),
-    )
-    assert np.allclose(
-        nucleus._build_parameter_vector({nucleus.parameter: 5.0}), np.array([5.0])
-    )
-
-    with raises(KeyError):
-        cell._build_parameter_vector({"non_existing_parameter": 3})
-
-    with raises(ValueError):
-        # Outside compartment
-        nucleus._build_parameter_vector({cell.parameter: 3})
-
-    with raises(ValueError):
-        # Not a parameter
-        nucleus._build_parameter_vector({nucleus.reactant: 3})
+        nucleus._build_value_vectors(values)
+    nucleus._build_value_vectors(values, raise_on_unexpected=False)
