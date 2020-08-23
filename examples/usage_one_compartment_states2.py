@@ -7,7 +7,7 @@ from simbio.simulator import PandasSimulator as Simulator
 
 cell = Universe("cell")
 C = cell.add_compartment("C")
-C.add_species("u_u", concentration=1)
+C.add_species("u_u", value=1)
 C.add_species("u_p")
 C.add_species("p_u")
 C.add_species("p_p")

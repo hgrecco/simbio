@@ -74,7 +74,7 @@ class Compartment(Container):
             compartment = Compartment(name=compartment, belongs_to=self)
         return self._add(compartment)
 
-    def add_species(self, species: Union[str, Species], concentration=0) -> Species:
+    def add_species(self, species: Union[str, Species], value=0) -> Species:
         """Add species to this compartment.
 
         If the species is a string, a Species object will be automatically created.
@@ -82,16 +82,14 @@ class Compartment(Container):
         Parameters
         ----------
         species : str or Species
-        concentration : float
+        value : float
 
         Returns
         -------
         species
         """
         if isinstance(species, str):
-            species = Species(
-                name=species, belongs_to=self, concentration=concentration
-            )
+            species = Species(name=species, belongs_to=self, value=value)
         return self._add(species)
 
     def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
@@ -166,9 +164,7 @@ class Compartment(Container):
     ) -> np.ndarray:
 
         species = self._in_reaction_species
-        out = np.fromiter(
-            (r.concentration for r in species), dtype=float, count=len(species)
-        )
+        out = np.fromiter((r.value for r in species), dtype=float, count=len(species))
 
         if concentrations is not None:
             for sp, concentration in concentrations.items():

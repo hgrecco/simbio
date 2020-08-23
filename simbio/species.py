@@ -10,11 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Union
 
-from .core import Content
+from .parameters import BaseParameter
 
 
-class Species(Content):
-    concentration: float = 0
+class Species(BaseParameter):
+    value: float = 0
 
     def __mul__(self, other):
         if not isinstance(other, (float, int)):
@@ -35,5 +35,5 @@ class InReactionSpecies:
         return self.species.name
 
     @property
-    def concentration(self):
-        return self.species.concentration
+    def value(self):
+        return self.species.value
