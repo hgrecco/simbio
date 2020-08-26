@@ -1,4 +1,9 @@
-from .compound import CompoundReaction, ReversibleSynthesis
+from .compound import CatalyzeConvert, Equilibration, ReversibleSynthesis
+from .enzymatic import (
+    MichaelisMenten,
+    MichaelisMentenEqApprox,
+    MichaelisMentenQuasiSSAprox,
+)
 from .single import Conversion, Creation, Destruction, Dissociation, Synthesis
 
 __all__ = [
@@ -7,6 +12,10 @@ __all__ = [
     "Destruction",
     "Dissociation",
     "Synthesis",
-    "CompoundReaction",
+    "CatalyzeConvert",
+    "Equilibration",
     "ReversibleSynthesis",
+    "MichaelisMenten",
+    "MichaelisMentenEqApprox",
+    "MichaelisMentenQuasiSSAprox",
 ]

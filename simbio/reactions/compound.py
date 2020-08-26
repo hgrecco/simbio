@@ -16,7 +16,7 @@ from typing import Tuple
 from ..parameters import Parameter
 from ..species import Species
 from .core import BaseReaction
-from .single import Dissociation, Synthesis
+from .single import Conversion, Dissociation, Synthesis
 
 
 class CompoundReaction(BaseReaction):
@@ -92,3 +92,46 @@ class ReversibleSynthesis(CompoundReaction):
         yield self._template_replace(
             r"\ce{ $A + $B <=>[$forward_rate][$reverse_rate] $AB"
         )
+
+
+@dataclass
+class Equilibration(CompoundReaction):
+    """A forward and backward Conversion reactions.
+
+    A <-> B
+    """
+
+    A: Species
+    B: Species
+    forward_rate: Parameter
+    reverse_rate: Parameter
+
+    def yield_reactions(self):
+        yield Conversion(A=self.A, B=self.B, rate=self.forward_rate)
+        yield Conversion(A=self.B, B=self.A, rate=self.reverse_rate)
+
+
+@dataclass
+class CatalyzeConvert(CompoundReaction):
+    """
+
+    A + B <--> A:B --> P
+    """
+
+    A: Species
+    B: Species
+    AB: Species
+    P: Species
+    forward_rate: Parameter
+    reverse_rate: Parameter
+    conversion_rate: Parameter
+
+    def yield_reactions(self):
+        yield ReversibleSynthesis(
+            A=self.A,
+            B=self.B,
+            AB=self.AB,
+            forward_rate=self.forward_rate,
+            reverse_rate=self.reverse_rate,
+        )
+        yield Conversion(A=self.AB, B=self.P, rate=self.conversion_rate)
