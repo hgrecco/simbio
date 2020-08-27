@@ -27,9 +27,6 @@ class Content:
     name: str
     belongs_to: Container
 
-    def __init_subclass__(cls) -> None:
-        return dataclass(cls, frozen=True, eq=False)
-
     def __post_init__(self) -> None:
         # Validate name
         if not self.name.isidentifier():
@@ -42,6 +39,7 @@ class Content:
         return replace(self, name=name or self.name, belongs_to=belongs_to)
 
 
+@dataclass(frozen=True, eq=False)
 class Container(Content):
     """Base Container class.
 

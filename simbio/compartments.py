@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import field
+from dataclasses import dataclass, field
 from itertools import chain
 from typing import Dict, List, Tuple, Union
 
@@ -19,6 +19,7 @@ from .reactions.single import BaseReaction
 from .species import Species
 
 
+@dataclass(frozen=True, eq=False)
 class Compartment(Container):
     __reactions: List[BaseReaction] = field(
         default_factory=list, init=False, repr=False

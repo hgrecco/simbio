@@ -13,6 +13,7 @@ from typing import Union
 from .parameters import BaseParameter
 
 
+@dataclass(frozen=True, eq=False)
 class Species(BaseParameter):
     value: float = 0
 
