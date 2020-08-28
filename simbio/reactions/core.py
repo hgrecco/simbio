@@ -1,7 +1,6 @@
-import inspect
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from string import Template
-from typing import Callable, Generator, Tuple
+from typing import Callable, Generator, Tuple, get_type_hints
 
 import numpy as np
 
@@ -28,30 +27,26 @@ ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 class BaseReaction:
     """Base class of all single and compound reactions."""
 
-    _species_names: Tuple[str, ...]
-    _parameter_names: Tuple[str, ...]
-    st_numbers: np.ndarray
+    _species_names: Tuple[str, ...] = field(init=False)
+    _parameter_names: Tuple[str, ...] = field(init=False)
+    st_numbers: np.ndarray = field(init=False)
 
-    def __init_subclass__(cls, annotations: dict = None):
-        """Initialize class from annotations dict.
+    def __init_subclass__(cls):
+        """Initialize class as a dataclass.
 
-        Set class annotations, then create init and others with dataclass.
-        Set (ordered) tuples of reactions and parameters names.
+        Set (ordered) tuples of reactions and parameters names from __init__ annotations.
         """
-        if annotations is None:
-            return cls
-
-        setattr(cls, "__annotations__", annotations)
+        dataclass(cls)
 
         # Save tuples of names
+        annotations = get_type_hints(cls.__init__)
+        del annotations["return"]
         cls._species_names = tuple(
             k for k, v in annotations.items() if issubclass(v, Species)
         )
         cls._parameter_names = tuple(
             k for k, v in annotations.items() if issubclass(v, Parameter)
         )
-
-        return dataclass(cls)
 
     def __post_init__(self):
         """Initializes and validates arguments.
@@ -62,9 +57,7 @@ class BaseReaction:
         self.st_numbers = np.ones(len(self._species_names))
 
         # Validate expected Species
-        for i, key in enumerate(self._species_names):
-            value = getattr(self, key)
-
+        for i, (key, value) in enumerate(zip(self._species_names, self.species)):
             if isinstance(value, InReactionSpecies):
                 self.st_numbers[i] = value.st_number
                 setattr(self, key, value.species)
@@ -72,10 +65,9 @@ class BaseReaction:
                 raise TypeError(f"{value} is not a Species.")
 
         # Validate expected Parameters
-        for key in self._parameter_names:
-            value = getattr(self, key)
-            if not isinstance(value, Parameter):
-                raise TypeError(f"{value} is not a Parameter.")
+        for parameter in self.parameters:
+            if not isinstance(parameter, Parameter):
+                raise TypeError(f"{parameter} is not a Parameter.")
 
     @property
     def species(self) -> Tuple[Species, ...]:
@@ -138,39 +130,3 @@ class BaseReaction:
 
     def yield_latex_parameter_values(self):
         raise NotImplementedError
-
-
-def _check_signature(method, t_first: bool):
-    """Validates type and order of signature arguments.
-
-    Signature should be (t, *Species, *Parameter)
-
-    Parameters
-    ----------
-    t_first : bool
-        True if "t" should be the first parameter.
-    """
-    params = iter(inspect.signature(method).parameters.values())
-
-    if t_first:
-        v = next(params)
-        if not v.name == "t":
-            raise TypeError(f"{method} first parameter is {v.name}, but must be t")
-
-    for v in params:
-        if issubclass(v.annotation, Species):
-            continue
-        elif issubclass(v.annotation, Parameter):
-            break
-        else:
-            raise TypeError(
-                f"{method} parameter {v.name} is neither Species nor Parameter"
-            )
-
-    for v in params:
-        if issubclass(v.annotation, Species):
-            raise TypeError(
-                f"{method} are in the wrong order. Species {v.name} found after Parameter."
-            )
-        elif not issubclass(v.annotation, Parameter):
-            raise TypeError(f"{method} parameter {v.name} is not Parameter")

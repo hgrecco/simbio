@@ -9,12 +9,13 @@
 """
 from __future__ import annotations
 
-import inspect
-from typing import Tuple, get_type_hints
+from dataclasses import dataclass, field
+from inspect import signature
+from typing import Tuple
 
 from ..parameters import Parameter
 from ..species import Species
-from .core import BaseReaction, _check_signature
+from .core import BaseReaction
 from .single import Dissociation, Synthesis
 
 
@@ -23,78 +24,64 @@ class CompoundReaction(BaseReaction):
     combination of others.
     """
 
-    _reactions: Tuple[BaseReaction, ...]
+    reactions: Tuple[BaseReaction, ...] = field(init=False)
 
     def __init_subclass__(cls):
-        """Initialize class from yield_reactions method.
+        super().__init_subclass__()
 
-        Check if yield_reactions method is well-defined. It must:
-        - be a staticmethod
-        - have an ordered signature (t, *Species, *Parameters)
-
-        Continue class initialization with yield_reactions annotations in BaseReaction.
-        """
-        # Check if staticmethod
-        if not isinstance(inspect.getattr_static(cls, "yield_reactions"), staticmethod):
-            raise TypeError(
-                f"{cls.__name__}.yield_reactions must be a staticmethod. Use @staticmethod decorator."
+        sig = signature(cls.yield_reactions)
+        if len(sig.parameters) != 1:
+            raise ValueError(
+                f"{cls.__qualname__}.yield_reactions should have no parameters."
             )
-
-        annotations = get_type_hints(cls.yield_reactions)
-        cls.yield_reactions.__annotations__ = annotations
-        _check_signature(cls.yield_reactions, t_first=False)
-        return super().__init_subclass__(annotations=annotations)
 
     def __post_init__(self):
         """Generates and saves the reactions from yield_reactions."""
-        species = dict(zip(self._species_names, self.species))
-        parameters = dict(zip(self._parameter_names, self.parameters))
-        self._reactions = tuple(self.yield_reactions(**species, **parameters))
+        self.reactions = tuple(self.yield_reactions())
         # super().__post_init__() must be called after collecting species and
         # parameters, and generating reactions, as it will unpack InReactionSpecies.
         super().__post_init__()
 
-    @staticmethod
-    def yield_reactions(self, **kwargs):
+    def yield_reactions(self):
         raise NotImplementedError
 
     def _yield_ip_rhs(self, global_species=None, global_parameters=None):
-        for reaction in self._reactions:
+        for reaction in self.reactions:
             yield from reaction._yield_ip_rhs(global_species, global_parameters)
 
     def yield_latex_equations(self, *, use_brackets=True):
-        for reaction in self._reactions:
+        for reaction in self.reactions:
             yield reaction.yield_latex_equations(use_brackets=use_brackets)
 
     def yield_latex_reaction(self):
-        for reaction in self._reactions:
+        for reaction in self.reactions:
             yield reaction.yield_latex_reaction()
 
     def yield_latex_species_values(self):
-        for reaction in self._reactions:
+        for reaction in self.reactions:
             yield from reaction.yield_latex_species_values()
 
     def yield_latex_parameter_values(self):
-        for reaction in self._reactions:
+        for reaction in self.reactions:
             yield from reaction.yield_latex_parameter_values()
 
 
+@dataclass
 class ReversibleSynthesis(CompoundReaction):
     """A Synthesis and Dissociation reactions.
 
     A + B <-> AB
     """
 
-    @staticmethod
-    def yield_reactions(
-        A: Species,
-        B: Species,
-        AB: Species,
-        forward_rate: Parameter,
-        reverse_rate: Parameter,
-    ):
-        yield Synthesis(A=A, B=B, AB=AB, rate=forward_rate)
-        yield Dissociation(A=A, B=B, AB=AB, rate=reverse_rate)
+    A: Species
+    B: Species
+    AB: Species
+    forward_rate: Parameter
+    reverse_rate: Parameter
+
+    def yield_reactions(self):
+        yield Synthesis(A=self.A, B=self.B, AB=self.AB, rate=self.forward_rate)
+        yield Dissociation(AB=self.AB, A=self.A, B=self.B, rate=self.reverse_rate)
 
     def yield_latex_reaction(self):
         yield self._template_replace(

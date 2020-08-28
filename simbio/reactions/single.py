@@ -10,45 +10,58 @@
 from __future__ import annotations
 
 import inspect
-from typing import get_type_hints
+from dataclasses import dataclass
 
 import numpy as np
 
 from ..parameters import Parameter
 from ..species import Species
-from .core import BaseReaction, _check_signature
+from .core import BaseReaction
 
 
 class SingleReaction(BaseReaction):
     """Base class for all single reactions."""
 
     def __init_subclass__(cls):
-        """Initialize class from rhs method.
+        """Validates class
 
         Check if rhs method is well-defined. It must:
         - be a staticmethod
-        - have an ordered signature (t, *Species, *Parameters)
-
-        Continue class initialization with rhs annotations in BaseReaction.
+        - have 't' as its first parameter, and the rest must correspond
+        to a Species or Parameter class annotation.
         """
+        super().__init_subclass__()
 
-        # Check if staticmethod
+        # Check if rhs is a staticmethod
         if not isinstance(inspect.getattr_static(cls, "rhs"), staticmethod):
             raise TypeError(
-                f"{cls.__name__}.rhs must be a staticmethod. Use @staticmethod decorator."
+                f"{cls.__qualname__}.rhs must be a staticmethod. Use @staticmethod decorator."
             )
 
-        # Evaluate annotations
-        rhs_annotations = cls.rhs.__annotations__ = get_type_hints(cls.rhs)
+        # Check rhs signature
+        parameters = iter(inspect.signature(cls.rhs).parameters)
 
-        # Check signature order
-        _check_signature(cls.rhs, t_first=True)
+        # Check if 't' is the first parameter
+        parameter = next(parameters)
+        if parameter != "t":
+            raise ValueError(
+                f"{cls.__qualname__}.rhs first parameter is not t, but {parameter}"
+            )
 
-        # Set class annotations from rhs
-        if "t" in rhs_annotations:
-            rhs_annotations.pop("t")
-
-        return super().__init_subclass__(annotations=rhs_annotations)
+        # Check that all rhs parameter have correct class annotation.
+        for parameter in parameters:
+            if parameter in cls._species_names:
+                continue
+            elif parameter in cls._parameter_names:
+                continue
+            elif parameter in cls.__annotations__:
+                raise TypeError(
+                    f"{cls.__qualname__}.{parameter} is missing a Species or Parameter class annotation."
+                )
+            else:
+                raise ValueError(
+                    f"{cls.__qualname__}.rhs parameter {parameter} is missing from {cls.__qualname__} annotations"
+                )
 
     def _yield_ip_rhs(self, global_species=None, global_parameters=None):
         if global_species is None:
@@ -87,42 +100,55 @@ class SingleReaction(BaseReaction):
             yield getattr(self, name).value
 
 
+@dataclass
 class Creation(SingleReaction):
     """A substance is created from nothing.
 
       -> A
     """
 
+    A: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, A: Species, rate: Parameter):
+    def rhs(t, A, rate):
         return rate * A
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ \varnothing ->[$rate] $A }")
 
 
+@dataclass
 class Destruction(SingleReaction):
     """A substance degrades into nothing.
 
     A ->
     """
 
+    A: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, A: Species, rate: Parameter):
+    def rhs(t, A, rate):
         return -rate * A
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A ->[$rate] \varnothing }")
 
 
+@dataclass
 class Conversion(SingleReaction):
     """A substance convert to another.
 
     A -> B
     """
 
+    A: Species
+    B: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, A: Species, B: Species, rate: Parameter):
+    def rhs(t, A, B, rate):
         delta = rate * A
         return -delta, delta
 
@@ -130,14 +156,20 @@ class Conversion(SingleReaction):
         yield self._template_replace(r"\ce{ $A ->[$rate] $B }")
 
 
+@dataclass
 class Synthesis(SingleReaction):
     """Two or more simple substances combine to form a more complex substance.
 
     A + B -> AB
     """
 
+    A: Species
+    B: Species
+    AB: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, A: Species, B: Species, AB: Species, rate: Parameter):
+    def rhs(t, A, B, AB, rate):
         delta = rate * A * B
         return -delta, -delta, delta
 
@@ -145,14 +177,20 @@ class Synthesis(SingleReaction):
         yield self._template_replace(r"\ce{ $A + $B ->[$rate] $AB }")
 
 
+@dataclass
 class Dissociation(SingleReaction):
     """A more complex substance breaks down into its more simple parts.
 
     AB -> A + B
     """
 
+    AB: Species
+    A: Species
+    B: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, AB: Species, A: Species, B: Species, rate: Parameter):
+    def rhs(t, AB, A, B, rate):
         delta = rate * AB
         return -delta, delta, delta
 
@@ -160,28 +198,42 @@ class Dissociation(SingleReaction):
         yield self._template_replace(r"\ce{ $AB ->[$rate] $A + $B }")
 
 
+@dataclass
 class SingleReplacement(SingleReaction):
     """A single uncombined element replaces another in a compound.
 
     A + BC -> AC + B
     """
 
+    A: Species
+    BC: Species
+    AC: Species
+    B: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, A: Species, BC: Species, AC: Species, B: Species, rate: Parameter):
+    def rhs(t, A, BC, AC, B, rate):
         raise NotImplementedError
 
     def yield_latex_reaction(self):
         yield self._template_replace(r"\ce{ $A + $BC ->[$rate] $AC + $B }")
 
 
+@dataclass
 class DoubleReplacement(SingleReaction):
     """The anions and cations of two compounds switch places and form two entirely different compounds.
 
     AB + CD -> AD + CB
     """
 
+    AB: Species
+    CD: Species
+    AD: Species
+    CB: Species
+    rate: Parameter
+
     @staticmethod
-    def rhs(t, AB: Species, CD: Species, AD: Species, CB: Species, rate: Parameter):
+    def rhs(t, AB, CD, AD, CB, rate):
         raise NotImplementedError
 
     def yield_latex_reaction(self):

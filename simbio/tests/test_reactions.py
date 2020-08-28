@@ -8,26 +8,26 @@ from ward import raises, test
 @test("rhs: correctly defined")
 def _():
     class Reaction1(SingleReaction):
+        A: Species
+        B: Species
+        p: Parameter
+
         @staticmethod
-        def rhs(t, A: Species, B: Species, p: Parameter):
+        def rhs(t, A, B, p):
             pass
 
     class Reaction2(SingleReaction):
+        A: Species
+
         @staticmethod
-        def rhs(t, A: Species):
+        def rhs(t, A):
             pass
 
 
 @test("yield_reactions: correctly defined")
 def _():
     class Reaction1(CompoundReaction):
-        @staticmethod
-        def yield_reactions(A: Species, B: Species, p: Parameter):
-            pass
-
-    class Reaction2(CompoundReaction):
-        @staticmethod
-        def yield_reactions(A: Species):
+        def yield_reactions(self):
             pass
 
 
@@ -47,102 +47,49 @@ def _():
                 pass
 
 
-@test("yield_reactions: must be staticmethod")
+@test("yield_reactions: must take no parameters")
 def _():
-    with raises(TypeError):
+    with raises(ValueError):
 
         class Reaction1(CompoundReaction):
-            def yield_reactions():
-                pass
-
-    with raises(TypeError):
-
-        class Reaction2(CompoundReaction):
-            @classmethod
-            def yield_reactions():
+            def yield_reactions(self, A):
                 pass
 
 
 @test("rhs: first parameter must be t")
 def _():
-    with raises(TypeError):
+    with raises(ValueError):
 
         class Reaction(SingleReaction):
+            A: Species
+
             @staticmethod
             def rhs(A, t):
                 pass
 
 
-@test("rhs: check parameter order")
-def _():
-    with raises(TypeError):
-
-        class Reaction1(SingleReaction):
-            @staticmethod
-            def rhs(t, p: Parameter, A: Species, B: Species):
-                pass
-
-    with raises(TypeError):
-
-        class Reaction2(SingleReaction):
-            @staticmethod
-            def rhs(t, A: Species, p: Parameter, B: Species):
-                pass
-
-
-@test("yield_reactions: check parameter order")
-def _():
-    with raises(TypeError):
-
-        class Reaction1(CompoundReaction):
-            @staticmethod
-            def yield_reactions(p: Parameter, A: Species, B: Species):
-                pass
-
-    with raises(TypeError):
-
-        class Reaction2(CompoundReaction):
-            @staticmethod
-            def yield_reactions(A: Species, p: Parameter, B: Species):
-                pass
-
-
 @test("rhs: check unannotated parameter")
 def _():
-    with raises(TypeError):
+    with raises(ValueError):
 
         class Reaction1(SingleReaction):
-            @staticmethod
-            def rhs(t, A: Species, k, p: Parameter):
-                pass
+            A: Species
+            p: Parameter
 
-    with raises(TypeError):
-
-        class Reaction2(SingleReaction):
             @staticmethod
-            def rhs(t, A: Species, p: Parameter, k):
+            def rhs(t, A, p, k):
                 pass
 
 
-@test("yield_reactions: check unannotated parameter")
+@test("rhs: check misannotated parameter")
 def _():
     with raises(TypeError):
 
-        class Reaction1(CompoundReaction):
+        class Reaction1(SingleReaction):
+            A: Species
+            p: Parameter
+            k: float
+
             @staticmethod
-            def yield_reactions(A: Species, k, p: Parameter):
-                pass
-
-    with raises(TypeError):
-
-        class Reaction2(CompoundReaction):
-            @staticmethod
-            def yield_reactions(A: Species, p: Parameter, k):
-                pass
-
-    with raises(TypeError):
-
-        class Reaction3(CompoundReaction):
-            @staticmethod
-            def yield_reactions(t, A: Species, p: Parameter):
+            def rhs(t, A, p, k):
                 pass

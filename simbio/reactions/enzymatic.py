@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from ..parameters import Parameter
 from ..species import Species
 from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
@@ -5,20 +7,23 @@ from .single import SingleReaction
 
 
 class MichaelisMenten(CompoundReaction):
-    @staticmethod
-    def yield_reactions(
-        E: Species,
-        S: Species,
-        ES: Species,
-        P: Species,
-        forward_rate: Parameter,
-        reverse_rate: Parameter,
-        catalytic_rate: Parameter,
-    ):
+    E: Species
+    S: Species
+    ES: Species
+    P: Species
+    forward_rate: Parameter
+    reverse_rate: Parameter
+    catalytic_rate: Parameter
+
+    def yield_reactions(self):
         yield ReversibleSynthesis(
-            A=E, B=S, AB=ES, forward_rate=forward_rate, reverse_rate=reverse_rate
+            A=self.E,
+            B=self.S,
+            AB=self.ES,
+            forward_rate=self.forward_rate,
+            reverse_rate=self.reverse_rate,
         )
-        yield Dissociation(AB=ES, A=E, B=P, rate=catalytic_rate)
+        yield Dissociation(AB=self.ES, A=self.E, B=self.P, rate=self.catalytic_rate)
 
     def yield_latex_reaction(self):
         yield self._template_replace(
@@ -54,15 +59,15 @@ class MichaelisMenten(CompoundReaction):
         )
 
 
+@dataclass
 class MichaelisMentenEqApprox(SingleReaction):
+    S: Species
+    P: Species
+    maximum_velocity: Parameter
+    dissociation_constant: Parameter
+
     @staticmethod
-    def rhs(
-        t,
-        S: Species,
-        P: Species,
-        maximum_velocity: Parameter,
-        dissociation_constant: Parameter,
-    ):
+    def rhs(t, S, P, maximum_velocity, dissociation_constant):
         delta = maximum_velocity * S / (dissociation_constant + S)
         return -delta, delta
 
@@ -72,15 +77,15 @@ class MichaelisMentenEqApprox(SingleReaction):
         )
 
 
+@dataclass
 class MichaelisMentenQuasiSSAprox(SingleReaction):
+    S: Species
+    P: Species
+    maximum_velocity: Parameter
+    michaelis_constant: Parameter
+
     @staticmethod
-    def rhs(
-        t,
-        S: Species,
-        P: Species,
-        maximum_velocity: Parameter,
-        michaelis_constant: Parameter,
-    ):
+    def rhs(t, S, P, maximum_velocity, michaelis_constant):
         delta = maximum_velocity * S / (michaelis_constant + S)
         return -delta, delta
 
