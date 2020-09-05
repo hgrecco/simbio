@@ -134,6 +134,9 @@ class Container(Content):
         except KeyError:
             raise AttributeError(f"{item} not found in {self}.") from None
 
+    def __dir__(self):
+        return super().__dir__() + list(self.__contents)
+
     def copy(self, name: str = None, belongs_to: Container = None) -> Container:
         new = super().copy(name=name, belongs_to=belongs_to)
         for content in self.__contents.values():
