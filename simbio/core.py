@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 
 @dataclass(frozen=True, eq=False)
@@ -37,6 +37,34 @@ class Content:
 
     def copy(self, name: str = None, belongs_to: Container = None) -> Content:
         return replace(self, name=name or self.name, belongs_to=belongs_to)
+
+    def _absolute_path(self) -> List[Content]:
+        """List of Contents upto."""
+        content = self
+
+        path = []
+        while content is not None:
+            path.append(content)
+            content = content.belongs_to
+        return path[::-1]
+
+    @staticmethod
+    def _common_parent(*contents: Tuple[Content, ...]):
+        if len(contents) == 1:
+            return contents[0].belongs_to
+
+        common_parent = None
+        for parents in zip(*(c._absolute_path() for c in contents)):
+            parent = parents[0]
+            if all(p is parent for p in parents):
+                common_parent = parent
+            else:
+                break
+
+        if common_parent is None:
+            raise ValueError("No common parent found.")
+
+        return common_parent
 
 
 @dataclass(frozen=True, eq=False)
@@ -84,19 +112,22 @@ class Container(Content):
     def _filter_contents(self, cls) -> Tuple[Content, ...]:
         return tuple(c for c in self.contents.values() if isinstance(c, cls))
 
+    def _relative_path(self, content: Content) -> List[Content]:
+        """Path from this Container to the given Content."""
+        path = []
+        while content is not self:
+            path.append(content)
+            content = content.belongs_to
+            if content is None:
+                raise AttributeError(f"{content} does not belong to this Container.")
+        return path[::-1]
+
     def _relative_name(self, content: Content) -> str:
         """Name relative to this Container."""
         if content is self:
             raise NotImplementedError("Relative name to self is not implemented.")
 
-        names = []
-        while content is not self:
-            names.append(content.name)
-            content = content.belongs_to
-            if content is None:
-                raise AttributeError(f"{content} does not belong to this Container.")
-
-        return ".".join(names[::-1])
+        return ".".join(c.name for c in self._relative_path(content))
 
     def __contains__(self, item: Content) -> bool:
         """Check if contained in this container or any subcontainers."""

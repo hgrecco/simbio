@@ -114,3 +114,20 @@ def _(data=data):
         assert c.belongs_to.name == nc.belongs_to.name
         assert c is not nc
         assert c.belongs_to is not nc.belongs_to
+
+
+@test("Absolute path")
+def _(data=data):
+    main, _ = data
+
+    assert main.cont._absolute_path() == [main, main.cont]
+    assert main.sub.subcont._absolute_path() == [main, main.sub, main.sub.subcont]
+
+
+@test("Common parent")
+def _(data=data):
+    main, _ = data
+
+    assert Content._common_parent(main.cont, main.sub) == main
+    assert Content._common_parent(main.cont, main.sub.subcont) == main
+    assert Content._common_parent(main.sub, main.sub.subcont) == main.sub
