@@ -12,46 +12,58 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
-@dataclass(frozen=True, eq=False)
 class Content:
     """Base Content class.
 
-    Content has two protected attributes, name and belongs_to.
-    Name must be a valid Python identifier.
+    Content has two protected attributes, name and parent.
     """
 
     name: str
-    belongs_to: Container
+    parent: Optional[Container]
 
-    def __post_init__(self) -> None:
-        # Validate name
-        if not self.name.isidentifier():
-            raise ValueError("Name must be a valid Python identifier.")
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def parent(self):
+        return self.__parent
+
+    def __init__(self, *args, name=None, **kwargs):
+        if name is not None and name != "":
+            self.__name = name
+        self.__parent = None
+        super().__init__(*args, **kwargs)
+
+    def __set_name__(self, owner, name):
+        self.__name = name
+        if self.__parent is not None:
+            raise Exception(f"Reassigning {self} from {self.__parent} to {owner}.")
+        self.__parent = owner
 
     def __hash__(self) -> int:
         return id(self)
 
-    def copy(self, name: str = None, belongs_to: Container = None) -> Content:
-        return replace(self, name=name or self.name, belongs_to=belongs_to)
+    def copy(self, *, new=None) -> Content:
+        if new is None:
+            new = self.__class__(name=self.name)
+        return new
 
     def _absolute_path(self) -> List[Content]:
         """List of Contents upto."""
-        content = self
-
-        path = []
+        path, content = [], self
         while content is not None:
             path.append(content)
-            content = content.belongs_to
+            content = content.parent
         return path[::-1]
 
     @staticmethod
     def _common_parent(*contents: Tuple[Content, ...]):
         if len(contents) == 1:
-            return contents[0].belongs_to
+            return contents[0].parent
 
         common_parent = None
         for parents in zip(*(c._absolute_path() for c in contents)):
@@ -67,14 +79,17 @@ class Content:
         return common_parent
 
 
-@dataclass(frozen=True, eq=False)
 class Container(Content):
     """Base Container class.
 
     Container is a Content that stores Content.
     """
 
-    __contents: Dict[str, Content] = field(default_factory=dict, init=False, repr=False)
+    __contents: Dict[str, Content]
+
+    def __init__(self, *args, name=None, contents=None, **kwargs):
+        self.__contents = contents or {}
+        super().__init__(*args, name=name, **kwargs)
 
     def _add(self, content: Content) -> Content:
         """Add content to this container.
@@ -84,14 +99,17 @@ class Container(Content):
         """
         if not isinstance(content, Content):
             raise TypeError(f"{content} is not a Content.")
-        elif content.name in self.__contents:
+
+        if content.name in self.__contents:
             raise ValueError(f"There is already a Content named {content.name}")
-        elif content.belongs_to is not self:
+
+        if content.parent is not None:
             raise Exception(
                 f"{content} can't be added to {self}."
-                f"It belongs to {content.belongs_to}."
+                f"It belongs to {content.parent}."
             )
 
+        content._Content__parent = self
         self.__contents[content.name] = content
         return content
 
@@ -117,7 +135,7 @@ class Container(Content):
         path = []
         while content is not self:
             path.append(content)
-            content = content.belongs_to
+            content = content.parent
             if content is None:
                 raise AttributeError(f"{content} does not belong to this Container.")
         return path[::-1]
@@ -168,8 +186,11 @@ class Container(Content):
     def __dir__(self):
         return super().__dir__() + list(self.__contents)
 
-    def copy(self, name: str = None, belongs_to: Container = None) -> Container:
-        new = super().copy(name=name, belongs_to=belongs_to)
+    def copy(self, *, new=None) -> Container:
+        if new is None:
+            new = super().copy(new=new)
+
+        # Copy _contents
         for content in self.__contents.values():
-            new._add(content.copy(belongs_to=new))
+            new._add(content.copy())
         return new

@@ -13,10 +13,7 @@ from typing import Union
 from .parameters import BaseParameter
 
 
-@dataclass(frozen=True, eq=False)
 class Species(BaseParameter):
-    value: float = 0
-
     def __mul__(self, other):
         if not isinstance(other, (float, int)):
             raise TypeError("Only floats and ints can multiply a Species.")

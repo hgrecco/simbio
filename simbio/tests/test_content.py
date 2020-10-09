@@ -1,30 +1,25 @@
-from dataclasses import FrozenInstanceError
-
-from simbio.compartments import Compartment, Universe
 from simbio.core import Container, Content
-from simbio.parameters import Parameter
-from simbio.species import Species
 from ward import each, raises, test, xfail
 
-classes = (Content, Container, Species, Parameter, Compartment, Universe)
+classes = (Content, Container)
 
 
 @test("Set or del protected attributes in {cls.__name__}")
 def _(cls=each(*classes)):
-    instance = cls(name="fixed_name", belongs_to=None)
+    instance = cls(name="fixed_name")
 
-    for attr in Content.__annotations__:
-        with raises(FrozenInstanceError):
+    for attr in ("name", "parent"):
+        with raises(AttributeError):
             setattr(instance, attr, "new_name")
 
-        with raises(FrozenInstanceError):
+        with raises(AttributeError):
             delattr(instance, attr)
 
 
 @test("Hash and equality by id in {cls.__name__}")
 def _(cls=each(*classes)):
-    obj1 = cls(name="name", belongs_to=None)
-    obj2 = cls(name="name", belongs_to=None)
+    obj1 = cls(name="name")
+    obj2 = cls(name="name")
 
     assert hash(obj1) == id(obj1)
     assert obj1 == obj1
@@ -33,22 +28,14 @@ def _(cls=each(*classes)):
 
 @test("Copy {cls.__name__}")
 def _(cls=each(*classes)):
-    base_obj = cls(name="name", belongs_to=None)
+    orig_obj = cls(name="name")
+    orig_obj.__parent = "parent"
 
-    new_name = base_obj.copy(name="new_name")
-    assert new_name.name == "new_name"
-    assert new_name.belongs_to is None
-
-    new_belong = base_obj.copy(belongs_to="container")
-    assert new_belong.name == base_obj.name
-    assert new_belong.belongs_to == "container"
-
-
-@test("{cls.__name__}.name must be valid Python identifier")
-def _(cls=each(*classes)):
-    for name in ("name.", "1name"):
-        with raises(ValueError):
-            cls(name=name, belongs_to=None)
+    copy_obj = orig_obj.copy()
+    # Different object with same name but no parent.
+    assert copy_obj is not orig_obj
+    assert copy_obj.name == orig_obj.name
+    assert copy_obj.parent is None
 
 
 @xfail("Not implemented yet")
@@ -56,4 +43,4 @@ def _(cls=each(*classes)):
 def _(cls=each(*classes)):
     colliding_name = "name"
     with raises(ValueError):
-        cls(name=colliding_name, belongs_to=None)
+        cls(name=colliding_name)

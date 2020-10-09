@@ -4,10 +4,11 @@ from ward import fixture, raises, test
 
 @fixture
 def data():
-    main = Container("main", belongs_to=None)
-    cont = main._add(Content("cont", belongs_to=main))
-    sub = main._add(Container("sub", belongs_to=main))
-    subcont = sub._add(Content("subcont", belongs_to=sub))
+    main = Container(name="main")
+    cont = main._add(Content(name="cont"))
+    sub = main._add(Container(name="sub"))
+    subcont = sub._add(Content(name="subcont"))
+
     return main, {"cont": cont, "sub": sub, "sub.subcont": subcont}
 
 
@@ -19,17 +20,16 @@ def _(data=data):
     with raises(TypeError):
         main._add(1)
 
+    # Belongs to other Container
+    with raises(Exception):
+        main.sub._add(main.cont)
+
     # Name collision
+    cont = Content(name="cont")
     with raises(ValueError):
-        main._add(Content("cont", belongs_to=main))
-    main.sub._add(Content("cont", belongs_to=main.sub))  # Fine
+        main._add(cont)
 
-    # Doesn't belong to Container
-    with raises(Exception):
-        main._add(Content("cont2", belongs_to=None))
-
-    with raises(Exception):
-        main.sub._add(Content("cont2", belongs_to=main))
+    main.sub._add(cont)  # Fine
 
 
 @test("View of content")
@@ -109,11 +109,17 @@ def _(data=data):
 
     new_main = main.copy()
 
-    for c, nc in zip(main.contents.values(), new_main.contents.values()):
-        assert c.name == nc.name
-        assert c.belongs_to.name == nc.belongs_to.name
-        assert c is not nc
-        assert c.belongs_to is not nc.belongs_to
+    assert new_main.name == main.name
+    assert new_main.parent is None
+
+    for new_c in new_main._Container__contents.values():
+        assert new_c.parent is new_main
+
+    for c, new_c in zip(main.contents.values(), new_main.contents.values()):
+        assert new_c.name == c.name
+        assert new_c is not c
+        assert new_c.parent.name == c.parent.name
+        assert (new_c.parent is new_main) or (new_c.parent in new_main)
 
 
 @test("Absolute path")

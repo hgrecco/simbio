@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import field
 from itertools import chain
 from typing import Dict, List, Tuple, Union
 
@@ -20,11 +20,14 @@ from .reactions.single import BaseReaction
 from .species import Species
 
 
-@dataclass(frozen=True, eq=False)
 class Compartment(Container):
     __reactions: OrderedSet[BaseReaction] = field(
         default_factory=OrderedSet, init=False, repr=False
     )
+
+    def __init__(self, *, name=None):
+        super().__init__(name=name)
+        self.__reactions = OrderedSet()
 
     @property
     def compartments(self) -> Tuple[Compartment, ...]:
@@ -90,7 +93,7 @@ class Compartment(Container):
         comparment
         """
         if isinstance(compartment, str):
-            compartment = Compartment(name=compartment, belongs_to=self)
+            compartment = Compartment(name=compartment)
         return self._add(compartment)
 
     def add_species(self, species: Union[str, Species], value=0) -> Species:
@@ -108,7 +111,7 @@ class Compartment(Container):
         species
         """
         if isinstance(species, str):
-            species = Species(name=species, belongs_to=self, value=value)
+            species = Species(value, name=species)
         return self._add(species)
 
     def add_parameter(self, parameter: Union[str, Parameter], value=0) -> Parameter:
@@ -126,14 +129,17 @@ class Compartment(Container):
         parameter
         """
         if isinstance(parameter, str):
-            parameter = Parameter(name=parameter, belongs_to=self, value=value)
+            parameter = Parameter(value, name=parameter)
         return self._add(parameter)
 
-    def copy(self, name: str = None, belongs_to: Container = None) -> Compartment:
-        # __contents copy is handled by Container.copy
-        new = super().copy(name=name, belongs_to=belongs_to)
+    def copy(self, *, new=None) -> Container:
+        if new is None:
+            new = self.__class__(name=self.name)
 
-        # We have to handle __reactions copy
+        # Copy __contents
+        new = super().copy(new=new)
+
+        # We have to handle _reactions copy
         # For each reaction, we get the relative names of its species
         # and parameters, which will be the same in the new Compartment.
         # Then we instantiate another reaction searching corresponding
@@ -238,10 +244,3 @@ class Compartment(Container):
             return out
 
         return fun
-
-
-class Universe(Compartment):
-    """Universe is a Compartment that belongs to None."""
-
-    def __init__(self, name: str, belongs_to=None):
-        super().__init__(name=name, belongs_to=belongs_to)

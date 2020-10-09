@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from .core import Content
 
 
-@dataclass(frozen=True, eq=False)
 class BaseParameter(Content):
-    value: float = 0
+    value: float
+
+    def __init__(self, value, *, name=None, override=False):
+        self.value = value
+        self.override = override
+        super().__init__(name=name)
+
+    def copy(self):
+        return self.__class__(self.value, name=self.name)
 
 
-@dataclass(frozen=True, eq=False)
 class Parameter(BaseParameter):
     pass

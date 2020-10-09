@@ -109,8 +109,8 @@ def _():
         def rhs(t, A, B, C, k):
             pass
 
-    A, B, C = (Species(name, None) for name in "ABC")
-    k1, k2 = (Parameter(name, None) for name in ("k1", "k2"))
+    A, B, C = (Species(0, name=name) for name in "ABC")
+    k1, k2 = (Parameter(0, name=name) for name in ("k1", "k2"))
 
     reaction = Reaction(A=A, B=B, C=C, k=k1)
     equivalent = (Reaction(A=A, B=B, C=C, k=k2), Reaction(A=B, B=A, C=C, k=k1))

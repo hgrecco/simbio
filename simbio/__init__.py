@@ -9,12 +9,12 @@
 """
 
 from . import reactions
-from .compartments import Universe
+from .compartments import Compartment
 from .simulator import PandasSimulator, Simulator
 
 __all__ = [
     "reactions",
+    "Compartment",
     "Simulator",
     "PandasSimulator",
-    "Universe",
 ]

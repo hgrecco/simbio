@@ -1,12 +1,12 @@
 import numpy as np
-from simbio.compartments import Universe
+from simbio.compartments import Compartment
 from simbio.reactions import Conversion, Creation, Destruction, Synthesis
 from ward import fixture, raises, test
 
 
 @fixture
 def data():
-    cell = Universe(name="cell")
+    cell = Compartment(name="cell")
     reactant = cell.add_species("reactant", 1)
     parameter = cell.add_parameter("parameter", 2)
 
@@ -127,7 +127,7 @@ def _(d=data):
 
 @test("Add duplicate reaction")
 def _():
-    cell = Universe(name="cell")
+    cell = Compartment(name="cell")
     A = cell.add_species("A")
     B = cell.add_species("B")
     C = cell.add_species("C")
