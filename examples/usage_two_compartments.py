@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
-from simbio import Universe
+from simbio import Compartment
 from simbio.reactions import Dissociation, Synthesis
 from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
-cell = Universe("cell")
+cell = Compartment(name="cell")
 cytosol = cell.add_compartment("cytosol")
 nucleus = cell.add_compartment("nucleus")
 

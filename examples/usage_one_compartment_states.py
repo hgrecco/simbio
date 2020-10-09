@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
-from simbio import Universe
+from simbio import Compartment
 from simbio.reactions.enzymatic import MichaelisMentenEqApprox
 from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
-cell = Universe("cell")
+cell = Compartment(name="cell")
 C = cell.add_compartment("C")
 C.add_species("u", value=1)
 C.add_species("p", value=0)

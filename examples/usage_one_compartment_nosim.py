@@ -2,12 +2,12 @@ from functools import partial
 
 import matplotlib.pyplot as plt
 from scipy.integrate import RK45
-from simbio import Universe
+from simbio import Compartment
 from simbio.reactions import Synthesis
 
 ##############
 
-cell = Universe("cell")
+cell = Compartment(name="cell")
 cell.add_species("C", value=2)
 cell.add_species("O2", value=1)
 cell.add_species("CO2", value=0)

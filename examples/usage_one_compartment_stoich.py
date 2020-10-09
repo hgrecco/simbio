@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
-from simbio import Universe
+from simbio import Compartment
 from simbio.reactions import Synthesis
 from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
-cell = Universe("cell")
+cell = Compartment(name="cell")
 cell.add_species("C", value=2)
 cell.add_species("O2", value=1)
 cell.add_species("CO2", value=0)
