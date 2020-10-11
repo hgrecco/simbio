@@ -18,3 +18,10 @@ For testing we are using [ward](https://wardpy.com/). To execute the tests use t
 ```
 > ward
 ```
+
+## Run examples
+On the folder `examples` we have exmaples for the library usage. These examples can be run with `ward` using this command
+
+```
+> ward --path examples
+```
