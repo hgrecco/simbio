@@ -14,7 +14,7 @@ To install the package for developing:
 > pip install -e .[full]
 ```
 
-That will install all the needed packages to develop
+That will install all the needed packages to develop and the pre-commit hooks.
 
 ## Run tests
 For testing we are using [ward](https://wardpy.com/). To execute the tests use this command
@@ -24,8 +24,21 @@ For testing we are using [ward](https://wardpy.com/). To execute the tests use t
 ```
 
 ## Run examples
-On the folder `examples` we have exmaples for the library usage. These examples can be run with `ward` using this command
+On the folder `examples` we have examaples for the library usage
 
 ```
-> ward --path examples
+> python examples/<example>.py
+```
+
+## pre-commits
+We have in place pre-commit hooks, to have a common style. We use
+
+- black
+- flake8
+- isort
+
+They can be executed, without any commit, with
+
+```
+> pre-commit run --all-files
 ```
