@@ -12,8 +12,9 @@ from itertools import chain
 from typing import Dict, List, Tuple, Union
 
 import numpy as np
+from orderedset import OrderedSet
 
-from .core import Container
+from .core import Container, Content
 from .parameters import BaseParameter, Parameter
 from .reactions.single import BaseReaction
 from .species import Species
@@ -21,8 +22,8 @@ from .species import Species
 
 @dataclass(frozen=True, eq=False)
 class Compartment(Container):
-    __reactions: List[BaseReaction] = field(
-        default_factory=list, init=False, repr=False
+    __reactions: OrderedSet[BaseReaction] = field(
+        default_factory=OrderedSet, init=False, repr=False
     )
 
     @property
@@ -48,14 +49,28 @@ class Compartment(Container):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
 
-        components = chain(reaction.species, reaction.parameters)
-        out = [c for c in components if c not in self]
-        if out:
+        # We only test for the first common parent of Species, not Parameters,
+        # since reaction equivalence is given by its Species. Otherwise,
+        # an equivalent reaction with different parameters might be duplicated
+        # in a different Compartment, at a different level.
+        common_parent = Content._common_parent(*reaction.species)
+        if common_parent is not self:
             raise Exception(
-                "Some components are outside this compartment: %s",
-                [c.name for c in out],
+                "The reaction must be added to the first common parent Compartment of its Species:",
+                common_parent,
             )
-        self.__reactions.append(reaction)
+
+        # But its Parameters must be accesible from this Compartment.
+        outside_parameters = [p for p in reaction.parameters if p not in self]
+        if outside_parameters:
+            raise Exception(
+                "The reaction parameters must belong to this Compartment or any subcompartments. Parameters outside this Compartment are:",
+                outside_parameters,
+            )
+
+        if reaction in self.__reactions:
+            raise Exception("There's an existent equivalent reaction.")
+        self.__reactions.add(reaction)
         return reaction
 
     def add_compartment(self, compartment: Union[str, Compartment]) -> Compartment:

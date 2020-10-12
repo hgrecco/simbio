@@ -6,6 +6,7 @@ from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
 from .single import SingleReaction
 
 
+@dataclass
 class MichaelisMenten(CompoundReaction):
     E: Species
     S: Species

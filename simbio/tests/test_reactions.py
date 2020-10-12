@@ -93,3 +93,29 @@ def _():
             @staticmethod
             def rhs(t, A, p, k):
                 pass
+
+
+@test("Reaction equivalence")
+def _():
+    class Reaction(SingleReaction):
+        A: Species
+        B: Species
+        C: Species
+        k: Parameter
+
+        @staticmethod
+        def rhs(t, A, B, C, k):
+            pass
+
+        @property
+        def equivalent_species(self):
+            return (self.A, self.B), (self.C,)
+
+    A, B, C = (Species(name, None) for name in "ABC")
+    k1, k2 = (Parameter(name, None) for name in ("k1", "k2"))
+
+    h = hash(Reaction(A=A, B=B, C=C, k=k1))
+    assert hash(Reaction(A=A, B=B, C=C, k=k1)) == h
+    assert hash(Reaction(A=A, B=B, C=C, k=k2)) == h
+    assert hash(Reaction(A=B, B=A, C=C, k=k1)) == h
+    assert hash(Reaction(A=A, B=C, C=B, k=k1)) != h
