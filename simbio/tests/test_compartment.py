@@ -149,6 +149,7 @@ def _():
     with raises(Exception):
         cell.add_reaction(Synthesis(A=B, B=A, AB=C, rate=k1))
 
+    cell.add_reaction(Synthesis(A=A, B=B, AB=C, rate=k1), override=True)
     cell.add_reaction(Synthesis(A=A, B=C, AB=B, rate=k1))  # It's a different reaction
 
 

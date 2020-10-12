@@ -45,7 +45,7 @@ class Compartment(Container):
             out.extend(compartment.reactions)
         return tuple(out)
 
-    def add_reaction(self, reaction: BaseReaction):
+    def add_reaction(self, reaction: BaseReaction, *, override=False):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
 
@@ -69,7 +69,10 @@ class Compartment(Container):
             )
 
         if reaction in self.__reactions:
-            raise Exception("There's an existent equivalent reaction.")
+            if not override:
+                raise Exception(
+                    "There's an existent equivalent reaction. To override it, use override=True."
+                )
         self.__reactions.add(reaction)
         return reaction
 
