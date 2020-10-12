@@ -42,6 +42,11 @@ class CompoundReaction(BaseReaction):
         # parameters, and generating reactions, as it will unpack InReactionSpecies.
         super().__post_init__()
 
+    @property
+    def _equivalent_species(self):
+        for reaction in self.reactions:
+            yield from reaction._equivalent_species
+
     def yield_reactions(self):
         raise NotImplementedError
 

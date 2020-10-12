@@ -11,12 +11,47 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
+from itertools import permutations
+from typing import Tuple, get_type_hints
 
 import numpy as np
+import sympy
 
 from ..parameters import Parameter
 from ..species import Species
 from .core import BaseReaction
+
+
+def equivalent_species(reaction) -> Tuple[Tuple[str, ...], ...]:
+    """Check which species can be swapped in reaction.rhs
+
+    A + B -> AB is equivalent to B + A -> AB.
+
+    >>> equivalent_species(Conversion)
+    ("A",), ("B",)
+    >>> equivalent_species(Synthesis)
+    ("A", "B"), ("AB",)
+    """
+    # Builds a sympy.symbols dict from rhs
+    # and then tries all permutations of species.
+    species = reaction._species_names
+    rhs_args = inspect.signature(reaction.rhs).parameters
+    symbols = {name: sympy.symbols(name) for name in rhs_args}
+    dy = reaction.rhs(**symbols)
+
+    equivalent = []
+    for permutation in permutations(species):
+        # Build permutated parameters
+        sym_p = symbols.copy()
+        for a, b in zip(species, permutation):
+            sym_p[a] = symbols[b]
+
+        # Compare to original order
+        if reaction.rhs(**sym_p) == dy:
+            equivalent.append(permutation)
+
+    # TODO: Explain and simplify next line.
+    return tuple(set(map(tuple, map(sorted, map(set, zip(*equivalent))))))
 
 
 class SingleReaction(BaseReaction):
@@ -54,7 +89,7 @@ class SingleReaction(BaseReaction):
                 continue
             elif parameter in cls._parameter_names:
                 continue
-            elif parameter in cls.__annotations__:
+            elif parameter in get_type_hints(cls.__init__):
                 raise TypeError(
                     f"{cls.__qualname__}.{parameter} is missing a Species or Parameter class annotation."
                 )
@@ -62,6 +97,8 @@ class SingleReaction(BaseReaction):
                 raise ValueError(
                     f"{cls.__qualname__}.rhs parameter {parameter} is missing from {cls.__qualname__} annotations"
                 )
+
+        cls._equivalent_species = equivalent_species(cls)
 
     def _yield_ip_rhs(self, global_species=None, global_parameters=None):
         if global_species is None:
@@ -198,43 +235,15 @@ class Dissociation(SingleReaction):
         yield self._template_replace(r"\ce{ $AB ->[$rate] $A + $B }")
 
 
-@dataclass
-class SingleReplacement(SingleReaction):
-    """A single uncombined element replaces another in a compound.
-
-    A + BC -> AC + B
-    """
-
-    A: Species
-    BC: Species
-    AC: Species
-    B: Species
-    rate: Parameter
-
-    @staticmethod
-    def rhs(t, A, BC, AC, B, rate):
-        raise NotImplementedError
-
-    def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ $A + $BC ->[$rate] $AC + $B }")
+# class SingleReplacement(SingleReaction):
+#     """A single uncombined element replaces another in a compound.
+#
+#     A + BC -> AC + B
+#     """
 
 
-@dataclass
-class DoubleReplacement(SingleReaction):
-    """The anions and cations of two compounds switch places and form two entirely different compounds.
-
-    AB + CD -> AD + CB
-    """
-
-    AB: Species
-    CD: Species
-    AD: Species
-    CB: Species
-    rate: Parameter
-
-    @staticmethod
-    def rhs(t, AB, CD, AD, CB, rate):
-        raise NotImplementedError
-
-    def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ $AB + $CD ->[$rate] $AD + $CB }")
+# class DoubleReplacement(SingleReaction):
+#     """The anions and cations of two compounds switch places and form two entirely different compounds.
+#
+#     AB + CD -> AD + CB
+#     """

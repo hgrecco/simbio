@@ -1,25 +1,12 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from string import Template
 from typing import Callable, Generator, Tuple, get_type_hints
 
 import numpy as np
+from sympy import Derivative, Equality, symbols
 
 from ..parameters import Parameter
 from ..species import InReactionSpecies, Species
-
-try:
-    from sympy import symbols, Derivative, Equality
-except ImportError:
-
-    def symbols(*args, **kwargs):
-        raise Exception(
-            "This function requires sympy. Please install it:\n"
-            "\tpip install sympy\n"
-            "\t\t\tor\n"
-            "\tconda install sympy\n"
-        )
-
-    Derivative = Equality = symbols
 
 ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 
@@ -27,20 +14,30 @@ ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 class BaseReaction:
     """Base class of all single and compound reactions."""
 
-    _species_names: Tuple[str, ...] = field(init=False)
-    _parameter_names: Tuple[str, ...] = field(init=False)
-    st_numbers: np.ndarray = field(init=False)
+    # Class attributes
+    _species_names: Tuple[str, ...]
+    _parameter_names: Tuple[str, ...]
+    _equivalent_species: Tuple[Tuple[str, ...], ...]
+
+    # Instance attributes
+    st_numbers: np.ndarray
 
     def __init_subclass__(cls):
         """Initialize class as a dataclass.
 
         Set (ordered) tuples of reactions and parameters names from __init__ annotations.
         """
+        # Copy eq and hash methods
+        # @dataclass would override them if not called with @dataclass(eq=False)
+        cls.__eq__ = cls.__eq__
+        cls.__hash__ = cls.__hash__
+
+        # Create __init__ with dataclass after copying eq and hash
         dataclass(cls)
 
-        # Save tuples of names
+        # Save tuples of names inspecting __init__
+        # If we inspect the class directly, we have to remove other unrelated annotations.
         annotations = get_type_hints(cls.__init__)
-        del annotations["return"]
         cls._species_names = tuple(
             k for k, v in annotations.items() if issubclass(v, Species)
         )
@@ -78,6 +75,25 @@ class BaseReaction:
     def parameters(self) -> Tuple[Parameter, ...]:
         """Return a tuple of the parameters in this reaction."""
         return tuple(getattr(self, name) for name in self._parameter_names)
+
+    @property
+    def equivalent_species(self) -> Tuple[Tuple[Species, ...], ...]:
+        """Return tuples of equivalent species in this reaction."""
+        return tuple(
+            tuple(getattr(self, s) for s in S) for S in self._equivalent_species
+        )
+
+    def __hash__(self) -> int:
+        # Replace each species by its hash,
+        # sort each equivalent group by hash,
+        # and hash the resulting tuple of tuples.
+        sorted_groups = (tuple(sorted(map(hash, s))) for s in self.equivalent_species)
+        return hash(tuple(sorted_groups))
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return hash(other) == hash(self)
 
     def _yield_ip_rhs(
         self,
