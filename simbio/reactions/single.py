@@ -198,43 +198,15 @@ class Dissociation(SingleReaction):
         yield self._template_replace(r"\ce{ $AB ->[$rate] $A + $B }")
 
 
-@dataclass
-class SingleReplacement(SingleReaction):
-    """A single uncombined element replaces another in a compound.
-
-    A + BC -> AC + B
-    """
-
-    A: Species
-    BC: Species
-    AC: Species
-    B: Species
-    rate: Parameter
-
-    @staticmethod
-    def rhs(t, A, BC, AC, B, rate):
-        raise NotImplementedError
-
-    def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ $A + $BC ->[$rate] $AC + $B }")
+# class SingleReplacement(SingleReaction):
+#     """A single uncombined element replaces another in a compound.
+#
+#     A + BC -> AC + B
+#     """
 
 
-@dataclass
-class DoubleReplacement(SingleReaction):
-    """The anions and cations of two compounds switch places and form two entirely different compounds.
-
-    AB + CD -> AD + CB
-    """
-
-    AB: Species
-    CD: Species
-    AD: Species
-    CB: Species
-    rate: Parameter
-
-    @staticmethod
-    def rhs(t, AB, CD, AD, CB, rate):
-        raise NotImplementedError
-
-    def yield_latex_reaction(self):
-        yield self._template_replace(r"\ce{ $AB + $CD ->[$rate] $AD + $CB }")
+# class DoubleReplacement(SingleReaction):
+#     """The anions and cations of two compounds switch places and form two entirely different compounds.
+#
+#     AB + CD -> AD + CB
+#     """
