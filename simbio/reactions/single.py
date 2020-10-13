@@ -98,7 +98,8 @@ class SingleReaction(BaseReaction):
                     f"{cls.__qualname__}.rhs parameter {parameter} is missing from {cls.__qualname__} annotations"
                 )
 
-        cls._equivalent_species = equivalent_species(cls)
+        if not hasattr(cls, "_equivalent_species"):
+            cls._equivalent_species = equivalent_species(cls)
 
     def _yield_ip_rhs(self, global_species=None, global_parameters=None):
         if global_species is None:

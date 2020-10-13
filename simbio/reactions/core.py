@@ -79,21 +79,36 @@ class BaseReaction:
     @property
     def equivalent_species(self) -> Tuple[Tuple[Species, ...], ...]:
         """Return tuples of equivalent species in this reaction."""
-        return tuple(
-            tuple(getattr(self, s) for s in S) for S in self._equivalent_species
-        )
+        return tuple(map(tuple, self._yield_equivalent_species()))
+
+    def _yield_equivalent_species(self):
+        for group in self._equivalent_species:
+            yield (getattr(self, s) for s in group)
 
     def __hash__(self) -> int:
-        # Replace each species by its hash,
-        # sort each equivalent group by hash,
-        # and hash the resulting tuple of tuples.
-        sorted_groups = (tuple(sorted(map(hash, s))) for s in self.equivalent_species)
-        return hash(tuple(sorted_groups))
+        # Replace each species by its id,
+        # sum each equivalent group,
+        # and hash the resulting tuple of sums of ids.
+        groups = (sum(map(id, s)) for s in self._yield_equivalent_species())
+        return hash(tuple(groups))
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return hash(other) == hash(self)
+
+        # Check equivalence by Species object identity
+        # For each equivalent group, replace each Species by its id,
+        # and check that both reactions have the same Species objects.
+        # Note: the order of equivalence groups matters.
+        # ReversibleSynthesis uses two "equivalent" reactions,
+        # but for the order of the equivalence groups.
+        for group1, group2 in zip(
+            self._yield_equivalent_species(), other._yield_equivalent_species()
+        ):
+            if not set(map(id, group1)) == set(map(id, group2)):
+                return False
+        else:
+            return True
 
     def _yield_ip_rhs(
         self,

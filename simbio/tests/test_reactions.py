@@ -103,19 +103,23 @@ def _():
         C: Species
         k: Parameter
 
+        _equivalent_species = ("A", "B"), ("C")
+
         @staticmethod
         def rhs(t, A, B, C, k):
             pass
 
-        @property
-        def equivalent_species(self):
-            return (self.A, self.B), (self.C,)
-
     A, B, C = (Species(name, None) for name in "ABC")
     k1, k2 = (Parameter(name, None) for name in ("k1", "k2"))
 
-    h = hash(Reaction(A=A, B=B, C=C, k=k1))
-    assert hash(Reaction(A=A, B=B, C=C, k=k1)) == h
-    assert hash(Reaction(A=A, B=B, C=C, k=k2)) == h
-    assert hash(Reaction(A=B, B=A, C=C, k=k1)) == h
-    assert hash(Reaction(A=A, B=C, C=B, k=k1)) != h
+    reaction = Reaction(A=A, B=B, C=C, k=k1)
+    equivalent = (Reaction(A=A, B=B, C=C, k=k2), Reaction(A=B, B=A, C=C, k=k1))
+    non_equivalent = Reaction(A=A, B=C, C=B, k=k1), Reaction(A=C, B=B, C=A, k=k1)
+
+    for r in equivalent:
+        assert hash(r) == hash(reaction)
+        assert r == reaction
+
+    for r in non_equivalent:
+        assert hash(r) != hash(reaction)
+        assert r != reaction
