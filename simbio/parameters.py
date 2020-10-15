@@ -14,6 +14,14 @@ class BaseParameter(Content):
     def copy(self):
         return self.__class__(self.value, name=self.name)
 
+    def __hash__(self) -> int:
+        return hash((self.name, self.value))
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return (self.name == other.name) and (self.value == other.value)
+
 
 class Parameter(BaseParameter):
     pass
