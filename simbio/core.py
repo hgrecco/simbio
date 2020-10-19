@@ -60,9 +60,10 @@ class Content:
         return sep.join(c.name for c in relative_path)
 
     @staticmethod
-    def _common_parent(*contents: Tuple[Content, ...]):
-        if len(contents) == 1:
-            return contents[0].parent
+    def _common_parent(*contents: Tuple[Content, ...]) -> Optional[Container]:
+        content = contents[0]
+        if all(c is content for c in contents):
+            return content.parent
 
         common_parent = None
         for parents in zip(*(c._absolute_path() for c in contents)):
@@ -139,12 +140,12 @@ class Container(Content):
                 raise AttributeError(f"{content} does not belong to this Container.")
         return path[::-1]
 
-    def _relative_name(self, content: Content) -> str:
+    def _relative_name(self, content: Content, *, sep: str = ".") -> str:
         """Name relative to this Container."""
         if content is self:
             raise NotImplementedError("Relative name to self is not implemented.")
 
-        return ".".join(c.name for c in self._relative_path(content))
+        return sep.join(c.name for c in self._relative_path(content))
 
     def __contains__(self, item: Content) -> bool:
         """Check if contained in this container or any subcontainers."""

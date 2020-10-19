@@ -22,6 +22,20 @@ class Species(BaseParameter):
 
     __rmul__ = __mul__
 
+    def __and__(self, other):
+        if not other.__class__ == self.__class__:
+            return NotImplemented
+
+        parent = self._common_parent(self, other)
+        names = [parent._relative_name(s, sep="_") for s in (self, other)]
+        name = "_".join(sorted(names))
+        try:
+            new = parent[name]
+        except KeyError:
+            new = self.__class__(0, name=name)
+            parent._add(new)
+        return new
+
 
 @dataclass(frozen=True)
 class InReactionSpecies:
