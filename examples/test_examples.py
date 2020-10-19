@@ -1,12 +1,12 @@
+from importlib.util import spec_from_file_location
 from pathlib import Path
 
 from ward import each, test
 
-examples = Path("examples").glob("usage*.py")
+examples = Path("examples").rglob("*.py")
 
 
 @test("Test {example}")
 def _(example=each(*examples)):
-    with open(example) as f:
-        script = f.read()
-        exec(script)
+    spec = spec_from_file_location(example.stem, example)
+    spec.loader.load_module()

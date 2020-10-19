@@ -26,23 +26,16 @@ class Content:
 
     @property
     def name(self):
-        return self.__name
+        return self._name
 
     @property
     def parent(self):
-        return self.__parent
+        return self._parent
 
     def __init__(self, *args, name=None, **kwargs):
-        if name is not None and name != "":
-            self.__name = name
-        self.__parent = None
+        self._name = name
+        self._parent = None
         super().__init__(*args, **kwargs)
-
-    def __set_name__(self, owner, name):
-        self.__name = name
-        if self.__parent is not None:
-            raise Exception(f"Reassigning {self} from {self.__parent} to {owner}.")
-        self.__parent = owner
 
     def __hash__(self) -> int:
         return id(self)
@@ -85,10 +78,10 @@ class Container(Content):
     Container is a Content that stores Content.
     """
 
-    __contents: Dict[str, Content]
+    _contents: Dict[str, Content]
 
     def __init__(self, *args, name=None, contents=None, **kwargs):
-        self.__contents = contents or {}
+        self._contents = contents or {}
         super().__init__(*args, name=name, **kwargs)
 
     def _add(self, content: Content) -> Content:
@@ -100,7 +93,7 @@ class Container(Content):
         if not isinstance(content, Content):
             raise TypeError(f"{content} is not a Content.")
 
-        if content.name in self.__contents:
+        if content.name in self._contents:
             raise ValueError(f"There is already a Content named {content.name}")
 
         if content.parent is not None:
@@ -109,8 +102,8 @@ class Container(Content):
                 f"It belongs to {content.parent}."
             )
 
-        content._Content__parent = self
-        self.__contents[content.name] = content
+        content._parent = self
+        self._contents[content.name] = content
         return content
 
     @property
@@ -120,7 +113,7 @@ class Container(Content):
         Includes contents from stored Containers.
         """
         out = {}
-        for name, content in self.__contents.items():
+        for name, content in self._contents.items():
             out[name] = content
             if isinstance(content, Container):
                 for subname, subcontent in content.contents.items():
@@ -166,14 +159,14 @@ class Container(Content):
 
         if "." in item:
             c, item = item.split(".", 1)
-            sub = self.__contents[c]
+            sub = self._contents[c]
             try:
                 return sub[item]
             except TypeError:
                 raise TypeError(f"Content {sub} of {c} is not a Container.")
         else:
             try:
-                return self.__contents[item]
+                return self._contents[item]
             except KeyError:
                 raise KeyError(f"{item} not found in {self}.") from None
 
@@ -184,13 +177,13 @@ class Container(Content):
             raise AttributeError(f"{item} not found in {self}.") from None
 
     def __dir__(self):
-        return super().__dir__() + list(self.__contents)
+        return super().__dir__() + list(self._contents)
 
     def copy(self, *, new=None) -> Container:
         if new is None:
             new = super().copy(new=new)
 
         # Copy _contents
-        for content in self.__contents.values():
+        for content in self._contents.values():
             new._add(content.copy())
         return new

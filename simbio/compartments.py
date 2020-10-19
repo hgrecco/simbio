@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import field
+from collections import defaultdict
 from itertools import chain
 from typing import Dict, List, Tuple, Union
 
@@ -20,18 +20,141 @@ from .reactions.single import BaseReaction
 from .species import Species
 
 
-class Compartment(Container):
-    __reactions: OrderedSet[BaseReaction] = field(
-        default_factory=OrderedSet, init=False, repr=False
-    )
+class DuplicateComponentError(Exception):
+    pass
 
-    def __init__(self, *, name=None):
-        super().__init__(name=name)
+
+class DuplicateContentDict(dict):
+    """For Model.__prepare__.
+
+    On class body parsing, it saves Content (Species, Parameters and Compartments)
+    on a separate dict, recording duplicates. Additionally, sets Content._name.
+    Being on a separate dict, they are not added to the class __dict__.
+    """
+
+    def __init__(self):
+        self.contents = defaultdict(list)
+
+    def __setitem__(self, k, v):
+        if isinstance(v, Content):
+            v._name = k
+            self.contents[k].append(v)
+        else:
+            super().__setitem__(k, v)
+
+    # Override update and __ior__, which bypass __setitem__.
+    def update(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def __ior__(self, other):
+        raise NotImplementedError
+
+
+class Model(Container, type):
+    __reactions: OrderedSet[BaseReaction]
+
+    def copy(self) -> Model:
+        return self.__class__(self.name, (self,), DuplicateContentDict())
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other) -> bool:
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return (self.name == other.name) and (self._contents == other._contents)
+
+    def __call__(cls, *, name=""):
+        if cls not in (Model, Compartment):
+            raise TypeError(f"{cls} is not callable.")
+
+        args = name, (), DuplicateContentDict()
+        self = cls.__class__.__new__(cls.__class__, *args)
+        self.__class__.__init__(self, *args)
+        return self
+
+    def __prepare__(cls, name):
+        return DuplicateContentDict()
+
+    def __init__(self, name, bases, clsdict):
+        super().__init__(name, bases, clsdict, name=name or None)
+
+        # Copy inherited components and reactions
+        # from _contents and _reactions respectively,
+        # since they may have been added dynamically.
+
+        # Check for:
+        # 1. Duplicate new components in class body definition.
+        # 2. Colliding inherited components that must be overriden.
+        # 3. Collisions between inherited and new components, which
+        # aren't marked as overriding.
+        contents = clsdict.contents
+
+        duplicates = {k for k, v in contents.items() if len(v) > 1}
+        if duplicates:
+            raise DuplicateComponentError(
+                f"Duplicate Components found in {self} definition:", duplicates
+            )
+
+        for base in bases:
+            for k, v in base._contents.items():
+                contents[k].append(v)
+
+        to_override = []
+        for k, (v0, *v) in contents.items():
+
+            if not all(isinstance(vi, v0.__class__) for vi in v):  # Mixing classes
+                raise TypeError
+
+            if v0.parent is None:  # Not inherited
+                if len(v) == 0:  # No collision
+                    self._add(v0)
+                elif isinstance(v0, BaseParameter) and v0.override:
+                    self._add(v0)
+                elif isinstance(v0, Model) and all(issubclass(v0, vi) for vi in v):
+                    self._add(v0)
+                else:
+                    to_override.append(k)
+
+            else:  # Inherited
+                if all(vi == v0 for vi in v):
+                    self._add(v0.copy())
+                else:
+                    to_override.append(k)
+
+        if to_override:
+            raise DuplicateComponentError(
+                "Multiple inherited Species must be overriden:", to_override
+            )
+
+        # For each reaction, we get the relative names of its species
+        # and parameters, which will be the same in the new Compartment.
+        # Then we instantiate another reaction searching corresponding
+        # species and parameters from the new compartment.
         self.__reactions = OrderedSet()
+        for base in bases:
+            for reaction in base.reactions:
+                kwargs = {}
 
+                for name, species, st_number in zip(
+                    reaction._species_names, reaction.species, reaction.st_numbers
+                ):
+                    rel_name = base._relative_name(species)
+                    kwargs[name] = st_number * self[rel_name]
+
+                for name, parameter in zip(
+                    reaction._parameter_names, reaction.parameters
+                ):
+                    rel_name = base._relative_name(parameter)
+                    kwargs[name] = self[rel_name]
+
+                self.add_reaction(reaction.__class__(**kwargs))
+
+    # Model view components
+    # =====================
     @property
     def compartments(self) -> Tuple[Compartment, ...]:
-        return self._filter_contents(Compartment)
+        return self._filter_contents(Model)
 
     @property
     def species(self) -> Tuple[Species, ...]:
@@ -48,6 +171,8 @@ class Compartment(Container):
             out.extend(compartment.reactions)
         return tuple(out)
 
+    # Model add components
+    # ====================
     def add_reaction(self, reaction: BaseReaction, *, override=False):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
@@ -132,34 +257,8 @@ class Compartment(Container):
             parameter = Parameter(value, name=parameter)
         return self._add(parameter)
 
-    def copy(self, *, new=None) -> Container:
-        if new is None:
-            new = self.__class__(name=self.name)
-
-        # Copy __contents
-        new = super().copy(new=new)
-
-        # We have to handle _reactions copy
-        # For each reaction, we get the relative names of its species
-        # and parameters, which will be the same in the new Compartment.
-        # Then we instantiate another reaction searching corresponding
-        # species and parameters from the new compartment.
-        for reaction in self.__reactions:
-            kwargs = {}
-
-            for name, species, st_number in zip(
-                reaction._species_names, reaction.species, reaction.st_numbers
-            ):
-                rel_name = self._relative_name(species)
-                kwargs[name] = st_number * new[rel_name]
-
-            for name, parameter in zip(reaction._parameter_names, reaction.parameters):
-                rel_name = self._relative_name(parameter)
-                kwargs[name] = new[rel_name]
-
-            new.add_reaction(reaction.__class__(**kwargs))
-        return new
-
+    # Model build RHS
+    # ===============
     @property
     def _in_reaction_species(self) -> Tuple[Species, ...]:
         out = {}  # Using dict as an ordered set.
@@ -244,3 +343,7 @@ class Compartment(Container):
             return out
 
         return fun
+
+
+class Compartment(metaclass=Model):
+    pass

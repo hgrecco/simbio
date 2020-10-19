@@ -112,7 +112,7 @@ def _(data=data):
     assert new_main.name == main.name
     assert new_main.parent is None
 
-    for new_c in new_main._Container__contents.values():
+    for new_c in new_main._contents.values():
         assert new_c.parent is new_main
 
     for c, new_c in zip(main.contents.values(), new_main.contents.values()):
