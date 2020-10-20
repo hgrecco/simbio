@@ -53,6 +53,12 @@ class Content:
             content = content.parent
         return path[::-1]
 
+    def _relative_name_from_root(self, sep=".") -> str:
+        relative_path = self._absolute_path()
+        if len(relative_path) > 1:  # parent is not None
+            relative_path = relative_path[1:]  # exclude first Container from name
+        return sep.join(c.name for c in relative_path)
+
     @staticmethod
     def _common_parent(*contents: Tuple[Content, ...]):
         if len(contents) == 1:

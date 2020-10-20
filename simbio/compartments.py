@@ -63,7 +63,9 @@ class Model(Container, type):
     def __eq__(self, other) -> bool:
         if other.__class__ is not self.__class__:
             return NotImplemented
-        return (self.name == other.name) and (self._contents == other._contents)
+        return (
+            self._relative_name_from_root() == other._relative_name_from_root()
+        ) and (self._contents == other._contents)
 
     def __call__(cls, *, name=""):
         if cls not in (Model, Compartment):
