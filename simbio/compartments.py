@@ -51,7 +51,7 @@ class DuplicateContentDict(dict):
 
 
 class Model(Container, type):
-    __reactions: OrderedSet[BaseReaction]
+    _reactions: OrderedSet[BaseReaction]
 
     def copy(self) -> Model:
         return self.__class__(self.name, (self,), DuplicateContentDict())
@@ -131,9 +131,9 @@ class Model(Container, type):
         # and parameters, which will be the same in the new Compartment.
         # Then we instantiate another reaction searching corresponding
         # species and parameters from the new compartment.
-        self.__reactions = OrderedSet()
+        self._reactions = OrderedSet()
         for base in bases:
-            for reaction in base.reactions:
+            for reaction in base._reactions:
                 kwargs = {}
 
                 for name, species, st_number in zip(
@@ -166,7 +166,7 @@ class Model(Container, type):
 
     @property
     def reactions(self) -> Tuple[BaseReaction, ...]:
-        out = list(self.__reactions)
+        out = list(self._reactions)
         for compartment in self.compartments:
             out.extend(compartment.reactions)
         return tuple(out)
@@ -196,12 +196,12 @@ class Model(Container, type):
                 outside_parameters,
             )
 
-        if reaction in self.__reactions:
+        if reaction in self._reactions:
             if not override:
                 raise Exception(
                     "There's an existent equivalent reaction. To override it, use override=True."
                 )
-        self.__reactions.add(reaction)
+        self._reactions.add(reaction)
         return reaction
 
     def add_compartment(self, compartment: Union[str, Compartment]) -> Compartment:

@@ -1,50 +1,33 @@
 import numpy as np
-from simbio import Compartment
+from simbio import Compartment, Parameter, Species
 from simbio.reactions import ReversibleSynthesis, Synthesis
 from simbio.simulator import Simulator
-from ward import fixture, test
-
-
-@fixture
-def cell():
-    cell = Compartment(name="cell")
-    cell.add_species("C", value=2)
-    cell.add_species("O2", value=1)
-    cell.add_species("CO", value=0)
-    cell.add_species("CO2", value=0)
-    cell.add_parameter("k", value=0.1)
-    return cell
-
-
-@test("Model copy")
-def _(cell=cell):
-    C, O2, CO, CO2, k = cell.C, cell.O2, cell.CO, cell.CO2, cell.k
-
-    cell.add_reaction(Synthesis(A=C, B=O2, AB=CO2, rate=k))
-    cell.add_reaction(
-        ReversibleSynthesis(A=C, B=O2, AB=CO, forward_rate=k, reverse_rate=k)
-    )
-
-    t1, y1 = Simulator(cell).run(10)
-    t2, y2 = Simulator(cell.copy()).run(10)
-
-    assert np.allclose(t1, t2)
-    assert np.allclose(y1, y2)
+from ward import test
 
 
 @test("Model copy with stoichometric numbers")
-def _(cell=cell):
-    C, O2, CO2, k = cell.C, cell.O2, cell.CO2, cell.k
+def _():
+    class Model(Compartment):
+        C = Species(2)
+        O2 = Species(1)
+        CO = Species(0)
+        CO2 = Species(0)
 
-    cell.add_reaction(Synthesis(A=2 * C, B=3 * O2, AB=4 * CO2, rate=k))
-    cell.add_reaction(
+        k = Parameter(0.1)
+
+    Model.add_reaction(Synthesis(A=Model.C, B=Model.O2, AB=Model.CO2, rate=Model.k))
+    Model.add_reaction(
         ReversibleSynthesis(
-            A=2 * C, B=2 * O2, AB=2 * CO2, forward_rate=k, reverse_rate=k
+            A=Model.C,
+            B=Model.O2,
+            AB=2 * Model.CO,
+            forward_rate=Model.k,
+            reverse_rate=Model.k,
         )
     )
 
-    t1, y1 = Simulator(cell).run(10)
-    t2, y2 = Simulator(cell.copy()).run(10)
+    t1, y1 = Simulator(Model).run(10)
+    t2, y2 = Simulator(Model.copy()).run(10)
 
     assert np.allclose(t1, t2)
     assert np.allclose(y1, y2)
