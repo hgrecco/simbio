@@ -16,6 +16,7 @@ from orderedset import OrderedSet
 
 from .core import Container, Content
 from .parameters import BaseParameter, Parameter
+from .reactions.compound import CompoundReaction
 from .reactions.single import BaseReaction
 from .species import Species
 
@@ -176,6 +177,11 @@ class Model(Container, type):
     def add_reaction(self, reaction: BaseReaction, *, override=False):
         if not isinstance(reaction, BaseReaction):
             raise TypeError(f"{reaction} is not a Reaction.")
+
+        if isinstance(reaction, CompoundReaction):
+            for r in reaction.reactions:
+                self.add_reaction(r, override=override)
+            return reaction
 
         # We only test for the first common parent of Species, not Parameters,
         # since reaction equivalence is given by its Species. Otherwise,
