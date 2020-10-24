@@ -117,7 +117,9 @@ class SingleReaction(BaseReaction):
             ix_p = np.fromiter(ix_p, dtype=int, count=len(local_parameters))
 
         def fun(t, y, p, out):
-            out[ix_y] += self.rhs(t, *(y[ix_y] ** self.st_numbers), *p[ix_p])
+            out[ix_y] += (
+                self.rhs(t, *(y[ix_y] ** self.st_numbers), *p[ix_p]) * self.st_numbers
+            )
 
         yield fun
 
