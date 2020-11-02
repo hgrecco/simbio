@@ -5,7 +5,7 @@ from typing import Callable, Generator, Tuple, get_type_hints
 import numpy as np
 from sympy import Derivative, Equality, symbols
 
-from ..parameters import InReactionSpecies, Parameter, Species
+from ..components import InReactionSpecies, Parameter, Species
 
 ODE_Fun = Callable[[float, np.ndarray, np.ndarray], None]
 

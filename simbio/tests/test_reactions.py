@@ -1,4 +1,4 @@
-from simbio.parameters import Parameter, Species
+from simbio.components import Parameter, Species
 from simbio.reactions.compound import CompoundReaction
 from simbio.reactions.single import SingleReaction
 from ward import raises, test

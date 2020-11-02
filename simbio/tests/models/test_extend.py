@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from simbio import Compartment, Parameter, Species
 from simbio.compartments import DuplicateComponentError
-from simbio.parameters import BaseParameter
+from simbio.components import Component
 from simbio.reactions import Conversion, Destruction, Synthesis
 from ward import each, fixture, raises, test
 
@@ -40,7 +40,7 @@ def assert_inherited_contents(BaseModel, Model, overrided: set[str] = None):
 
         assert isinstance(new_component, component.__class__)
         assert new_component.name == component.name
-        if name not in overrided and isinstance(component, BaseParameter):
+        if name not in overrided and isinstance(component, Component):
             assert new_component.value == component.value
 
         assert new_component.parent is Model

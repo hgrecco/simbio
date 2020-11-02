@@ -6,7 +6,7 @@ from typing import Union
 from .core import Content
 
 
-class BaseParameter(Content):
+class Component(Content):
     value: float
 
     def __init__(self, value, *, name=None, override=False):
@@ -28,11 +28,11 @@ class BaseParameter(Content):
         ) and (self.value == other.value)
 
 
-class Parameter(BaseParameter):
+class Parameter(Component):
     pass
 
 
-class Species(BaseParameter):
+class Species(Component):
     def __mul__(self, other):
         if not isinstance(other, (float, int)):
             raise TypeError("Only floats and ints can multiply a Species.")

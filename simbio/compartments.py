@@ -14,8 +14,8 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 from orderedset import OrderedSet
 
+from .components import Component, Parameter, Species
 from .core import Container, Content
-from .parameters import BaseParameter, Parameter, Species
 from .reactions.compound import CompoundReaction
 from .reactions.single import BaseReaction
 
@@ -111,7 +111,7 @@ class Model(Container, type):
             if v0.parent is None:  # Not inherited
                 if len(v) == 0:  # No collision
                     self._add(v0)
-                elif isinstance(v0, BaseParameter) and v0.override:
+                elif isinstance(v0, Component) and v0.override:
                     self._add(v0)
                 elif isinstance(v0, Model) and all(issubclass(v0, vi) for vi in v):
                     self._add(v0)
@@ -301,7 +301,7 @@ class Model(Container, type):
                     out[name] = value
                 except (KeyError, TypeError):
                     unexpected.append(name)
-            elif isinstance(name, BaseParameter):
+            elif isinstance(name, Component):
                 if name not in self:
                     unexpected.append(name)
                 else:

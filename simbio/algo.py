@@ -4,7 +4,7 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from .parameters import BaseParameter, Parameter, Species
+from .components import Component, Parameter, Species
 from .simulator import Simulator
 from .solvers.core import BaseSolver
 
@@ -64,7 +64,7 @@ class Scanner:
     def from_single_value(cls, simulator, name, values):
         if isinstance(name, str):
             name = simulator.model[name]
-        elif not isinstance(name, BaseParameter):
+        elif not isinstance(name, Component):
             raise ValueError(f"{name.name} is neither a Species nor a Parameter.")
 
         return cls(simulator, ({name: value} for value in values))

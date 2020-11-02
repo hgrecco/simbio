@@ -10,7 +10,7 @@
 
 from . import reactions
 from .compartments import Compartment
-from .parameters import Parameter, Species
+from .components import Parameter, Species
 from .simulator import PandasSimulator, Simulator
 
 __all__ = [

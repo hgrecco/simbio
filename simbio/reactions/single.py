@@ -17,7 +17,7 @@ from typing import Tuple, get_type_hints
 import numpy as np
 import sympy
 
-from ..parameters import Parameter, Species
+from ..components import Parameter, Species
 from .core import BaseReaction
 
 
