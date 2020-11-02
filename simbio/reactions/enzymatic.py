@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
-from ..parameters import Parameter
-from ..species import Species
+from ..parameters import Parameter, Species
 from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
 from .single import SingleReaction
 

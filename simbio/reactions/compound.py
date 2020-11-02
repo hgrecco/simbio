@@ -13,8 +13,7 @@ from dataclasses import dataclass, field
 from inspect import signature
 from typing import Tuple
 
-from ..parameters import Parameter
-from ..species import Species
+from ..parameters import Parameter, Species
 from .core import BaseReaction
 from .single import Conversion, Dissociation, Synthesis
 

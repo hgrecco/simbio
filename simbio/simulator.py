@@ -6,10 +6,9 @@ import numpy as np
 import pandas as pd
 
 from .compartments import Compartment
-from .parameters import Parameter
+from .parameters import Parameter, Species
 from .solvers.core import BaseSolver
 from .solvers.scipy import ScipySolver
-from .species import Species
 
 
 class Simulator:

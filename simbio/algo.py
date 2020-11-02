@@ -4,10 +4,9 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from .parameters import BaseParameter, Parameter
+from .parameters import BaseParameter, Parameter, Species
 from .simulator import Simulator
 from .solvers.core import BaseSolver
-from .species import Species
 
 
 def _find_steady_state(

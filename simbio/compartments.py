@@ -15,10 +15,9 @@ import numpy as np
 from orderedset import OrderedSet
 
 from .core import Container, Content
-from .parameters import BaseParameter, Parameter
+from .parameters import BaseParameter, Parameter, Species
 from .reactions.compound import CompoundReaction
 from .reactions.single import BaseReaction
-from .species import Species
 
 
 class DuplicateComponentError(Exception):
