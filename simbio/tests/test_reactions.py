@@ -1,7 +1,9 @@
+from simbio import Compartment
+from simbio.compartments import DuplicateComponentError
 from simbio.components import Parameter, ReactionBalance, Species
 from simbio.reactions import Synthesis
 from simbio.reactions.core import Reaction, SingleReaction
-from ward import raises, test
+from ward import raises, test, xfail
 
 
 @test("rate: correctly defined")
@@ -164,3 +166,14 @@ def _():
     for r in non_equivalent:
         assert r != reaction
         assert not reaction.equivalent(r)
+
+
+@xfail("Not implemented yet. Will raise error on simulation.")
+@test("Repeated reactant")
+def _():
+    A, B = (Species(0, name=name) for name in "AB")
+    k = Parameter(0, name="k")
+
+    with raises(DuplicateComponentError):
+
+        Synthesis(A, A, B, k)
