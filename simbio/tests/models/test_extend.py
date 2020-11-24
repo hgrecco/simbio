@@ -184,7 +184,7 @@ def _():
             yield Synthesis(self.C, self.O2, self.CO2, self.new_rate)
 
     assert_inherited_contents(BaseModel, Model)
-    assert_added_contents(BaseModel, Model)
+    assert_added_contents(BaseModel, Model, {"parameters": 1})
 
 
 @test("Don't override with different type")

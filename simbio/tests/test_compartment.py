@@ -14,11 +14,12 @@ def data():
     nucleus_reactant = nucleus.add_species("reactant", 3)
     nucleus_parameter = nucleus.add_parameter("parameter", 4)
 
-    reaction1 = cell.add_reaction(Creation(cell.reactant, cell.parameter))
-    reaction2 = nucleus.add_reaction(Creation(nucleus.reactant, nucleus.parameter))
-    reaction3 = cell.add_reaction(
-        Conversion(cell.reactant, nucleus.reactant, nucleus.parameter)
-    )
+    reaction1 = Creation(cell.reactant, cell.parameter)
+    cell.add_reaction(reaction1)
+    reaction2 = Creation(nucleus.reactant, nucleus.parameter)
+    nucleus.add_reaction(reaction2)
+    reaction3 = Conversion(cell.reactant, nucleus.reactant, nucleus.parameter)
+    cell.add_reaction(reaction3)
 
     return {
         "cell": cell,
@@ -137,17 +138,17 @@ def _():
 
     cell.add_reaction(Synthesis(A=A, B=B, AB=C, rate=k1))
 
-    # Identical reaction
+    # Identical reactions
     with raises(Exception):
         cell.add_reaction(Synthesis(A=A, B=B, AB=C, rate=k1))
+
+    # Identical reaction switching A and B
+    with raises(Exception):
+        cell.add_reaction(Synthesis(A=B, B=A, AB=C, rate=k1))
 
     # Equivalent reaction with different paramenter
     with raises(Exception):
         cell.add_reaction(Synthesis(A=A, B=B, AB=C, rate=k2))
-
-    # Equivalent reaction, switching order of A + B
-    with raises(Exception):
-        cell.add_reaction(Synthesis(A=B, B=A, AB=C, rate=k1))
 
     cell.add_reaction(Synthesis(A=A, B=B, AB=C, rate=k1), override=True)
     cell.add_reaction(Synthesis(A=A, B=C, AB=B, rate=k1))  # It's a different reaction
