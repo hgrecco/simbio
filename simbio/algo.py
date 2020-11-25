@@ -6,14 +6,14 @@ import numpy as np
 
 from .components import Component, Parameter, Species
 from .simulator import Simulator
-from .solvers.core import BaseSolver
+from .solvers.core import Solver
 
 
 def _find_steady_state(
-    solver: BaseSolver, *, atol=1e-4, rtol=1e-4, max_iter=1000
+    solver: Solver, *, atol=1e-4, rtol=1e-4, max_iter=1000
 ) -> Tuple[float, np.ndarray]:
     for _ in range(max_iter):
-        dy = np.abs(solver.rhs(solver.t, solver.y, solver.p))
+        dy = np.abs(solver.rhs(solver.t, solver.y))
         y = np.abs(solver.y)
 
         adiff = dy.max()
