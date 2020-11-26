@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment
+from simbio import Compartment, Simulator
 from simbio.reactions.enzymatic import MichaelisMentenEqApprox
-from simbio.simulator import PandasSimulator as Simulator
 
 ##############
 
