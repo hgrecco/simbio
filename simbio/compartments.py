@@ -8,10 +8,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from itertools import chain
-from typing import Dict, List, Tuple, Union
-
-import numpy as np
+from typing import Dict, Tuple, Union
 
 from .components import Component, Parameter, ReactionBalance, Species
 from .core import Container, Content
@@ -339,93 +336,6 @@ class Model(Container, type):
         if isinstance(parameter, str):
             parameter = Parameter(value, name=parameter)
         return self._add(parameter)
-
-    # Model build RHS
-    # ===============
-    @property
-    def _in_reaction_species(self) -> Tuple[Species, ...]:
-        out = {}  # Using dict as an ordered set.
-        for reaction in self.reactions:
-            for species in reaction.species:
-                out[species] = 1
-        return tuple(out.keys())
-
-    @property
-    def _in_reaction_parameters(self) -> Tuple[Parameter, ...]:
-        out = {}  # Using dict as an ordered set.
-        for reaction in self.reactions:
-            for parameter in reaction.parameters:
-                out[parameter] = 1
-        return tuple(out.keys())
-
-    @property
-    def _in_reaction_species_names(self) -> Tuple[str, ...]:
-        return tuple(map(self._relative_name, self._in_reaction_species))
-
-    @property
-    def _in_reaction_parameter_names(self) -> Tuple[str, ...]:
-        return tuple(map(self._relative_name, self._in_reaction_parameters))
-
-    def _resolve_values(
-        self, values: Dict[Union[str, Species, Parameter], float] = None
-    ) -> Tuple[Dict, List]:
-        out, unexpected = {}, []
-        for name, value in values.items():
-            if isinstance(name, str):
-                try:
-                    name = self[name]
-                    out[name] = value
-                except (KeyError, TypeError):
-                    unexpected.append(name)
-            elif isinstance(name, Component):
-                if name not in self:
-                    unexpected.append(name)
-                else:
-                    out[name] = value
-            else:
-                unexpected.append(name)
-        return out, unexpected
-
-    def _build_value_vectors(
-        self,
-        values: Dict[Union[str, Species, Parameter], float] = None,
-        raise_on_unexpected: bool = True,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        if values is None:
-            values = {}
-        else:
-            values, unexpected = self._resolve_values(values)
-
-            if raise_on_unexpected and unexpected:
-                raise ValueError(
-                    f"Received unexpected values not found in Compartment: {unexpected}"
-                )
-
-        species = self._in_reaction_species
-        species = np.fromiter(
-            (values.get(r, r.value) for r in species), dtype=float, count=len(species)
-        )
-
-        parameters = self._in_reaction_parameters
-        parameters = np.fromiter(
-            (values.get(r, r.value) for r in parameters),
-            dtype=float,
-            count=len(parameters),
-        )
-        return species, parameters
-
-    def _build_ip_rhs(self):
-        species, parameters = self._in_reaction_species, self._in_reaction_parameters
-        funcs = (r._yield_ip_rhs(species, parameters) for r in self.reactions)
-        funcs = tuple(chain.from_iterable(funcs))
-
-        def fun(t, y, p):
-            out = np.zeros_like(y)
-            for func in funcs:
-                func(t, y, p, out)
-            return out
-
-        return fun
 
 
 class Compartment(metaclass=Model):

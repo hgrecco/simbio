@@ -32,7 +32,7 @@ def _find_steady_state(
 
 def find_steady_state(simulator: Simulator, **kwargs):
     t, y = _find_steady_state(simulator.create_solver(), **kwargs)
-    return t, simulator._to_single_output(y, y_names=simulator.names)
+    return t, simulator.output.to_single_output(y, y_names=simulator.names)
 
 
 def _dose_response(
@@ -48,7 +48,7 @@ def _dose_response(
 
 
 def dose_response(simulator, name: Union[str, Species, Parameter], values, **kwargs):
-    return simulator._to_output(
+    return simulator.output.to_output(
         *_dose_response(simulator, name, values, **kwargs),
         t_name="dose",
         y_names=simulator.names,

@@ -1,7 +1,7 @@
 import numpy as np
 from simbio.compartments import Compartment
 from simbio.reactions import Conversion, Creation, Destruction, Synthesis
-from ward import fixture, raises, test
+from ward import fixture, raises, test, xfail
 
 
 @fixture
@@ -154,6 +154,7 @@ def _():
     cell.add_reaction(Synthesis(A=A, B=C, AB=B, rate=k1))  # It's a different reaction
 
 
+@xfail("Functionality moved to Builder class")
 @test("Build Compartment concentration and parameter vectors")
 def _(data=data):
     cell, nucleus = data["cell"], data["nucleus"]

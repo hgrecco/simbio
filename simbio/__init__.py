@@ -11,7 +11,7 @@
 from . import reactions
 from .compartments import Compartment
 from .components import Parameter, Species
-from .simulator import PandasSimulator, Simulator
+from .simulator import Simulator
 
 __all__ = [
     "Compartment",
@@ -20,5 +20,4 @@ __all__ = [
     "reactions",
     "Compartment",
     "Simulator",
-    "PandasSimulator",
 ]
