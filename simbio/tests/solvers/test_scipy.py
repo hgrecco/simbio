@@ -1,5 +1,5 @@
 import numpy as np
-from simbio.solvers.scipy import ScipySolver
+from simbio.simulator.solvers.scipy import ScipySolver
 from ward import fixture, test
 
 

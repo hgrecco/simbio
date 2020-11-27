@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Dict, Tuple, Type, Union
+from typing import Dict, Optional, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
@@ -10,8 +10,8 @@ from orderedset import OrderedSet
 
 from ..compartments import Compartment
 from ..components import Component, Parameter, Species
-from ..solvers.core import Solver
-from ..solvers.scipy import ScipySolver
+from .solvers.core import Solver
+from .solvers.scipy import ScipySolver
 
 
 class Output:
@@ -146,11 +146,12 @@ class Simulator:
     model: Compartment
     t0: float
     values: Dict[Union[str, Species, Parameter], float]
-    solver_factory: Type[Solver]
+    solver: Type[Solver]
+    solver_kwargs: Dict
     builder: Type[Builder]
     output: Type[Output]
 
-    solver: Solver
+    current_solver: Solver
 
     def __init__(
         self,
@@ -158,7 +159,8 @@ class Simulator:
         *,
         t0: float = 0,
         values: Dict[Union[str, Species, Parameter], float] = None,
-        solver_factory: Type[Solver] = ScipySolver,
+        solver: Type[Solver] = ScipySolver,
+        solver_kwargs: Optional[Dict] = None,
         builder: Union[str, Type[Builder]] = "numpy",
         output: Union[str, Type[Output]] = "pandas",
     ):
@@ -166,7 +168,8 @@ class Simulator:
         # TODO: Validate concentrations and parameters?
         self.values = values or {}
         self.t0 = t0
-        self.solver_factory = solver_factory
+        self.solver = solver
+        self.solver_kwargs = solver_kwargs or {}
 
         if isinstance(builder, str):
             builder = Builder.BUILDERS[builder]
@@ -186,6 +189,7 @@ class Simulator:
         *,
         t0: float = None,
         values: Dict[Union[str, Species, Parameter], float] = None,
+        **kwargs,
     ) -> Solver:
         """Create a solver instance.
 
@@ -197,7 +201,7 @@ class Simulator:
         t = t0 or self.t0
         y, p = self.builder.build_value_vectors({**self.values, **(values or {})})
         rhs = self.builder.build_rhs(p)
-        return self.solver_factory(rhs, t, y)
+        return self.solver(rhs, t, y, **{**self.solver_kwargs, **kwargs})
 
     def run(
         self,
@@ -216,7 +220,7 @@ class Simulator:
         t0 and values are ignored.
         """
         if not resume:
-            self.solver = self.create_solver(t0=t0, values=values)
+            self.current_solver = self.create_solver(t0=t0, values=values)
 
-        t, y = self.solver.run(t)
+        t, y = self.current_solver.run(t)
         return self.output.to_output(t, y, t_name="time", y_names=self.names)

@@ -6,7 +6,7 @@ import numpy as np
 
 from .components import Component, Parameter, Species
 from .simulator import Simulator
-from .solvers.core import Solver
+from .simulator.solvers.core import Solver
 
 
 def _find_steady_state(
