@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 
-from ..parameters import Parameter
-from ..species import Species
-from .compound import CompoundReaction, Dissociation, ReversibleSynthesis
+from ..components import Parameter, ReactionBalance, Species
+from .compound import Dissociation, Reaction, ReversibleSynthesis
 from .single import SingleReaction
 
 
 @dataclass
-class MichaelisMenten(CompoundReaction):
+class MichaelisMenten(Reaction):
     E: Species
     S: Species
     ES: Species
@@ -16,7 +15,7 @@ class MichaelisMenten(CompoundReaction):
     reverse_rate: Parameter
     catalytic_rate: Parameter
 
-    def yield_reactions(self):
+    def reactions(self):
         yield ReversibleSynthesis(
             A=self.E,
             B=self.S,
@@ -67,10 +66,12 @@ class MichaelisMentenEqApprox(SingleReaction):
     maximum_velocity: Parameter
     dissociation_constant: Parameter
 
+    def reaction_balance(self) -> ReactionBalance:
+        return self.S >> self.P
+
     @staticmethod
-    def rhs(t, S, P, maximum_velocity, dissociation_constant):
-        delta = maximum_velocity * S / (dissociation_constant + S)
-        return -delta, delta
+    def reaction_rate(t, S, maximum_velocity, dissociation_constant):
+        return maximum_velocity * S / (dissociation_constant + S)
 
     def yield_latex_reaction(self):
         yield self._template_replace(
@@ -85,10 +86,12 @@ class MichaelisMentenQuasiSSAprox(SingleReaction):
     maximum_velocity: Parameter
     michaelis_constant: Parameter
 
+    def reaction_balance(self) -> ReactionBalance:
+        return self.S >> self.P
+
     @staticmethod
-    def rhs(t, S, P, maximum_velocity, michaelis_constant):
-        delta = maximum_velocity * S / (michaelis_constant + S)
-        return -delta, delta
+    def reaction_rate(t, S, maximum_velocity, michaelis_constant):
+        return maximum_velocity * S / (michaelis_constant + S)
 
     def yield_latex_reaction(self):
         yield self._template_replace(

@@ -1,74 +1,106 @@
-from simbio.parameters import Parameter
-from simbio.reactions.compound import CompoundReaction
-from simbio.reactions.single import SingleReaction
-from simbio.species import Species
-from ward import raises, test
+from simbio import Compartment
+from simbio.compartments import DuplicateComponentError
+from simbio.components import Parameter, ReactionBalance, Species
+from simbio.reactions import Synthesis
+from simbio.reactions.core import Reaction, SingleReaction
+from ward import raises, test, xfail
 
 
-@test("rhs: correctly defined")
+@test("rate: correctly defined")
 def _():
     class Reaction1(SingleReaction):
         A: Species
-        B: Species
         p: Parameter
 
+        def reaction_balance(self) -> ReactionBalance:
+            return self.A >> None
+
         @staticmethod
-        def rhs(t, A, B, p):
+        def reaction_rate(t, A, p):
             pass
 
     class Reaction2(SingleReaction):
         A: Species
+        p: Parameter
+
+        def reaction_balance(self) -> ReactionBalance:
+            return None >> self.A
 
         @staticmethod
-        def rhs(t, A):
+        def reaction_rate(t, p):
+            pass
+
+    class Reaction3(SingleReaction):
+        A: Species
+        B: Species
+        p: Parameter
+
+        def reaction_balance(self) -> ReactionBalance:
+            return self.A >> self.B
+
+        @staticmethod
+        def reaction_rate(t, A, p):
             pass
 
 
-@test("yield_reactions: correctly defined")
+@test("reactions: correctly defined")
 def _():
-    class Reaction1(CompoundReaction):
-        def yield_reactions(self):
+    class Reaction1(Reaction):
+        def reactions(self):
             pass
 
 
-@test("rhs: must be staticmethod")
+@test("rate: must be staticmethod")
 def _():
     with raises(TypeError):
 
         class Reaction1(SingleReaction):
-            def rhs(t):
+            A: Species
+
+            def reaction_balance(self) -> ReactionBalance:
+                return None >> self.A
+
+            def reaction_rate(t):
                 pass
 
     with raises(TypeError):
 
         class Reaction2(SingleReaction):
+            A: Species
+
+            def reaction_balance(self) -> ReactionBalance:
+                return None >> self.A
+
             @classmethod
-            def rhs(t):
+            def reaction_rate(t):
                 pass
 
 
-@test("yield_reactions: must take no parameters")
+@test("reactions: must take no parameters")
 def _():
     with raises(ValueError):
 
-        class Reaction1(CompoundReaction):
-            def yield_reactions(self, A):
+        class Reaction1(Reaction):
+            def reactions(self, A):
                 pass
 
 
-@test("rhs: first parameter must be t")
+@test("rate: first parameter must be t")
 def _():
     with raises(ValueError):
 
         class Reaction(SingleReaction):
             A: Species
 
+            def reaction_balance(self) -> ReactionBalance:
+                return self.A >> None
+
             @staticmethod
-            def rhs(A, t):
+            def reaction_rate(A, t):
                 pass
 
 
-@test("rhs: check unannotated parameter")
+@test("rate: check unannotated parameter")
 def _():
     with raises(ValueError):
 
@@ -76,12 +108,15 @@ def _():
             A: Species
             p: Parameter
 
+            def reaction_balance(self) -> ReactionBalance:
+                return self.A >> None
+
             @staticmethod
-            def rhs(t, A, p, k):
+            def reaction_rate(t, A, p, k):
                 pass
 
 
-@test("rhs: check misannotated parameter")
+@test("rate: check misannotated parameter")
 def _():
     with raises(TypeError):
 
@@ -90,8 +125,11 @@ def _():
             p: Parameter
             k: float
 
+            def reaction_balance(self) -> ReactionBalance:
+                return self.A >> None
+
             @staticmethod
-            def rhs(t, A, p, k):
+            def reaction_rate(t, A, p, k):
                 pass
 
 
@@ -103,23 +141,39 @@ def _():
         C: Species
         k: Parameter
 
-        _equivalent_species = ("A", "B"), ("C")
+        def reaction_balance(self) -> ReactionBalance:
+            return self.A + self.B >> self.C
 
         @staticmethod
-        def rhs(t, A, B, C, k):
+        def reaction_rate(t, A, B, k):
             pass
 
     A, B, C = (Species(0, name=name) for name in "ABC")
     k1, k2 = (Parameter(0, name=name) for name in ("k1", "k2"))
 
     reaction = Reaction(A=A, B=B, C=C, k=k1)
-    equivalent = (Reaction(A=A, B=B, C=C, k=k2), Reaction(A=B, B=A, C=C, k=k1))
+
+    equal = Reaction(A=B, B=A, C=C, k=k1)
+    equivalent = Reaction(A=A, B=B, C=C, k=k2)
     non_equivalent = Reaction(A=A, B=C, C=B, k=k1), Reaction(A=C, B=B, C=A, k=k1)
 
-    for r in equivalent:
-        assert hash(r) == hash(reaction)
-        assert r == reaction
+    assert hash(equal) == hash(reaction)
+    assert equal == reaction
+
+    assert equivalent != reaction
+    assert reaction.equivalent(equivalent)
 
     for r in non_equivalent:
-        assert hash(r) != hash(reaction)
         assert r != reaction
+        assert not reaction.equivalent(r)
+
+
+@xfail("Not implemented yet. Will raise error on simulation.")
+@test("Repeated reactant")
+def _():
+    A, B = (Species(0, name=name) for name in "AB")
+    k = Parameter(0, name="k")
+
+    with raises(DuplicateComponentError):
+
+        Synthesis(A, A, B, k)

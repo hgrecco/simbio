@@ -4,17 +4,16 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from .parameters import BaseParameter, Parameter
+from .components import Component, Parameter, Species
 from .simulator import Simulator
-from .solvers.core import BaseSolver
-from .species import Species
+from .solvers.core import Solver
 
 
 def _find_steady_state(
-    solver: BaseSolver, *, atol=1e-4, rtol=1e-4, max_iter=1000
+    solver: Solver, *, atol=1e-4, rtol=1e-4, max_iter=1000
 ) -> Tuple[float, np.ndarray]:
     for _ in range(max_iter):
-        dy = np.abs(solver.rhs(solver.t, solver.y, solver.p))
+        dy = np.abs(solver.rhs(solver.t, solver.y))
         y = np.abs(solver.y)
 
         adiff = dy.max()
@@ -33,7 +32,7 @@ def _find_steady_state(
 
 def find_steady_state(simulator: Simulator, **kwargs):
     t, y = _find_steady_state(simulator.create_solver(), **kwargs)
-    return t, simulator._to_single_output(y, y_names=simulator.names)
+    return t, simulator.output.to_single_output(y, y_names=simulator.names)
 
 
 def _dose_response(
@@ -49,7 +48,7 @@ def _dose_response(
 
 
 def dose_response(simulator, name: Union[str, Species, Parameter], values, **kwargs):
-    return simulator._to_output(
+    return simulator.output.to_output(
         *_dose_response(simulator, name, values, **kwargs),
         t_name="dose",
         y_names=simulator.names,
@@ -65,7 +64,7 @@ class Scanner:
     def from_single_value(cls, simulator, name, values):
         if isinstance(name, str):
             name = simulator.model[name]
-        elif not isinstance(name, BaseParameter):
+        elif not isinstance(name, Component):
             raise ValueError(f"{name.name} is neither a Species nor a Parameter.")
 
         return cls(simulator, ({name: value} for value in values))

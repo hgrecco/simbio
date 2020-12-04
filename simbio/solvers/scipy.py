@@ -1,12 +1,10 @@
-from contextlib import contextmanager
-from functools import partial
-from typing import Callable, Tuple, Type, Union
+from typing import Type, Union
 
 import numpy as np
 from scipy.integrate._ivp import OdeSolver
 from scipy.integrate._ivp.ivp import METHODS
 
-from .core import BaseSolver
+from .core import NumpySolver
 
 
 def _method(method: Union[str, Type[OdeSolver]]) -> Type[OdeSolver]:
@@ -21,7 +19,7 @@ def _method(method: Union[str, Type[OdeSolver]]) -> Type[OdeSolver]:
         )
 
 
-class ScipySolver(BaseSolver):
+class ScipySolver(NumpySolver):
     """Scipy solver.
 
     method : str or OdeSolver
@@ -29,39 +27,17 @@ class ScipySolver(BaseSolver):
     """
 
     def __init__(
-        self,
-        t: float,
-        y: np.ndarray,
-        p: np.ndarray,
-        rhs: Callable,
-        *,
-        method="RK45",
-        **kwargs,
-    ) -> None:
-        super().__init__(t=t, y=y, p=p, rhs=rhs)
+        self, rhs, t, y, *, method: Union[str, Type[OdeSolver]] = "RK45", **kwargs,
+    ):
+        super().__init__(rhs=rhs, t=t, y=y)
         method = _method(method)
-        rhs = partial(rhs, p=p)
         self._solver = method(rhs, t, y, t_bound=np.inf, **kwargs)
 
-    def step(self):
+    def _step(self):
         self._solver.step()
         self.t, self.y = self._solver.t, self._solver.y
 
-    def interpolate(self, t):
+    def _interpolate(self, t):
+        if t == self.t:
+            return self.y
         return self._solver.dense_output()(t)
-
-    @contextmanager
-    def _t_bound(self, t: float):
-        """Context manager that sets OdeSolver.t_bound to t."""
-        self._solver.t_bound = t
-        yield
-        self._solver.t_bound = np.inf
-        self._solver.status = "running"
-
-    def _move_to(self, t: float):
-        with self._t_bound(t):
-            super()._move_to(t)
-
-    def _run_free(self, t: float) -> Tuple[np.ndarray, np.ndarray]:
-        with self._t_bound(t):
-            return super()._run_free(t)

@@ -1,111 +1,143 @@
 from abc import ABC, abstractmethod
-from collections.abc import Collection
 from numbers import Real
-from typing import Callable, Tuple, Union
+from typing import Tuple, Union
 
 import numpy as np
 
 
-class BaseSolver(ABC):
-    """Base class for all solvers.
+class Solver(ABC):
+    """API for all solvers.
 
-    Must implement step and interpolate methods.
-    Can override private methods _move_to, _run_free, _run_array,
-    with optimized implementations.
+    Same API as numbakit-ode solvers.
     """
 
     t: float
     y: np.ndarray
-    p: np.ndarray
-    rhs: Callable
+    t_bound: float = np.inf
 
-    def __init__(self, t: float, y: np.ndarray, p: np.ndarray, rhs: Callable, **kwargs):
+    @abstractmethod
+    def __init__(self, rhs, t, y, **kwargs):
+        pass
+
+    @abstractmethod
+    def step(self, *, n: int = None, upto_t: float = None) -> Tuple[np.array, np.array]:
+        """Advance simulation `n` steps or until the next timepoint will go beyond `upto_t`.
+
+        It records and output all intermediate steps."""
+        pass
+
+    @abstractmethod
+    def skip(self, *, n: int = None, upto_t: float = None) -> None:
+        """Advance simulation `n` steps or until the next timepoint will go beyond `upto_t`.
+
+        Unlike `step` or `run`, this method does not output the time and state."""
+
+    @abstractmethod
+    def run(self, t: Union[Real, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+        """Integrates the ODE interpolating at each of the timepoints `t`."""
+
+
+class NumpySolver(Solver):
+    def __init__(self, rhs, t, y, **kwargs):
+        self.rhs = rhs
         self.t = t
         self.y = y
-        self.p = p
-        self.rhs = rhs
 
     @abstractmethod
-    def step(self):
-        """Advance simulation one time step.
+    def _step(self) -> None:
+        """Perform one step.
 
-        Saves the result in self.t, self.y
+        Saves result in self.t, self.y.
         """
-        raise NotImplementedError
 
     @abstractmethod
-    def interpolate(self, t):
+    def _interpolate(self, t: float) -> np.ndarray:
         """Interpolate solution at t."""
-        raise NotImplementedError
 
     def _check_time(self, t):
-        if t < self.t:
+        if t > self.t_bound:
             raise ValueError(
-                f"Time {t=} is smaller than current solver time t={self.t}"
+                f"Time {t} is larger than solver bound time t_bound={self.t_bound}"
             )
 
+    def skip(self, *, n: int = None, upto_t: float = None) -> None:
+        if upto_t is not None:
+            if upto_t > self.t_bound:
+                raise ValueError(f"{upto_t=} is greater than {self.t_bound=}.")
+            elif upto_t < self.t:
+                return
+
+        if n is None and upto_t is None:
+            # No parameters, make one step.
+            self._step()
+
+        elif upto_t is None:
+            # Only n is given, make n steps. If t_bound is reached, raise an exception.
+            for i in range(n):
+                self._step()
+                if self.t > self.t_bound:
+                    raise RuntimeError("Integrator reached t_bound.")
+
+        elif n is None:
+            # Only upto_t is given, move until that value.
+            while self.t < upto_t:
+                self._step()
+
+        else:
+            # Both parameters are given, move until either condition is reached.
+            for i in range(n):
+                self._step()
+                if self.t > upto_t:
+                    break
+
+    def step(self, *, n: int = None, upto_t: float = None) -> Tuple[np.array, np.array]:
+        if upto_t is not None:
+            if upto_t > self.t_bound:
+                raise ValueError(f"{upto_t=} is greater than {self.t_bound=}.")
+            elif upto_t < self.t:
+                return np.array(()), np.array(())
+
+        if n is None and upto_t is None:
+            # No parameters, make one step.
+            self._step()
+            return np.array((self.t,)), self.y
+
+        elif upto_t is None:
+            # Only n is given, make n steps. If t_bound is reached, raise an exception.
+            ts, ys = np.empty(n), np.empty((n, self.y.size))
+            for i in range(n):
+                self._step()
+                if self.t > self.t_bound:
+                    raise RuntimeError("Integrator reached t_bound.")
+                ts[i] = self.t
+                ys[i] = self.y
+            return ts, ys
+
+        elif n is None:
+            # Only upto_t is given, move until that value.
+            ts, ys = [self.t], [self.y]
+            while self.t < upto_t:
+                self._step()
+                ts.append(self.t)
+                ys.append(self.y)
+            return np.array(ts), np.array(ys)
+
+        else:
+            # Both parameters are given, move until either condition is reached.
+            ts, ys = np.empty(n), np.empty((n, self.y.size))
+            for i in range(n):
+                self._step()
+                if self.t > upto_t:
+                    return ts[:i], ys[:i]
+                ts[i] = self.t
+                ys[i] = self.y
+            return ts, ys
+
     def run(self, t: Union[Real, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
-        """Run solver.
-
-        If t is a scalar, run freely up to t.
-        If t is an array-like, return solution evaluated at t.
-        """
-        if isinstance(t, Real):
-            self._check_time(t)
-            return self._run_free(t)
-        elif isinstance(t, Collection):
-            t = np.asarray(t)
-            self._check_time(t[0])
-            return self._run_array(t)
-
-    def move_to(self, t: float):
-        """Advance simulation upto t.
-
-        Saves the result in self.t, self.y
-        """
-        self._check_time(t)
-        self._move_to(t)
-
-    def _move_to(self, t: float):
-        """Move solver to time t.
-
-        If input t is current solver time, do nothing.
-        """
-        while self.t < t:
-            self.step()
-
-        # If we overstepped, go back.
-        if self.t > t:
-            self.y = self.interpolate(t)
-            self.t = t
-
-    def _run_free(self, t: float) -> Tuple[np.ndarray, np.ndarray]:
-        """Run freely upto t and return (t, y) as arrays."""
-        t_out, y_out = [], []
-
-        while self.t < t:
-            t_out.append(self.t)
-            y_out.append(self.y)
-            self.step()
-
-        # If we overstepped, go back.
-        if self.t > t:
-            self.y = self.interpolate(t)
-            self.t = t
-
-        # Save last point
-        t_out.append(self.t)
-        y_out.append(self.y)
-
-        return np.array(t_out), np.array(y_out)
-
-    def _run_array(self, t: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Run upto t, evualuating y at given t and return (t, y) as arrays."""
-        y0 = self.y
-        y = np.empty((t.size, y0.size))
-
-        for i, ti in enumerate(t):
-            self._move_to(ti)
-            y[i] = self.y
-
-        return t, y
+        ts = np.array(t, copy=False, ndmin=1)
+        ys = np.empty((ts.size, self.y.size))
+        for i, ti in enumerate(ts):
+            while self.t < ti:
+                self.step()
+            ys[i] = self._interpolate(ti)
+        return ts, ys
