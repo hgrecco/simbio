@@ -30,8 +30,8 @@ def _find_steady_state(
         )
 
 
-def find_steady_state(simulator: Simulator, **kwargs):
-    t, y = _find_steady_state(simulator.create_solver(), **kwargs)
+def find_steady_state(simulator: Simulator, values=None, **kwargs):
+    t, y = _find_steady_state(simulator.create_solver(values=values), **kwargs)
     return t, simulator.output.to_single_output(y, y_names=simulator.names)
 
 
