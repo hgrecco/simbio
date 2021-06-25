@@ -15,7 +15,7 @@ cell.add_reaction(step1)
 
 
 sim = Simulator(cell)
-t_values, y_values = sim.run(100)
+t_values, y_values = sim.run(range(100))
 
 plt.plot(t_values, y_values)
 plt.legend(sim.names)

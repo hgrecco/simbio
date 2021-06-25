@@ -23,7 +23,7 @@ react2 = Dissociation(A=nucleus.C, B=nucleus.O2, AB=nucleus.CO2, rate=nucleus.ra
 nucleus.add_reaction(react2)
 
 sim = Simulator(cell)
-_, df = sim.run(100)
+_, df = sim.run(range(100))
 
 df.plot()
 plt.show()

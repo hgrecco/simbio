@@ -25,7 +25,7 @@ cell.C.add_reaction(step2)
 
 
 sim = Simulator(cell)
-_, df = sim.run(100)
+_, df = sim.run(range(100))
 
 df.plot()
 plt.show()

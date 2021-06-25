@@ -16,4 +16,4 @@ class Cell(Compartment):
 sim = Simulator(Cell, values={Cell.CO2: 5, Cell.k: 2, "O2": 15})
 
 # Overrides concentrations and parameters for this run
-t, y = sim.run(10, values={Cell.C: 20})
+t, y = sim.run(range(10), values={Cell.C: 20})
