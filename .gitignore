@@ -1,31 +1,19 @@
+# Hidden and temporary files
+.*
 *~
-__pycache__
-*egg-info*
-*.pyc
-.DS_Store
-docs/_build/
-.idea
-.vscode
+
+# Python
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
 build/
 dist/
 MANIFEST
-*pytest_cache*
-.eggs
-.mypy_cache
-pip-wheel-metadata
-.venv
+*.egg-info
 
-# WebDAV file system cache files
-.DAV/
-
-# tags files (from ctags)
-tags
-
-test/
-.coverage*
-
-# notebook stuff
-*.ipynb_checkpoints*
-
-# test csv which should be user generated
-notebooks/pandas_test.csv
+# Sphinx documentation
+docs/_build/
