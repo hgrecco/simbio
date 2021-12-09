@@ -1,0 +1,15 @@
+name: simbio
+channels:
+  - conda-forge
+dependencies:
+  - numpy >= 1.14
+  - pandas >= 1
+  - scipy
+  - orderedset
+  - sympy
+  - numba
+  - matplotlib
+  pip:
+    - pre-commit
+    - ward
+  
