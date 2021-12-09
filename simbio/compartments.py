@@ -60,8 +60,8 @@ class DuplicateContentDict(dict):
 class Model(Container, type):
     _reactions: Dict[ReactionBalance, SingleReaction]
 
-    def copy(self) -> Model:
-        return self.__class__(self.name, (self,), DuplicateContentDict())
+    def copy(self, *, name=None) -> Model:
+        return self.__class__(name or self.name, (self,), DuplicateContentDict())
 
     def __hash__(self) -> int:
         return hash(self.name)
