@@ -13,10 +13,10 @@ Its initial concentration can be a number (`float`) or can be resolved later whe
 
 ## Parameter
 
-The `Parameter` class is similar:
+The `Parameter` class is similar to `Species`:
 
 ```python
-class Species:
+class Parameter:
     value: float | Parameter
 ```
 
@@ -69,10 +69,21 @@ Cell
 
 ## Reactions
 
-The `Reaction` class corresponds to a simple reaction.
+The `Reaction` class corresponds to a simple reaction, where reactants are converted to products at a given rate:
 
 ```python
 class Reaction:
+    species: Mapping[str, Stoichiometry]
+    rates: Mapping[str, float | Parameter]
+    rate_law: callable[]
+
+    reactants: ?
+    products: ?
+    equivalence: ?
+```
+
+```python
+class SingleReaction:
     reactants: Set[Stoichiometry]
     products: Set[Stoichiometry]
     rate: float | Parameter
@@ -86,9 +97,23 @@ class Stoichiometry:
     number: float
 ```
 
+It implies the following differential equations:
+
+1. $A \rightarrow B$
+    - $\dot{A} = -kA$
+    - $\dot{B} = +kA$
+
+2. A + B -> B
+    - $\dot{A} = -kAB$
+    - $\dot{B} = 0$
+
+3. 2A -> B
+    - $\dot{A} = -2 k A^2 / 2!$
+    - $\dot{B} = -k A^2 / 2!$
+
 ### Uniqueness of Reactions
 
-To avoid inadvertently adding the same Reaction more than once, there are two restrictions:
+To avoid inadvertently adding the same reaction more than once, two restrictions are enforced:
 
 1. a Reaction must be unique within a given Compartment.
 2. a Reaction can only be added to the first common parent of its Species.
@@ -110,16 +135,48 @@ Tissue
 |---Reaction: Nucleus.A -> Cytoplasm.A  # not ok
 ```
 
-## Groups
+## Group
 
-- Dataclasses
-- HungryGroups: cannot be nested (how would they be initialized?).
-
-## DSL
+`Group` is similar to `Compartment`, but it is only a logical "compartment":
 
 ```python
-class 
+class Group:
+    parameters: Mapping[str, Parameter]
+    species: Mapping[str, Species]
+    reactions: Mapping[str, Reaction]
+    groups: Mapping[str, Groups]
 ```
 
-- Override MRO: might result in Method Resolution Error.
-- Self object or annotation: to provide inherited components.
+In contrast to `Compartment`, `Group`s can be used to define "macros", by leaving *uninitialized* `Species` or `Parameter`s as annotations:
+
+```python
+@dataclass  # optional for type-hints
+class MyGroup(Group):
+    """A -> B"""
+    A: Species  # uninitialized
+    k: Parameter  # uninitialized
+    B = Species(0)
+    convert = Convert(A, B, rate=k)
+```
+
+And then used as:
+
+```python
+class Model(Compartment):
+    X = Species(1)
+    group_1 = MyGroup(A=X, rate=1)
+    group_2 = MyGroup(A=X, rate=2)
+```
+
+Model has 3 distinct `Species`:
+
+- `X` (which is also `group_1.A` and `group_2.A`)
+- `group_1.B`
+- `group_2.B`
+
+and two `Reaction`s:
+
+- `X -> group_1.B` with `rate=1`
+- `X -> group_2.B` with `rate=2`
+
+Note that the reactions `group_1.convert` and `group_2.convert` does not "belong" to their respective groups, but to `Model`, which is the first common parent between the `Species` in the `Reaction`s.
