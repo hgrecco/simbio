@@ -9,7 +9,8 @@ dependencies:
   - sympy
   - numba
   - matplotlib
-  pip:
+  - pip
+  - pip:
     - pre-commit
     - ward
   
