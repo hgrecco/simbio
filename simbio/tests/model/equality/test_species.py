@@ -7,44 +7,44 @@ from simbio.model import Compartment, Parameter, Species
 
 def test_same_value():
     class ModelA(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     class ModelB(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     assert ModelA == ModelB
 
 
 def test_same_parameter():
     class ModelA(Compartment):
-        k = Parameter(0)
-        A = Species(k)
+        k: Parameter = 0
+        A: Species = k
 
     class ModelB(Compartment):
-        k = Parameter(0)
-        A = Species(k)
+        k: Parameter = 0
+        A: Species = k
 
     assert ModelA == ModelB
 
 
 def test_diff_value():
     class ModelA(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     class ModelB(Compartment):
-        A = Species(1)
+        A: Species = 1
 
     assert ModelA != ModelB
 
 
 def test_diff_parameter_value():
     class ModelA(Compartment):
-        k = Parameter(0)
-        A = Species(k)
+        k: Parameter = 0
+        A: Species = k
 
     class ModelB(Compartment):
-        k = Parameter(1)
-        A = Species(k)
+        k: Parameter = 1
+        A: Species = k
 
     assert ModelA != ModelB
 
@@ -56,10 +56,10 @@ def test_diff_name():
     """
 
     class ModelA(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     class ModelB(Compartment):
-        B = Species(0)
+        B: Species = 0
 
     assert ModelA != ModelB
 
@@ -72,12 +72,12 @@ def test_diff_parameter_name():
     """
 
     class ModelA(Compartment):
-        kA = Parameter(0)
-        A = Species(kA)
+        kA: Parameter = 0
+        A: Species = kA
 
     class ModelB(Compartment):
-        kB = Parameter(0)
-        A = Species(kB)
+        kB: Parameter = 0
+        A: Species = kB
 
     assert ModelA != ModelB
 
@@ -90,15 +90,15 @@ def test_value_vs_parameter():
     linking Species `A` value to that other Component.
 
     Should the combined model have:
-        1. A = Species(0)
-        2. A = Species(k)
+        1. A: Species = 0
+        2. A: Species = k
     """
 
     class ModelA(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     class ModelB(Compartment):
-        k = Parameter(0)
-        A = Species(k)
+        k: Parameter = 0
+        A: Species = k
 
     assert ModelA != ModelB

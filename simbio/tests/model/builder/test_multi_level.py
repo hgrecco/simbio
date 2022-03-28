@@ -6,12 +6,12 @@ def test_shared_parameter():
     """A multi-level model with a shared Parameter."""
 
     class Static(Compartment):
-        k = Parameter(1)
-        A = Species(k)
+        k: Parameter = 1
+        A: Species = k
 
         class Inner(Compartment):
             k: Parameter
-            A = Species(k)  # noqa: F821
+            A: Species = k  # noqa: F821
 
     Dynamic = Compartment.to_builder()
     k = Dynamic.add_parameter("k", 1)
@@ -32,7 +32,7 @@ def test_shared_species_compartment():
     with raises(TypeError):
 
         class Static(Compartment):
-            A = Species(0)
+            A: Species = 0
 
             class Inner(Compartment):
                 A: Species
@@ -50,7 +50,7 @@ def test_shared_species_group():
     """
 
     class Static(Compartment):
-        A = Species(0)
+        A: Species = 0
 
         class Inner(Group):
             A: Species
@@ -74,21 +74,21 @@ def test_missing_parameter():
         class First(Compartment):
             class Second(Compartment):
                 k: Parameter
-                A = Species(k)  # noqa: F821
+                A: Species = k  # noqa: F821
 
     with raises(NameError):
 
         class First(Compartment):  # noqa: F811
             class Second(Group):
                 k: Parameter
-                A = Species(k)  # noqa: F821
+                A: Species = k  # noqa: F821
 
     with raises(NameError):
 
         class First(Group):  # noqa: F811
             class Second(Group):
                 k: Parameter
-                A = Species(k)  # noqa: F821
+                A: Species = k  # noqa: F821
 
     # Can't be replicated dynamically
 
@@ -101,12 +101,12 @@ def test_skip_level_parameter():
     with raises(NameError):
 
         class Static(Compartment):
-            k = Parameter(1)
+            k: Parameter = 1
 
             class First(Compartment):
                 class Second(Compartment):
                     k: Parameter
-                    A = Species(k)  # noqa: F821
+                    A: Species = k  # noqa: F821
 
     Dynamic = Compartment.to_builder()
     k = Dynamic.add_parameter("k", 1)

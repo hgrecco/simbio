@@ -10,10 +10,10 @@ def test_dynamic_vs_static():
     """
 
     class Static(Compartment):
-        k_free = Parameter(1)
-        k_dep = Parameter(k_free)
-        A = Species(0)
-        B = Species(k_free)
+        k_free: Parameter = 1
+        k_dep: Parameter = k_free
+        A: Species = 0
+        B: Species = k_free
         create_A = Creation(A, 1)
         create_B = Creation(B, k_dep)
 
@@ -29,7 +29,7 @@ def test_dynamic_vs_static():
     assert Static == Dynamic
 
 
-def test_add_extenal_species():
+def test_add_external_species():
     # Dynamically, we could check if X is a number | Parameter.
 
     X = Species(0)
@@ -37,7 +37,7 @@ def test_add_extenal_species():
     with raises(TypeError):
 
         class Static(Compartment):
-            A = X
+            A: Species = X
 
     Dynamic = Compartment.to_builder()
     with raises(TypeError):
@@ -52,7 +52,7 @@ def test_add_external_parameter():
     with raises(TypeError):
 
         class Static(Compartment):
-            k = X
+            k: Parameter = X
 
     Dynamic = Compartment.to_builder()
     with raises(NameError):
@@ -82,12 +82,12 @@ def test_use_external_parameter():
     with raises(NameError):
 
         class Static(Compartment):
-            k = Parameter(X)
+            k: Parameter = X
 
     with raises(NameError):
 
         class Static(Compartment):  # noqa: F811
-            A = Species(X)
+            A: Species = X
 
     with raises(NameError):
 
@@ -105,14 +105,14 @@ def test_use_external_parameter():
 
 def test_use_component_from_external_compartment():
     class External(Compartment):
-        A = Species(0)
-        k = Parameter(0)
+        A: Species = 0
+        k: Parameter = 0
 
     # Species
     with raises(NameError):
 
         class Static(Compartment):
-            A = Species(1)
+            A: Species = 1
             create_A = Creation(A=External.A, rate=1)
 
     Dynamic = Compartment.to_builder()
@@ -124,8 +124,8 @@ def test_use_component_from_external_compartment():
     with raises(NameError):
 
         class Static(Compartment):  # noqa: F811
-            k = Parameter(1)
-            A = Species(External.k)
+            k: Parameter = 1
+            A: Species = External.k
 
     Dynamic = Compartment.to_builder()
     Dynamic.add_parameter("k", 1)

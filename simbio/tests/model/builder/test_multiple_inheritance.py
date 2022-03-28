@@ -8,10 +8,10 @@ def test_disjoint():
     """
 
     class ModelA(Compartment):
-        A = Species(0)
+        A: Species = 0
 
     class ModelB(Compartment):
-        B = Species(0)
+        B: Species = 0
 
     class Joint(ModelA, ModelB):
         pass
@@ -30,10 +30,10 @@ def test_non_colliding():
     """
 
     class ModelA(Compartment):
-        C = Species(0)
+        C: Species = 0
 
     class ModelB(Compartment):
-        C = Species(0)
+        C: Species = 0
 
     class Joint(ModelA, ModelB):
         pass
@@ -48,10 +48,10 @@ def test_colliding():
     """
 
     class ModelA(Compartment):
-        C = Species(0)
+        C: Species = 0
 
     class ModelB(Compartment):
-        C = Species(1)
+        C: Species = 1
 
     with raises(ValueError):
 

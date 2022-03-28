@@ -7,8 +7,8 @@ from simbio.reactions import Creation, Destruction
 class Base(Compartment):
     """A base model to use in extension tests."""
 
-    A = Species(0)
-    k = Parameter(0)
+    A: Species = 0
+    k: Parameter = 0
     create_A = Creation(A, k)
 
 
@@ -31,8 +31,8 @@ def test_extension():
     """Adding new components in an inheriting model."""
 
     class ExtendedStatic(Base):
-        B = Species(0)
-        kb = Parameter(0)
+        B: Species = 0
+        kb: Parameter = 0
         create_B = Creation(B, kb)
 
     ExtendedDynamic = Base.to_builder()
@@ -76,12 +76,12 @@ def test_collision():
     with raises(NameError):
 
         class Collision(Base):
-            A = Species(1)
+            A: Species = 1
 
     with raises(NameError):
 
         class Collision(Base):  # noqa: F811
-            k = Parameter(1)
+            k: Parameter = 1
 
     with raises(NameError):
 
