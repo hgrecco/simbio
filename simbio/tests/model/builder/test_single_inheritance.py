@@ -30,6 +30,14 @@ def test_extension_as_copy():
 def test_extension():
     """Adding new components in an inheriting model."""
 
+    class Manual(Compartment):
+        A: Species = 0
+        k: Parameter = 0
+        create_A = Creation(A, k)
+        B: Species = 0
+        kb: Parameter = 0
+        create_B = Creation(B, kb)
+
     class ExtendedStatic(Base):
         B: Species = 0
         kb: Parameter = 0
@@ -41,10 +49,9 @@ def test_extension():
     ExtendedDynamic.add_reaction(Creation(B, kb))
     ExtendedDynamic = ExtendedDynamic.build()
 
-    assert ExtendedStatic == ExtendedDynamic
-
     for Extended in (ExtendedStatic, ExtendedDynamic):
         assert Extended > Base
+        assert Extended == Manual
 
         assert Extended.A == Base.A
         assert Extended.k == Base.k
@@ -56,6 +63,12 @@ def test_extension_using_inherited():
     getting a reference to those components.
     """
 
+    class Manual(Compartment):
+        A: Species = 0
+        k: Parameter = 0
+        create_A = Creation(A, k)
+        remove_A = Destruction(A, k)
+
     class ExtendedStatic(Base):
         A: Species
         k: Parameter
@@ -65,7 +78,8 @@ def test_extension_using_inherited():
     ExtendedDynamic.add_reaction(Destruction(ExtendedDynamic.A, ExtendedDynamic.k))
     ExtendedDynamic = ExtendedDynamic.build()
 
-    assert ExtendedStatic == ExtendedDynamic
+    assert ExtendedStatic == Manual
+    assert ExtendedDynamic == Manual
 
 
 def test_collision():
@@ -100,6 +114,11 @@ def test_collision():
 def test_override():
     """Overriding existing components in the inherited model."""
 
+    class Manual(Compartment):
+        A: Species = 1
+        k: Parameter = 1
+        create_A = Creation(A, k)
+
     class OverridenStatic1(Base(A=1, k=1)):
         pass
 
@@ -110,10 +129,9 @@ def test_override():
     OverridenDynamic.replace_parameter("k", 1)
     OverridenDynamic = OverridenDynamic.build()
 
-    assert OverridenStatic1 == OverridenStatic2 == OverridenDynamic
-
     for Overriden in (OverridenStatic1, OverridenStatic2, OverridenDynamic):
         assert Overriden != Base
+        assert Overriden == Manual
 
         assert Overriden.A != Base.A
         assert Overriden.k != Base.k
