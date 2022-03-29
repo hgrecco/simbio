@@ -139,6 +139,26 @@ def test_override():
         assert Overriden.create_A == Base.create_A
 
 
+def test_override_2():
+    """Overriding with dependencies.
+
+    Species Base.A is not linked to parameter Base.k.
+    We want to modify the model to link them.
+    """
+
+    class Base(Compartment):
+        A: Species = 0
+        k: Parameter = 0
+
+    class Expected(Compartment):
+        k: Parameter = 1
+        A: Species = k
+
+    Overriden = Base(k=1, A=Base.k)
+
+    assert Overriden == Expected
+
+
 @pytest.mark.xfail(reason="Not implemented")
 def test_remove():
     class RemovedStatic(Base):
