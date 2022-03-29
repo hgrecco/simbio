@@ -159,6 +159,26 @@ def test_override_2():
     assert Overriden == Expected
 
 
+def test_extend_and_override():
+    """Extend and override with dependencies.
+
+    We want to add a new Parameter and link a previous Species to it.
+    """
+
+    class Base(Compartment):
+        A: Species = 0
+
+    class Expected(Compartment):
+        k: Parameter = 0
+        A: Species = k
+
+    class Overriden(Base):
+        k: Parameter = 0
+        A = k
+
+    assert Overriden == Expected
+
+
 @pytest.mark.xfail(reason="Not implemented")
 def test_remove():
     class RemovedStatic(Base):
