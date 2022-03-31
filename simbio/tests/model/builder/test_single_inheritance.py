@@ -154,7 +154,9 @@ def test_override_2():
         k: Parameter = 1
         A: Species = k
 
-    Overriden = Base(k=1, A=Base.k)
+    class Overriden(Base):
+        k: Parameter.override = 1
+        A: Species.override = k
 
     assert Overriden == Expected
 
@@ -174,7 +176,7 @@ def test_extend_and_override():
 
     class Overriden(Base):
         k: Parameter = 0
-        A = k
+        A: Species.override = k
 
     assert Overriden == Expected
 
