@@ -113,3 +113,23 @@ def test_skip_level_parameter():
     Second = Dynamic.add_comartment("First").add_compartment("Second")
     with raises(NameError):
         Second.add_species("A", k)
+
+
+def test_skip_level_species():
+    """A Species can only be "linked" from its first parent."""
+    First = Compartment.to_builder()
+    Second = First.add_group("Second")
+    Third = Second.add_group("Third")
+
+    First.add_species("A", 0)
+
+    with raises(ValueError):
+        # First.A does not belong to upper compartment.
+        Third.add_species("A", First.A)
+
+    Second.add_species("A", First.A)
+
+    with raises(ValueError):
+        # First.A does not belong to upper compartment,
+        # eventhough it is "in" Second.A
+        Third.add_species("A", First.A)
