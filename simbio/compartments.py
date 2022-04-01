@@ -115,16 +115,16 @@ class Model(Container, type):
             if not all(isinstance(vi, v0.__class__) for vi in v):  # Mixing classes
                 raise TypeError
 
-            if v0.parent is None:  # Not inherited
+            if isinstance(v0, Model):
+                v0 = type(v0.__name__, (v0, *v), DuplicateContentDict())
+                self._add(v0)
+            elif v0.parent is None:  # Not inherited
                 if len(v) == 0:  # No collision
                     self._add(v0)
                 elif isinstance(v0, Component) and v0.override:
                     self._add(v0)
-                elif isinstance(v0, Model) and all(issubclass(v0, vi) for vi in v):
-                    self._add(v0)
                 else:
                     to_override.append(k)
-
             else:  # Inherited
                 if all(vi == v0 for vi in v):
                     self._add(v0.copy())

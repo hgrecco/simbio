@@ -58,7 +58,7 @@ def _():
 
     class ModelC(ModelA):
         class Nucleus(ModelA.Nucleus):
-            B = Species(1)
+            A = Species(1)
 
     with raises(DuplicateComponentError):
 
@@ -67,7 +67,21 @@ def _():
 
     class ModelD(ModelB, ModelC):
         class Nucleus(ModelB.Nucleus, ModelC.Nucleus):
-            pass
+            A = Species(0, override=True)
+
+
+@test("Compatible sub-Compartments")
+def _():
+    class ModelB(ModelA):
+        class Nucleus(ModelA.Nucleus):
+            A = Species(0)
+
+    class ModelC(ModelA):
+        class Nucleus(ModelA.Nucleus):
+            B = Species(1)
+
+    class WrongModelD(ModelB, ModelC):
+        pass
 
 
 @test("Reaction collision")
