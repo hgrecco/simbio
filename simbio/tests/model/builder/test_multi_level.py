@@ -1,4 +1,5 @@
 from pytest import raises
+
 from simbio.model import Compartment, Group, Parameter, Species
 
 
@@ -133,3 +134,32 @@ def test_skip_level_species():
         # First.A does not belong to upper compartment,
         # eventhough it is "in" Second.A
         Third.add_species("A", First.A)
+
+
+def test_add_group():
+    class Single(Group):
+        A: Species
+        B: Species = 0
+
+    class Compound(Group):
+        X: Species = 0
+        group_X = Single(A=X)  # outer species
+        group_Y = Single(A=1)  # inner species
+        group_Z = Single(A=1, B=1)  # replaces inner default
+
+    with raises(ValueError):
+
+        class InexistentOuter(Group):
+            # It references an outer Species X.
+            group_X = Compound.group_X
+
+    with raises(ValueError):
+
+        class ExistentOuter(Group):
+            X: Species = 0
+            # It references an outer Species X.
+            group_X = Compound.group_X
+
+    class ReplacedOuter(Group):
+        X: Species = 0
+        group_X = Compound.group_X(A=X)  # Is this allowed?
