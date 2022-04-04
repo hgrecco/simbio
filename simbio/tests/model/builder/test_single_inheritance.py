@@ -1,5 +1,6 @@
 import pytest
 from pytest import raises
+
 from simbio.model import Compartment, Parameter, Species
 from simbio.reactions import Creation, Destruction
 
@@ -159,6 +160,35 @@ def test_override_2():
         A: Species.override = k
 
     assert Overriden == Expected
+
+
+def test_cyclic_override():
+    """Overriding elements might induce cyclic references.
+
+    Cycles can only happen between components of a particular level,
+    as a component cannot depend on a lower level component.
+    """
+
+    class Base(Compartment):
+        a: Parameter = 0
+        b: Parameter = a
+
+    with raises(ValueError):
+
+        class Direct(Base):
+            """A direct cycle: A <-> B"""
+
+            b: Parameter
+            a: Parameter.override = b  # noqa: F821
+
+    with raises(ValueError):
+
+        class Indirect(Base):
+            """A indirect cycle: A -> B -> C -> A"""
+
+            b: Parameter
+            c: Parameter = b  # noqa: F821
+            a: Parameter.override = c
 
 
 def test_extend_and_override():
