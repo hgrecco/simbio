@@ -1,6 +1,7 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Parameter, Species, reactions
+from simbio.components import EmptyCompartment, Parameter, Species
+from simbio.reactions.single import Creation
 
 
 def test_dynamic_vs_static():
@@ -14,16 +15,16 @@ def test_dynamic_vs_static():
         k_dep: Parameter = k_free
         A: Species = 0
         B: Species = k_free
-        create_A = reactions.Creation(A=A, rate=1)
-        create_B = reactions.Creation(A=B, rate=k_dep)
+        create_A = Creation(A=A, rate=1)
+        create_B = Creation(A=B, rate=k_dep)
 
     Dynamic = EmptyCompartment.to_builder()
     k_free = Dynamic.add_parameter("k_free", 1)
     k_dep = Dynamic.add_parameter("k_dep", k_free)
     A = Dynamic.add_species("A", 0)
     B = Dynamic.add_species("B", k_free)
-    Dynamic.add_reaction("create_A", reactions.Creation(A=A, rate=1))
-    Dynamic.add_reaction("create_B", reactions.Creation(A=B, rate=k_dep))
+    Dynamic.add_reaction("create_A", Creation(A=A, rate=1))
+    Dynamic.add_reaction("create_B", Creation(A=B, rate=k_dep))
     Dynamic = Dynamic.build()
 
     assert Static == Dynamic
@@ -67,11 +68,11 @@ def test_use_external_species():
     with raises(TypeError):
 
         class Static(EmptyCompartment):
-            create = reactions.Creation(A=X, rate=1)
+            create = Creation(A=X, rate=1)
 
     Dynamic = EmptyCompartment.to_builder()
     with raises(TypeError):
-        Dynamic.add_reaction("create", reactions.Creation(A=X, rate=1))
+        Dynamic.add_reaction("create", Creation(A=X, rate=1))
 
 
 def test_use_external_parameter():
@@ -92,7 +93,7 @@ def test_use_external_parameter():
     with raises(TypeError):
 
         class Static(EmptyCompartment):  # noqa: F811
-            create = reactions.Creation(A=0, rate=X)
+            create = Creation(A=0, rate=X)
 
     Dynamic = EmptyCompartment.to_builder()
     with raises(TypeError):
@@ -100,7 +101,7 @@ def test_use_external_parameter():
     with raises(TypeError):
         Dynamic.add_species("A", X)
     with raises(TypeError):
-        Dynamic.add_reaction("create", reactions.Creation(A=0, rate=X))
+        Dynamic.add_reaction("create", Creation(A=0, rate=X))
 
 
 def test_use_component_from_external_compartment():
@@ -113,12 +114,12 @@ def test_use_component_from_external_compartment():
 
         class Static(EmptyCompartment):
             A: Species = 1
-            create_A = reactions.Creation(A=External.A, rate=1)
+            create_A = Creation(A=External.A, rate=1)
 
     Dynamic = EmptyCompartment.to_builder()
     Dynamic.add_species("A", 1)
     with raises(ValueError):
-        Dynamic.add_reaction("create", reactions.Creation(A=External.A, rate=1))
+        Dynamic.add_reaction("create", Creation(A=External.A, rate=1))
 
     # Parameter
     with raises(ValueError):

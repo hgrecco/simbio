@@ -1,25 +1,25 @@
 import matplotlib.pyplot as plt
+
 import simbio.algo
-from simbio import Compartment, Simulator
-from simbio.reactions import Synthesis
+from simbio.components import EmptyCompartment
+from simbio.reactions.single import Synthesis
+from simbio.simulator import Simulator
 
-##############
-
-cell = Compartment(name="cell")
+cell = EmptyCompartment.to_builder(name="cell")
 cell.add_species("C", value=2)
 cell.add_species("O2", value=1)
 cell.add_species("CO2", value=0)
 cell.add_parameter("k", value=0.1)
 
 step1 = Synthesis(A=cell.C, B=cell.O2, AB=cell.CO2, rate=cell.k)
-cell.add_reaction(step1)
+cell.add_reaction("synthesize_CO2", step1)
 
 
 sim = Simulator(cell, output="numpy")
 t_values, y_values = sim.run(range(100))
 
 plt.plot(t_values, y_values)
-plt.legend(sim.names)
+plt.legend(sim.builder.species.index)
 
 t, y = simbio.algo.find_steady_state(sim)
 for a in y:

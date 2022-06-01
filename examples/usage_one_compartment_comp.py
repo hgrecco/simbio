@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
-from simbio import Compartment, Simulator
-from simbio.reactions import ReversibleSynthesis
 
-##############
+from simbio.components import EmptyCompartment
+from simbio.reactions.compound import ReversibleSynthesis
+from simbio.simulator import Simulator
 
-cell = Compartment(name="cell")
-cell.add_species("C", value=2)
-cell.add_species("O2", value=1)
-cell.add_species("CO2", value=0)
+cell = EmptyCompartment.to_builder(name="cell")
+cell.add_species("C", 2)
+cell.add_species("O2", 1)
+cell.add_species("CO2", 0)
 cell.add_parameter("forward_rate", 0.1)
 cell.add_parameter("reverse_rate", 0.05)
 
@@ -18,10 +18,10 @@ step1 = ReversibleSynthesis(
     forward_rate=cell.forward_rate,
     reverse_rate=cell.reverse_rate,
 )
-cell.add_reaction(step1)
+cell.add_reaction("rev_synth", step1)
 
 sim = Simulator(cell)
-t_values, y_values = sim.run(range(100))
+_, df = sim.run(range(100))
 
-y_values.plot()
+df.plot()
 plt.show()

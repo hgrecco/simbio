@@ -1,7 +1,8 @@
 import pytest
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Override, Parameter, Species, reactions
+from simbio.components import EmptyCompartment, Override, Parameter, Species
+from simbio.reactions.single import Creation, Destruction
 
 
 class Base(EmptyCompartment):
@@ -9,7 +10,7 @@ class Base(EmptyCompartment):
 
     A: Species = 0
     k: Parameter = 0
-    create_A = reactions.Creation(A=A, rate=k)
+    create_A = Creation(A=A, rate=k)
 
 
 def test_extension_as_copy():
@@ -33,20 +34,20 @@ def test_extension():
     class Manual(EmptyCompartment):
         A: Species = 0
         k: Parameter = 0
-        create_A = reactions.Creation(A=A, rate=k)
+        create_A = Creation(A=A, rate=k)
         B: Species = 0
         kb: Parameter = 0
-        create_B = reactions.Creation(A=B, rate=kb)
+        create_B = Creation(A=B, rate=kb)
 
     class ExtendedStatic(Base):
         B: Species = 0
         kb: Parameter = 0
-        create_B = reactions.Creation(A=B, rate=kb)
+        create_B = Creation(A=B, rate=kb)
 
     ExtendedDynamic = Base.to_builder()
     B = ExtendedDynamic.add_species("B", 0)
     kb = ExtendedDynamic.add_parameter("kb", 0)
-    ExtendedDynamic.add_reaction("create_B", reactions.Creation(A=B, rate=kb))
+    ExtendedDynamic.add_reaction("create_B", Creation(A=B, rate=kb))
     ExtendedDynamic = ExtendedDynamic.build()
 
     for Extended in (ExtendedStatic, ExtendedDynamic):
@@ -66,17 +67,17 @@ def test_extension_using_inherited():
     class Manual(EmptyCompartment):
         A: Species = 0
         k: Parameter = 0
-        create_A = reactions.Creation(A=A, rate=k)
-        remove_A = reactions.Destruction(A=A, rate=k)
+        create_A = Creation(A=A, rate=k)
+        remove_A = Destruction(A=A, rate=k)
 
     class ExtendedStatic(Base):
         A: Species
         k: Parameter
-        remove_A = reactions.Destruction(A=A, rate=k)  # noqa: F821
+        remove_A = Destruction(A=A, rate=k)  # noqa: F821
 
     ExtendedDynamic = Base.to_builder()
     ExtendedDynamic.add_reaction(
-        "remove_A", reactions.Destruction(A=ExtendedDynamic.A, rate=ExtendedDynamic.k)
+        "remove_A", Destruction(A=ExtendedDynamic.A, rate=ExtendedDynamic.k)
     )
     ExtendedDynamic = ExtendedDynamic.build()
 
@@ -102,7 +103,7 @@ def test_collision():
     with raises(ValueError):
 
         class Collision(Base):  # noqa: F811
-            create_A = reactions.Creation(A=1, rate=1)
+            create_A = Creation(A=1, rate=1)
 
     Collision = Base.to_builder()  # noqa: F811
     with raises(ValueError):
@@ -110,7 +111,7 @@ def test_collision():
     with raises(ValueError):
         Collision.add_parameter("k", 1)
     with raises(ValueError):
-        Collision.add_reaction("create_A", reactions.Creation(A=1, rate=1))
+        Collision.add_reaction("create_A", Creation(A=1, rate=1))
 
 
 def test_override():
@@ -119,7 +120,7 @@ def test_override():
     class Manual(EmptyCompartment):
         A: Species = 1
         k: Parameter = 1
-        create_A = reactions.Creation(A=A, rate=k)
+        create_A = Creation(A=A, rate=k)
 
     class OverridenStatic(Base):
         A: Species[Override] = 1

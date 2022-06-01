@@ -9,15 +9,11 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from ..components import Parameter, Species
-from .core import Reaction
+from ..components.types import Parameter, ReactionGroup, Species
 from .single import Conversion, Dissociation, Synthesis
 
 
-@dataclass
-class ReversibleSynthesis(Reaction):
+class ReversibleSynthesis(ReactionGroup):
     """A Synthesis and Dissociation reactions.
 
     A + B <-> AB
@@ -29,18 +25,11 @@ class ReversibleSynthesis(Reaction):
     forward_rate: Parameter
     reverse_rate: Parameter
 
-    def reactions(self):
-        yield Synthesis(A=self.A, B=self.B, AB=self.AB, rate=self.forward_rate)
-        yield Dissociation(AB=self.AB, A=self.A, B=self.B, rate=self.reverse_rate)
-
-    def yield_latex_reaction(self):
-        yield self._template_replace(
-            r"\ce{ $A + $B <=>[$forward_rate][$reverse_rate] $AB"
-        )
+    forward_reaction = Synthesis(A=A, B=B, AB=AB, rate=forward_rate)
+    backward_reaction = Dissociation(AB=AB, A=A, B=B, rate=reverse_rate)
 
 
-@dataclass
-class Equilibration(Reaction):
+class Equilibration(ReactionGroup):
     """A forward and backward Conversion reactions.
 
     A <-> B
@@ -51,13 +40,11 @@ class Equilibration(Reaction):
     forward_rate: Parameter
     reverse_rate: Parameter
 
-    def reactions(self):
-        yield Conversion(A=self.A, B=self.B, rate=self.forward_rate)
-        yield Conversion(A=self.B, B=self.A, rate=self.reverse_rate)
+    forward_reaction = Conversion(A=A, B=B, rate=forward_rate)
+    backward_reaction = Conversion(A=B, B=A, rate=reverse_rate)
 
 
-@dataclass
-class CatalyzeConvert(Reaction):
+class CatalyzeConvert(ReactionGroup):
     """
 
     A + B <--> A:B --> P
@@ -71,12 +58,7 @@ class CatalyzeConvert(Reaction):
     reverse_rate: Parameter
     conversion_rate: Parameter
 
-    def reactions(self):
-        yield ReversibleSynthesis(
-            A=self.A,
-            B=self.B,
-            AB=self.AB,
-            forward_rate=self.forward_rate,
-            reverse_rate=self.reverse_rate,
-        )
-        yield Conversion(A=self.AB, B=self.P, rate=self.conversion_rate)
+    binding_reaction = ReversibleSynthesis(
+        A=A, B=B, AB=AB, forward_rate=forward_rate, reverse_rate=reverse_rate
+    )
+    conversion_reaction = Conversion(A=AB, B=P, rate=conversion_rate)

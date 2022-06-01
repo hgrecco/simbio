@@ -2,112 +2,79 @@ from __future__ import annotations
 
 import itertools
 import types
-from functools import cached_property, partial
+from functools import cached_property
 
 import numba
-import numpy as np
 
-from ..reactions.core import SingleReaction
+from ..components.types import SingleReaction
 from .core import Builder
 
 
 class NumpyBuilder(Builder, alias="numpy"):
-    def _build_reaction_ip_rhs(self, reaction: SingleReaction):
-        ix_y = np.fromiter(map(self.species.index, reaction.species), dtype=int)
-        ix_p = np.fromiter(map(self.parameters.index, reaction.parameters), dtype=int)
-
-        reaction_balance = reaction.reaction_balance()
-        ix_s = np.fromiter(
-            map(self.species.index, reaction_balance.reactants), dtype=int
-        )
-        orders = np.fromiter(reaction_balance.reactants.values(), dtype=float)
-
-        change = reaction_balance.change
-        st_numbers = np.fromiter(map(change.get, reaction.species), dtype=float)
+    def _build_reaction_ip_rhs(self, full_name: str, reaction: SingleReaction):
+        reactants_stoich = self.reactants_stoich(full_name, reaction)
+        species_stoich = self.species_stoich(full_name, reaction)
+        parameter_indexes = self.parameter_indexes(full_name, reaction)
 
         def ip_rhs(t, y, p, out):
-            rate = reaction.reaction_rate(t, *(y[ix_s] ** orders), *p[ix_p])
-            for ix, st in zip(ix_y, st_numbers):
-                out[ix] += st * rate
+            reactants = (
+                y[index] ** stoich for index, stoich in reactants_stoich.items()
+            )
+            parameters = (p[index] for index in parameter_indexes)
+            rate = reaction.reaction_rate(t, *reactants, *parameters)
+            for index, stoich in species_stoich.items():
+                out[index] += stoich * rate
 
         return ip_rhs
 
-    @cached_property
-    def rhs(self):
-        funcs = tuple(map(self._build_reaction_ip_rhs, self.reactions))
-
-        def fun(t, y, p):
-            out = np.zeros_like(y)
-            for func in funcs:
-                func(t, y, p, out)
-            return out
-
-        return fun
-
-    def build_rhs(self, p):
-        return partial(self.rhs, p=p)
-
 
 class NumbaBuilder(Builder, alias="numba"):
-    def _build_reaction_ip_rhs(self, reaction):
-        ix_y = np.fromiter(map(self.species.index, reaction.species), dtype=int)
-        ix_p = np.fromiter(map(self.parameters.index, reaction.parameters), dtype=int)
+    def _build_reaction_ip_rhs(self, full_name: str, reaction: SingleReaction):
+        reactants_stoich = self.reactants_stoich(full_name, reaction)
+        species_stoich = self.species_stoich(full_name, reaction)
+        parameter_indexes = self.parameter_indexes(full_name, reaction)
 
-        reaction_balance = reaction.reaction_balance()
-        ix_s = np.fromiter(
-            map(self.species.index, reaction_balance.reactants), dtype=int
+        input = (1 + len(reactants_stoich) + len(parameter_indexes)) * (numba.float64,)
+        output = numba.float64
+        signature = output(*input)
+        rate = numba.cfunc(signature)(reaction.reaction_rate)
+        return self._inplace_rhs(
+            rate, reactants_stoich, species_stoich, parameter_indexes
         )
-        orders = np.fromiter(reaction_balance.reactants.values(), dtype=float)
 
-        change = reaction_balance.change
-        st_numbers = np.fromiter(map(change.get, reaction.species), dtype=float)
+    @staticmethod
+    def _inplace_rhs(
+        reaction_rate, reactants_stoich, species_stoich, parameter_indexes
+    ):
+        y = (f"y[{ix}] ** {st}" for ix, st in reactants_stoich.items())
+        p = (f"p[{ix}]" for ix in parameter_indexes)
+        rhs_template = "reaction_rate(t, %s)" % ", ".join(itertools.chain(y, p))
 
-        def ip_rhs(t, y, p, out):
-            rate = reaction.reaction_rate(t, *(y[ix_s] ** orders), *p[ix_p])
-            for ix, st in zip(ix_y, st_numbers):
-                out[ix] += st * rate
+        template = "\n  ".join(
+            [
+                "def func(t, y, p, out):",
+                f"rate = {rhs_template}",
+                *(f"out[{ix}] += {st} * rate" for ix, st in species_stoich.items()),
+            ]
+        )
 
-        input = (1 + ix_s.size + ix_p.size) * (numba.float64,)
-        rate = numba.cfunc(numba.float64(*input))(reaction.reaction_rate)
-        return _inplace_rhs(rate, ix_y, st_numbers, ix_s, orders, ix_p)
-
-    @cached_property
-    def rhs(self):
-        funcs = tuple(map(self._build_reaction_ip_rhs, self.reactions))
-
-        def fun(t, y, p):
-            out = np.zeros_like(y)
-            for func in funcs:
-                func(t, y, p, out)
-            return out
+        code_obj = compile(template, "<string>", "exec")
+        func = types.FunctionType(code_obj.co_consts[0], locals())
 
         t = numba.float64
         y = numba.types.Array(numba.float64, 1, "C", readonly=True)
         p = numba.types.Array(numba.float64, 1, "C", readonly=True)
-        return numba.cfunc(numba.float64[::1](t, y, p))(fun)
+        out = numba.float64[:]
+        return numba.cfunc(numba.void(t, y, p, out))(func)
+
+    @cached_property
+    def rhs(self):
+        rhs = super().rhs
+        t = numba.float64
+        y = numba.types.Array(numba.float64, 1, "C", readonly=True)
+        p = numba.types.Array(numba.float64, 1, "C", readonly=True)
+        return numba.cfunc(numba.float64[::1](t, y, p))(rhs)
 
     def build_rhs(self, p):
         rhs = self.rhs
         return numba.njit(lambda t, y: rhs(t, y, p))
-
-
-def _inplace_rhs(reaction_rate, ix_y, st_numbers, ix_s, order, ix_p):
-    y = (f"y[{i}] ** {k}" for i, k in zip(ix_s, order))
-    p = (f"p[{i}]" for i in ix_p)
-    rhs_template = "reaction_rate(t, %s)" % ", ".join(itertools.chain(y, p))
-
-    template = "\n  ".join(
-        [
-            "def func(t, y, p, out):",
-            f"rate = {rhs_template}",
-            *(f"out[{ix}] += {st} * rate" for ix, st in zip(ix_y, st_numbers)),
-        ]
-    )
-
-    code_obj = compile(template, "<string>", "exec")
-    func = types.FunctionType(code_obj.co_consts[0], locals())
-
-    t = numba.float64
-    y = numba.types.Array(numba.float64, 1, "C", readonly=True)
-    p = numba.types.Array(numba.float64, 1, "C", readonly=True)
-    return numba.cfunc(numba.void(t, y, p, numba.float64[:]))(func)

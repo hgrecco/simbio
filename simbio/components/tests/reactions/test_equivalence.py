@@ -1,7 +1,8 @@
 from pytest import raises, skip, xfail
 
-from simbio.model import Parameter, Species, reactions
-from simbio.model.types import SingleReaction
+from simbio.components import Parameter, Species
+from simbio.components.types import SingleReaction
+from simbio.reactions.single import Synthesis
 
 skip("Not implemented", allow_module_level=True)
 
@@ -46,5 +47,4 @@ def test_repeated_reactant():
     k = Parameter(0, name="k")
 
     with raises(ValueError):
-
-        reactions.Synthesis(A, A, B, k)
+        Synthesis(A, A, B, k)

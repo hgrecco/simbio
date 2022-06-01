@@ -1,31 +1,30 @@
-from simbio import Compartment, Parameter, Simulator, Species
-from simbio.reactions import Conversion, Synthesis
+from simbio.components import EmptyCompartment, Parameter, Species
+from simbio.reactions.single import Conversion, Synthesis
+from simbio.simulator import Simulator
 
 
-class Cell(Compartment):
+class Cell(EmptyCompartment):
     # Parameters at Cell-level
-    k = Parameter(1)
-
-    # Reactions at Cell-level
-    def add_reactions(self):
-        # Transports CO2 from Cytoplasm to Nucleus
-        yield Conversion(self.Cytoplasm.CO2, self.Nucleus.CO2, self.k)
+    k: Parameter = 1
 
     # Inner Compartment
-    class Cytoplasm(Compartment):
-        C = Species(100)
-        O2 = Species(100)
-        CO2 = Species(0)
-        k = Parameter(2)
+    class Cytoplasm(EmptyCompartment):
+        C: Species = 100
+        O2: Species = 100
+        CO2: Species = 0
+        k: Parameter = 2
 
         # Reaction at Cytoplasm-level
-        def add_reactions(self):
-            # Converts C and O2 to CO2
-            yield Synthesis(self.C, self.O2, self.CO2, self.k)
+        # Converts C and O2 to CO2
+        synthesize_CO2 = Synthesis(C, O2, CO2, k)
 
     # Inner Compartment
-    class Nucleus(Compartment):
-        CO2 = Species(0)
+    class Nucleus(EmptyCompartment):
+        CO2: Species = 0
+
+    # Reactions at Cell-level
+    # Transports CO2 from Cytoplasm to Nucleus
+    transport_CO2 = Conversion(Cytoplasm.CO2, Nucleus.CO2, k)
 
 
 # Full simulation

@@ -1,13 +1,13 @@
 from importlib.util import spec_from_file_location
 from pathlib import Path
 
-from ward import each, test
+import pytest
 
 examples = Path("examples").rglob("*.py")
 
 
-@test("Test {example}")
-def _(example=each(*examples)):
+@pytest.mark.parametrize("example", examples)
+def test_example(example):
     import matplotlib.pyplot as plt
 
     plt.show = lambda: None

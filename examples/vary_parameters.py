@@ -1,15 +1,15 @@
-from simbio import Compartment, Parameter, Simulator, Species
-from simbio.reactions import Synthesis
+from simbio.components import EmptyCompartment, Parameter, Species
+from simbio.reactions.single import Synthesis
+from simbio.simulator import Simulator
 
 
-class Cell(Compartment):
-    C = Species(10)
-    O2 = Species(10)
-    CO2 = Species(0)
-    k = Parameter(1)
+class Cell(EmptyCompartment):
+    C: Species = 10
+    O2: Species = 10
+    CO2: Species = 0
+    k: Parameter = 1
 
-    def add_reactions(self):
-        yield Synthesis(self.C, self.O2, self.CO2, self.k)
+    synthesize = Synthesis(A=C, B=O2, AB=CO2, rate=k)
 
 
 # Overrides concentrations and parameters for this Simulator

@@ -1,6 +1,7 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, EmptyGroup, Parameter, Species, reactions
+from simbio.components import EmptyCompartment, EmptyGroup, Parameter, Species
+from simbio.reactions.single import Conversion
 
 
 def test_multi_level_model():
@@ -195,6 +196,6 @@ def test_intergroup_reaction():
         class GroupB(EmptyGroup):
             B: Species = 0
 
-        A_to_B = reactions.Conversion(A=GroupA.A, B=GroupB.B, rate=1)
+        A_to_B = Conversion(A=GroupA.A, B=GroupB.B, rate=1)
 
     assert Model.A_to_B.A.resolve(recursive=True) == Model.GroupA.A.resolve()

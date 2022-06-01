@@ -1,6 +1,6 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Override, Parameter, Species
+from simbio.components import EmptyCompartment, Override, Parameter, Species
 
 
 def test_add_species_to_outer():

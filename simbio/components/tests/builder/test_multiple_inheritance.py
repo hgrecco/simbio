@@ -1,6 +1,6 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Override, Species
+from simbio.components import EmptyCompartment, Override, Species
 
 
 def test_disjoint():

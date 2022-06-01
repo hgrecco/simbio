@@ -2,7 +2,7 @@
 Test model equivalence for Species and Parameters.
 """
 
-from simbio.model import EmptyCompartment, Parameter, Species
+from simbio.components import EmptyCompartment, Parameter, Species
 
 
 def test_same_value():

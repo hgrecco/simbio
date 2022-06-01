@@ -1,17 +1,17 @@
-from simbio import Compartment, Parameter, Species
+from simbio.components import EmptyCompartment, Override, Parameter, Species
 
 
-class Cell(Compartment):
-    A = Species(1)
-    k = Parameter(1)
+class Cell(EmptyCompartment):
+    A: Species = 1
+    k: Parameter = 1
 
-    class Nucleus(Compartment):
-        A = Species(2)
-        k = Parameter(2)
+    class Nucleus(EmptyCompartment):
+        A: Species = 2
+        k: Parameter = 2
 
 
 class ExtendedCell(Cell):
-    A = Species(10, override=True)
+    A: Species[Override] = 10
 
     class Nucleus(Cell.Nucleus):  # Extend compartment
-        A = Species(20, override=True)
+        A: Species[Override] = 20

@@ -1,57 +1,22 @@
 from __future__ import annotations
 
+import numbers
 from abc import ABC, abstractmethod
-from functools import cached_property
-from typing import Dict, Optional, Tuple, Type, Union
+from functools import cached_property, partial
+from typing import Protocol
 
 import numpy as np
 import pandas as pd
-from orderedset import OrderedSet
 
-from ..compartments import Compartment
-from ..components import Component, Parameter, Species
+from ..components._container import Reference, RelativeReference, get_full_name
+from ..components.types import Compartment, Parameter, SingleReaction, Species
 from .solvers.core import Solver
-from .solvers.scipy import ScipySolver
+from .solvers.scipy import ODEint
 
 
-class Output:
-    OUTPUTS = {}
-
-    def __init_subclass__(cls, name) -> None:
-        cls.OUTPUTS[name] = cls
-
-    @staticmethod
-    @abstractmethod
-    def to_single_output(y, *, y_names):
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def to_output(t, y, *, t_name="time", y_names):
-        pass
-
-
-class NumpyOutput(Output, name="numpy"):
-    @staticmethod
-    def to_single_output(y, *, y_names) -> np.ndarray:
-        return y
-
-    @staticmethod
-    def to_output(t, y, *, t_name="time", y_names) -> Tuple[np.ndarray, np.ndarray]:
-        return t, y
-
-
-class PandasOutput(Output, name="pandas"):
-    @staticmethod
-    def to_single_output(y, *, y_names) -> pd.Series:
-        y = pd.Series(y, index=y_names)
-        return y
-
-    @staticmethod
-    def to_output(t, y, *, t_name="time", y_names) -> Tuple[pd.Series, pd.DataFrame]:
-        t = pd.Series(t, name=t_name)
-        y = pd.DataFrame(data=y, index=t, columns=y_names)
-        return t, y
+class Output(Protocol):
+    index: np.ndarray
+    values: np.ndarray
 
 
 class Builder(ABC):
@@ -64,76 +29,156 @@ class Builder(ABC):
         cls.BUILDERS[alias] = cls
 
     @abstractmethod
-    def build_rhs(self, p):
+    def _build_reaction_ip_rhs(
+        self, full_name: str, reaction: SingleReaction
+    ) -> callable:
         raise NotImplementedError
 
     @cached_property
-    def reactions(self):
-        return self.model.reactions
+    def rhs(self):
+        funcs = tuple(
+            self._build_reaction_ip_rhs(name, reaction)
+            for name, reaction in self.yield_single_reactions()
+        )
 
-    @cached_property
-    def species(self) -> OrderedSet[Species]:
-        """Species participating in reactions."""
-        out = OrderedSet()
-        for reaction in self.reactions:
-            out.update(reaction.species)
+        def fun(t, y, p):
+            out = np.zeros_like(y)
+            for func in funcs:
+                func(t, y, p, out)
+            return out
+
+        return fun
+
+    def build_rhs(self, p):
+        return partial(self.rhs, p=p)
+
+    def yield_single_reactions(self):
+        yield from self.model._filter_contents(SingleReaction, recursive=True)
+
+    def reactants_stoich(
+        self, full_name: str, reaction: SingleReaction
+    ) -> dict[int, float]:
+        out = {}
+        for name, st in reaction.reactants_stoichiometry.items():
+            name = self.resolve(f"{full_name}.{name}")
+            index = self.get_species_index(name)
+            out[index] = st
         return out
 
-    @cached_property
-    def parameters(self) -> OrderedSet[Parameter]:
-        """Parameters participating in reactions."""
-        out = OrderedSet()
-        for reaction in self.reactions:
-            out.update(reaction.parameters)
+    def species_stoich(
+        self, full_name: str, reaction: SingleReaction
+    ) -> dict[int, float]:
+        out = {}
+        for name, st in reaction.species_stoichiometry.items():
+            name = self.resolve(f"{full_name}.{name}")
+            index = self.get_species_index(name)
+            out[index] = st
         return out
 
-    def _resolve_values(
-        self, values: dict[Union[str, Species, Parameter], float] = None
-    ) -> tuple[dict, list]:
-        out, unexpected = {}, []
-        for name, value in values.items():
-            if isinstance(name, str):
-                try:
-                    name = self.model[name]
-                    out[name] = value
-                except (KeyError, TypeError):
-                    unexpected.append(name)
-            elif isinstance(name, Component):
-                if name not in self.model:
-                    unexpected.append(name)
-                else:
-                    out[name] = value
-            else:
-                unexpected.append(name)
-        return out, unexpected
+    def parameter_indexes(self, full_name: str, reaction: SingleReaction) -> tuple[int]:
+        indexes = []
+        for name in reaction.parameters:
+            name = self.resolve(f"{full_name}.{name}")
+            index = self.get_parameter_index(name)
+            indexes.append(index)
+        return tuple(indexes)
+
+    def get_species_index(self, name: str) -> int:
+        return self.species.index.get_loc(name)
+
+    def get_parameter_index(self, name: str) -> int:
+        return self.parameters.index.get_loc(name)
+
+    def resolve(self, name: str) -> str:
+        while isinstance(name, str):
+            old_name, name = name, self.values[name]
+        return old_name
+
+    @cached_property
+    def values(self) -> dict[str, str | Species | Parameter]:
+        """Species and Parameters participating in reactions."""
+
+        def resolve(name, content) -> str:
+            value = content.value
+            if isinstance(value, numbers.Number):
+                return content
+            elif isinstance(value, RelativeReference):
+                return value.resolve_from(name)
+
+        all_contents = {
+            k: resolve(k, v)
+            for k, v in self.model._filter_contents(Species, Parameter, recursive=True)
+        }
+
+        in_reaction_contents = {}
+        for full_name, reaction in self.yield_single_reactions():
+            for name, value in reaction._filter_contents(Species, Parameter):
+                name = f"{full_name}.{name}"
+                while True:
+                    value = all_contents[name]
+                    in_reaction_contents[name] = value
+                    if isinstance(value, str):
+                        name = value
+                    else:
+                        break
+
+        return in_reaction_contents
+
+    @cached_property
+    def species(self):
+        return pd.Series(
+            {
+                name: species.value
+                for name, species in self.values.items()
+                if isinstance(species, Species)
+            }
+        )
+
+    @cached_property
+    def parameters(self):
+        return pd.Series(
+            {
+                name: parameter.value
+                for name, parameter in self.model._filter_contents(
+                    Parameter, recursive=True
+                )
+                if name in self.values
+            }
+        )
 
     def build_value_vectors(
         self,
-        values: dict[Union[str, Species, Parameter], float] = None,
-        raise_on_unexpected: bool = True,
+        values: dict[str | Reference, float] = {},
     ) -> tuple[np.ndarray, np.ndarray]:
-        if values is None:
-            values = {}
-        else:
-            values, unexpected = self._resolve_values(values)
+        species, parameters = self._build_value_vectors(values)
+        return species.values, parameters.values
 
-            if raise_on_unexpected and unexpected:
-                raise ValueError(
-                    f"Received unexpected values not found in Compartment: {unexpected}"
-                )
+    def _build_value_vectors(
+        self,
+        values: dict[str | Reference, float] = {},
+    ) -> tuple[pd.Series, pd.Series]:
+        def resolve(k):
+            if isinstance(k, Reference):
+                return get_full_name(k, root=self.model)
+            elif isinstance(k, str):
+                return k
+            else:
+                raise TypeError
 
-        species = self.species
-        species = np.fromiter(
-            (values.get(r, r.value) for r in species), dtype=float, count=len(species)
-        )
+        values = {resolve(k): v for k, v in values.items()}
+        species = {k: values.get(k, v) for k, v in self.species.items()}
+        parameters = {}
+        for name, value in self.parameters.items():
+            value = values.get(name, value)
+            if isinstance(value, RelativeReference):
+                value = self.values[name]
+            parameters[name] = value
+        for name, value in parameters.items():
+            while isinstance(value, str):
+                value = parameters[value]
+            parameters[name] = value
 
-        parameters = self.parameters
-        parameters = np.fromiter(
-            (values.get(r, r.value) for r in parameters),
-            dtype=float,
-            count=len(parameters),
-        )
-        return species, parameters
+        return pd.Series(species), pd.Series(parameters)
 
 
 class Simulator:
@@ -145,11 +190,10 @@ class Simulator:
 
     model: Compartment
     t0: float
-    values: Dict[Union[str, Species, Parameter], float]
-    solver: Type[Solver]
-    solver_kwargs: Dict
-    builder: Type[Builder]
-    output: Type[Output]
+    values: dict[str | Species | Parameter, float]
+    solver: type[Solver]
+    solver_kwargs: dict
+    builder: type[Builder]
 
     current_solver: Solver
 
@@ -158,11 +202,10 @@ class Simulator:
         model: Compartment,
         *,
         t0: float = 0,
-        values: Dict[Union[str, Species, Parameter], float] = None,
-        solver: Type[Solver] = ScipySolver,
-        solver_kwargs: Optional[Dict] = None,
-        builder: Union[str, Type[Builder]] = "numpy",
-        output: Union[str, Type[Output]] = "pandas",
+        values: dict[str | Species | Parameter, float] = None,
+        solver: type[Solver] = ODEint,
+        solver_kwargs: dict | None = None,
+        builder: str | type[Builder] = "numpy",
     ):
         self.model = model
         # TODO: Validate concentrations and parameters?
@@ -175,20 +218,11 @@ class Simulator:
             builder = Builder.BUILDERS[builder]
         self.builder = builder(model)
 
-        if isinstance(output, str):
-            output = Output.OUTPUTS[output]
-        self.output = output
-
-    @cached_property
-    def names(self) -> tuple[str, ...]:
-        """Species names relative to the Compartment."""
-        return tuple(map(self.model._relative_name, self.builder.species))
-
     def create_solver(
         self,
         *,
         t0: float = None,
-        values: Dict[Union[str, Species, Parameter], float] = None,
+        values: dict[str | Species | Parameter, float] = None,
         **kwargs,
     ) -> Solver:
         """Create a solver instance.
@@ -208,9 +242,9 @@ class Simulator:
         t: np.ndarray,
         *,
         t0: float = None,
-        values: Dict[Union[str, Species, Parameter], float] = None,
+        values: dict[str | Species | Parameter, float] = None,
         resume=False,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Run simulation and return solution evaluated at t.
 
         If resume is False (default), create a new solver instance
@@ -223,4 +257,8 @@ class Simulator:
             self.current_solver = self.create_solver(t0=t0, values=values)
 
         t, y = self.current_solver.run(t)
-        return self.output.to_output(t, y, t_name="time", y_names=self.names)
+        return pd.DataFrame(
+            data=y,
+            index=pd.Series(t, name="time"),
+            columns=self.builder.species.index,
+        )

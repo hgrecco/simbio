@@ -1,11 +1,12 @@
-from simbio.model import EmptyCompartment, Parameter, Species, reactions
-from simbio.model._container import Reference
+from simbio.components import EmptyCompartment, Parameter, Species
+from simbio.components._container import Reference
+from simbio.reactions.single import Creation
 
 
 class Model(EmptyCompartment):
     A: Species = 1
     k: Parameter = 1
-    create_A = reactions.Creation(A=A, rate=k)
+    create_A = Creation(A=A, rate=k)
 
 
 def test_contents_are_references():

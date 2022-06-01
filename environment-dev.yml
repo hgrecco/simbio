@@ -5,12 +5,9 @@ dependencies:
   - numpy >= 1.14
   - pandas >= 1
   - scipy
-  - orderedset
-  - sympy
   - numba
+  - plum-dispatch
+  - typing_extensions
   - matplotlib
-  - pip
-  - pip:
-    - pre-commit
-    - ward
-  
+  - pre-commit
+  - pytest

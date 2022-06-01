@@ -1,7 +1,7 @@
 from pytest import raises
 
-from simbio.model import Parameter, Species
-from simbio.model.types import SingleReaction
+from simbio.components import Parameter, Species
+from simbio.components.types import SingleReaction
 
 
 def test_reaction_rate():
