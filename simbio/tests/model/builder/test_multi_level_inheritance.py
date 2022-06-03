@@ -1,15 +1,15 @@
 from pytest import raises
 
-from simbio.model import Compartment, Parameter, Species
+from simbio.model import EmptyCompartment, Parameter, Species
 
 
 def test_add_species():
-    class Outer(Compartment):
+    class Outer(EmptyCompartment):
         """Base model."""
 
         A: Species = 0
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 0
 
     class ExtendedOuter(Outer):
@@ -17,11 +17,11 @@ def test_add_species():
 
         B: Species = 1
 
-    class ExpectedOuter(Compartment):
+    class ExpectedOuter(EmptyCompartment):
         A: Species = 0
         B: Species = 1
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 0
 
     assert ExtendedOuter == ExpectedOuter
@@ -32,7 +32,7 @@ def test_add_species():
         class Inner(Outer.Inner):
             B: Species = 1
 
-    class ExtendedInner2(Compartment):
+    class ExtendedInner2(EmptyCompartment):
         """Non-inherited Outer and extends inner.
 
         As inner has no links to Outer, it can be extracted.
@@ -43,10 +43,10 @@ def test_add_species():
         class Inner(Outer.Inner):
             B: Species = 1
 
-    class ExpectedInner(Compartment):
+    class ExpectedInner(EmptyCompartment):
         A: Species = 0
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 0
             B: Species = 1
 
@@ -54,27 +54,27 @@ def test_add_species():
 
 
 def test_collision():
-    class Outer(Compartment):
+    class Outer(EmptyCompartment):
         A: Species = 0
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 0
 
-    with raises(NameError):
+    with raises(ValueError):
 
         class Collision(Outer):
             """Inner Compartment collides with inherited Inner."""
 
-            class Inner(Compartment):
+            class Inner(EmptyCompartment):
                 B: Species = 0
 
 
 def test_override():
-    class Outer(Compartment):
+    class Outer(EmptyCompartment):
         A: Species = 0
         k: Parameter = 0
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 0
             k: Parameter = 0
 
@@ -84,11 +84,11 @@ def test_override():
         class Inner(Outer.Inner):
             A: Species.override = 1
 
-    class ExpectedOuter(Compartment):
+    class ExpectedOuter(EmptyCompartment):
         A: Species = 1
         k: Parameter = 0
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             A: Species = 1
             k: Parameter = 0
 
@@ -96,19 +96,19 @@ def test_override():
 
 
 def test_combine():
-    class ModelA(Compartment):
-        class InnerA(Compartment):
+    class ModelA(EmptyCompartment):
+        class InnerA(EmptyCompartment):
             A: Species = 0
 
-        class InnerC(Compartment):
+        class InnerC(EmptyCompartment):
             A: Species = 0
             C: Species = 0
 
-    class ModelB(Compartment):
-        class InnerB(Compartment):
+    class ModelB(EmptyCompartment):
+        class InnerB(EmptyCompartment):
             B: Species = 0
 
-        class InnerC(Compartment):
+        class InnerC(EmptyCompartment):
             B: Species = 0
             C: Species = 0
 
@@ -118,14 +118,14 @@ def test_combine():
 
         pass
 
-    class Expected(Compartment):
-        class InnerA(Compartment):
+    class Expected(EmptyCompartment):
+        class InnerA(EmptyCompartment):
             A: Species = 0
 
-        class InnerB(Compartment):
+        class InnerB(EmptyCompartment):
             B: Species = 0
 
-        class InnerC(Compartment):
+        class InnerC(EmptyCompartment):
             A: Species = 0
             B: Species = 0
             C: Species = 0

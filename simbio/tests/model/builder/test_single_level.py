@@ -1,6 +1,6 @@
 from pytest import raises
-from simbio.model import Compartment, Parameter, Species
-from simbio.reactions import Creation
+
+from simbio.model import EmptyCompartment, Parameter, Species, reactions
 
 
 def test_dynamic_vs_static():
@@ -9,21 +9,21 @@ def test_dynamic_vs_static():
     Uses free and dependent parameters.
     """
 
-    class Static(Compartment):
+    class Static(EmptyCompartment):
         k_free: Parameter = 1
         k_dep: Parameter = k_free
         A: Species = 0
         B: Species = k_free
-        create_A = Creation(A, 1)
-        create_B = Creation(B, k_dep)
+        create_A = reactions.Creation(A=A, rate=1)
+        create_B = reactions.Creation(A=B, rate=k_dep)
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     k_free = Dynamic.add_parameter("k_free", 1)
     k_dep = Dynamic.add_parameter("k_dep", k_free)
     A = Dynamic.add_species("A", 0)
     B = Dynamic.add_species("B", k_free)
-    Dynamic.add_reaction(Creation(A, 1))
-    Dynamic.add_reaction(Creation(B, k_dep))
+    Dynamic.add_reaction("create_A", reactions.Creation(A=A, rate=1))
+    Dynamic.add_reaction("create_B", reactions.Creation(A=B, rate=k_dep))
     Dynamic = Dynamic.build()
 
     assert Static == Dynamic
@@ -36,10 +36,10 @@ def test_add_external_species():
 
     with raises(TypeError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             A: Species = X
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     with raises(TypeError):
         Dynamic.add_species("A", X)
 
@@ -51,11 +51,11 @@ def test_add_external_parameter():
 
     with raises(TypeError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             k: Parameter = X
 
-    Dynamic = Compartment.to_builder()
-    with raises(NameError):
+    Dynamic = EmptyCompartment.to_builder()
+    with raises(TypeError):
         Dynamic.add_parameter("k", X)
 
 
@@ -64,14 +64,14 @@ def test_use_external_species():
 
     X = Species(0)
 
-    with raises(NameError):
+    with raises(TypeError):
 
-        class Static(Compartment):
-            create = Creation(A=X, rate=1)
+        class Static(EmptyCompartment):
+            create = reactions.Creation(A=X, rate=1)
 
-    Dynamic = Compartment.to_builder()
-    with raises(NameError):
-        Dynamic.add_reaction("create", Creation(A=X, rate=1))
+    Dynamic = EmptyCompartment.to_builder()
+    with raises(TypeError):
+        Dynamic.add_reaction("create", reactions.Creation(A=X, rate=1))
 
 
 def test_use_external_parameter():
@@ -79,55 +79,55 @@ def test_use_external_parameter():
 
     X = Parameter(0)
 
-    with raises(NameError):
+    with raises(TypeError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             k: Parameter = X
 
-    with raises(NameError):
+    with raises(TypeError):
 
-        class Static(Compartment):  # noqa: F811
+        class Static(EmptyCompartment):  # noqa: F811
             A: Species = X
 
-    with raises(NameError):
+    with raises(TypeError):
 
-        class Static(Compartment):  # noqa: F811
-            create = Creation(A=0, rate=X)
+        class Static(EmptyCompartment):  # noqa: F811
+            create = reactions.Creation(A=0, rate=X)
 
-    Dynamic = Compartment.to_builder()
-    with raises(NameError):
+    Dynamic = EmptyCompartment.to_builder()
+    with raises(TypeError):
         Dynamic.add_parameter("k", X)
-    with raises(NameError):
+    with raises(TypeError):
         Dynamic.add_species("A", X)
-    with raises(NameError):
-        Dynamic.add_reaction("create", Creation(A=0, rate=X))
+    with raises(TypeError):
+        Dynamic.add_reaction("create", reactions.Creation(A=0, rate=X))
 
 
 def test_use_component_from_external_compartment():
-    class External(Compartment):
+    class External(EmptyCompartment):
         A: Species = 0
         k: Parameter = 0
 
     # Species
-    with raises(NameError):
+    with raises(ValueError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             A: Species = 1
-            create_A = Creation(A=External.A, rate=1)
+            create_A = reactions.Creation(A=External.A, rate=1)
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     Dynamic.add_species("A", 1)
-    with raises(NameError):
-        Dynamic.add_reaction("create", Creation(A=External.A, rate=1))
+    with raises(ValueError):
+        Dynamic.add_reaction("create", reactions.Creation(A=External.A, rate=1))
 
     # Parameter
-    with raises(NameError):
+    with raises(ValueError):
 
-        class Static(Compartment):  # noqa: F811
+        class Static(EmptyCompartment):  # noqa: F811
             k: Parameter = 1
             A: Species = External.k
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     Dynamic.add_parameter("k", 1)
-    with raises(NameError):
+    with raises(ValueError):
         Dynamic.add_species("A", External.k)

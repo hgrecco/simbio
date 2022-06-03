@@ -2,81 +2,80 @@
 Test model equivalence for Reactions.
 """
 
-from simbio.model import Compartment, Parameter, Species
-from simbio.reactions import Creation
+from simbio.model import EmptyCompartment, Parameter, Species, reactions
 
 
 def test_same_reaction():
     # Both Species and Parameter are internal
-    class ModelA(Compartment):
-        create_A = Creation(A=0, rate=0)
+    class ModelA(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=0)
 
-    class ModelB(Compartment):
-        create_A = Creation(A=0, rate=0)
+    class ModelB(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=0)
 
     assert ModelA == ModelB
 
     # External Species and internal Parameter
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
-        create_A = Creation(A=A, rate=0)
+        create_A = reactions.Creation(A=A, rate=0)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         A: Species = 0
-        create_A = Creation(A=A, rate=0)
+        create_A = reactions.Creation(A=A, rate=0)
 
     assert ModelA == ModelB
 
     # Internal Species and external Parameter
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         k: Parameter = 0
-        create_A = Creation(A=0, rate=k)
+        create_A = reactions.Creation(A=0, rate=k)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         k: Parameter = 0
-        create_A = Creation(A=0, rate=k)
+        create_A = reactions.Creation(A=0, rate=k)
 
     assert ModelA == ModelB
 
 
 def test_diff_value():
     # Different internal Species
-    class ModelA(Compartment):
-        create_A = Creation(A=0, rate=0)
+    class ModelA(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=0)
 
-    class ModelB(Compartment):
-        create_A = Creation(A=1, rate=0)
+    class ModelB(EmptyCompartment):
+        create_A = reactions.Creation(A=1, rate=0)
 
     assert ModelA != ModelB
 
     # Different internal Parameter
-    class ModelA(Compartment):
-        create_A = Creation(A=0, rate=0)
+    class ModelA(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=0)
 
-    class ModelB(Compartment):
-        create_A = Creation(A=0, rate=1)
+    class ModelB(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=1)
 
     assert ModelA != ModelB
 
     # Different external Species
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
-        create_A = Creation(A=A, rate=0)
+        create_A = reactions.Creation(A=A, rate=0)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         A: Species = 1
-        create_A = Creation(A=A, rate=0)
+        create_A = reactions.Creation(A=A, rate=0)
 
     assert ModelA != ModelB
 
     # Different external Parameter
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         k: Parameter = 0
-        create_A = Creation(A=0, rate=k)
+        create_A = reactions.Creation(A=0, rate=k)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         k: Parameter = 1
-        create_A = Creation(A=0, rate=k)
+        create_A = reactions.Creation(A=0, rate=k)
 
     assert ModelA != ModelB
 
@@ -87,11 +86,11 @@ def test_diff_name():
     The combined model should have two reactions: create_A and create_B.
     """
 
-    class ModelA(Compartment):
-        create_A = Creation(A=0, rate=0)
+    class ModelA(EmptyCompartment):
+        create_A = reactions.Creation(A=0, rate=0)
 
-    class ModelB(Compartment):
-        create_B = Creation(A=0, rate=0)
+    class ModelB(EmptyCompartment):
+        create_B = reactions.Creation(A=0, rate=0)
 
     assert ModelA != ModelB
 
@@ -104,24 +103,24 @@ def test_diff_component_name():
     """
 
     # Different external Species
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
-        create = Creation(A=A, rate=0)
+        create = reactions.Creation(A=A, rate=0)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         B: Species = 0
-        create = Creation(A=B, rate=0)
+        create = reactions.Creation(A=B, rate=0)
 
     assert ModelA != ModelB
 
     # Different external Parameter
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Parameter = 0
-        create = Creation(A=0, rate=A)
+        create = reactions.Creation(A=0, rate=A)
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         B: Parameter = 0
-        create = Creation(A=0, rate=B)
+        create = reactions.Creation(A=0, rate=B)
 
     assert ModelA != ModelB
 
@@ -139,18 +138,18 @@ def test_value_vs_component():
     """
 
     # All internal
-    class Model(Compartment):
-        create = Creation(A=0, rate=0)
+    class Model(EmptyCompartment):
+        create = reactions.Creation(A=0, rate=0)
 
     # External Species
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
-        create = Creation(A=A, rate=0)
+        create = reactions.Creation(A=A, rate=0)
 
     # External Parameter
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         A: Parameter = 0
-        create = Creation(A=0, rate=A)
+        create = reactions.Creation(A=0, rate=A)
 
     assert Model != ModelA
     assert Model != ModelB

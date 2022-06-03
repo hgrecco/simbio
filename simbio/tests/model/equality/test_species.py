@@ -2,25 +2,25 @@
 Test model equivalence for Species and Parameters.
 """
 
-from simbio.model import Compartment, Parameter, Species
+from simbio.model import EmptyCompartment, Parameter, Species
 
 
 def test_same_value():
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         A: Species = 0
 
     assert ModelA == ModelB
 
 
 def test_same_parameter():
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         k: Parameter = 0
         A: Species = k
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         k: Parameter = 0
         A: Species = k
 
@@ -28,21 +28,21 @@ def test_same_parameter():
 
 
 def test_diff_value():
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         A: Species = 1
 
     assert ModelA != ModelB
 
 
 def test_diff_parameter_value():
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         k: Parameter = 0
         A: Species = k
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         k: Parameter = 1
         A: Species = k
 
@@ -55,10 +55,10 @@ def test_diff_name():
     The combined model should have two species: A and B.
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         B: Species = 0
 
     assert ModelA != ModelB
@@ -71,11 +71,11 @@ def test_diff_parameter_name():
     But, should A be linked to parameter kA or kB?
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         kA: Parameter = 0
         A: Species = kA
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         kB: Parameter = 0
         A: Species = kB
 
@@ -94,10 +94,10 @@ def test_value_vs_parameter():
         2. A: Species = k
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         k: Parameter = 0
         A: Species = k
 

@@ -1,23 +1,24 @@
 from pytest import raises
 
-from simbio.model import Compartment, Group, Parameter, Species
+from simbio.model import EmptyCompartment, Parameter, Species
+from simbio.model.types import ReactionGroup
 
 
 def test_shared_parameter():
     """A multi-level model with a shared Parameter."""
 
-    class Static(Compartment):
+    class Static(EmptyCompartment):
         k: Parameter = 1
         A: Species = k
 
-        class Inner(Compartment):
+        class Inner(EmptyCompartment):
             k: Parameter
             A: Species = k  # noqa: F821
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     k = Dynamic.add_parameter("k", 1)
     Dynamic.add_species("A", k)
-    Inner = Compartment.add_compartment("Inner")
+    Inner = EmptyCompartment.add_compartment("Inner")
     Inner.add_species("A", k)
     Dynamic = Dynamic.build()
 
@@ -32,15 +33,15 @@ def test_shared_species_compartment():
     """
     with raises(TypeError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             A: Species = 0
 
-            class Inner(Compartment):
+            class Inner(EmptyCompartment):
                 A: Species
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     A = Dynamic.add_species("A", 0)
-    Inner = Compartment.add_compartment("Inner")
+    Inner = EmptyCompartment.add_compartment("Inner")
     with raises(TypeError):
         Inner.add_species("A", A)
 
@@ -50,15 +51,15 @@ def test_shared_species_group():
     between a Compartment and a Group.
     """
 
-    class Static(Compartment):
+    class Static(EmptyCompartment):
         A: Species = 0
 
-        class Inner(Group):
+        class Inner(ReactionGroup):
             A: Species
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     A = Dynamic.add_species("A", 0)
-    Inner = Compartment.add_group("Inner")
+    Inner = EmptyCompartment.add_group("Inner")
     Inner.add_species("A", A)
     Dynamic = Dynamic.build()
 
@@ -72,22 +73,22 @@ def test_missing_parameter():
     """
     with raises(NameError):
 
-        class First(Compartment):
-            class Second(Compartment):
+        class First(EmptyCompartment):
+            class Second(EmptyCompartment):
                 k: Parameter
                 A: Species = k  # noqa: F821
 
     with raises(NameError):
 
-        class First(Compartment):  # noqa: F811
-            class Second(Group):
+        class First(EmptyCompartment):  # noqa: F811
+            class Second(ReactionGroup):
                 k: Parameter
                 A: Species = k  # noqa: F821
 
     with raises(NameError):
 
-        class First(Group):  # noqa: F811
-            class Second(Group):
+        class First(ReactionGroup):  # noqa: F811
+            class Second(ReactionGroup):
                 k: Parameter
                 A: Species = k  # noqa: F821
 
@@ -101,15 +102,15 @@ def test_skip_level_parameter():
     """
     with raises(NameError):
 
-        class Static(Compartment):
+        class Static(EmptyCompartment):
             k: Parameter = 1
 
-            class First(Compartment):
-                class Second(Compartment):
+            class First(EmptyCompartment):
+                class Second(EmptyCompartment):
                     k: Parameter
                     A: Species = k  # noqa: F821
 
-    Dynamic = Compartment.to_builder()
+    Dynamic = EmptyCompartment.to_builder()
     k = Dynamic.add_parameter("k", 1)
     Second = Dynamic.add_comartment("First").add_compartment("Second")
     with raises(NameError):
@@ -118,7 +119,7 @@ def test_skip_level_parameter():
 
 def test_skip_level_species():
     """A Species can only be "linked" from its first parent."""
-    First = Compartment.to_builder()
+    First = EmptyCompartment.to_builder()
     Second = First.add_group("Second")
     Third = Second.add_group("Third")
 
@@ -137,11 +138,11 @@ def test_skip_level_species():
 
 
 def test_add_group():
-    class Single(Group):
+    class Single(ReactionGroup):
         A: Species
         B: Species = 0
 
-    class Compound(Group):
+    class Compound(ReactionGroup):
         X: Species = 0
         group_X = Single(A=X)  # outer species
         group_Y = Single(A=1)  # inner species
@@ -149,17 +150,17 @@ def test_add_group():
 
     with raises(ValueError):
 
-        class InexistentOuter(Group):
+        class InexistentOuter(ReactionGroup):
             # It references an outer Species X.
             group_X = Compound.group_X
 
     with raises(ValueError):
 
-        class ExistentOuter(Group):
+        class ExistentOuter(ReactionGroup):
             X: Species = 0
             # It references an outer Species X.
             group_X = Compound.group_X
 
-    class ReplacedOuter(Group):
+    class ReplacedOuter(ReactionGroup):
         X: Species = 0
         group_X = Compound.group_X(A=X)  # Is this allowed?

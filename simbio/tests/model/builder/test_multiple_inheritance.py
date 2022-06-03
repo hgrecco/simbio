@@ -1,5 +1,6 @@
 from pytest import raises
-from simbio.model import Compartment, Species
+
+from simbio.model import EmptyCompartment, Override, Species
 
 
 def test_disjoint():
@@ -7,20 +8,20 @@ def test_disjoint():
     results in the union of the models.
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         A: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         B: Species = 0
 
     class Joint(ModelA, ModelB):
         pass
 
-    assert Joint > ModelA
-    assert Joint > ModelB
+    # assert Joint > ModelA
+    # assert Joint > ModelB
 
-    assert Joint.A == ModelA.A
-    assert Joint.B == ModelB.B
+    assert Joint.A.resolve() == ModelA.A.resolve()
+    assert Joint.B.resolve() == ModelB.B.resolve()
 
 
 def test_non_colliding():
@@ -29,10 +30,10 @@ def test_non_colliding():
     results in the union of the models.
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         C: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         C: Species = 0
 
     class Joint(ModelA, ModelB):
@@ -47,10 +48,10 @@ def test_colliding():
     requires overriding values to eliminate collisions.
     """
 
-    class ModelA(Compartment):
+    class ModelA(EmptyCompartment):
         C: Species = 0
 
-    class ModelB(Compartment):
+    class ModelB(EmptyCompartment):
         C: Species = 1
 
     with raises(ValueError):
@@ -58,8 +59,8 @@ def test_colliding():
         class CollidingJoint(ModelA, ModelB):
             pass
 
-    class Joint(ModelA(C=1), ModelB):
-        pass
+    class Joint(ModelA, ModelB):
+        C: Species[Override] = 1
 
     assert Joint != ModelA
     assert Joint == ModelB
