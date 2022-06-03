@@ -4,6 +4,28 @@ from simbio.model import EmptyCompartment, Parameter, Species
 from simbio.model.types import ReactionGroup
 
 
+def test_multi_level_model():
+    """A multi-level model with a shared Parameter."""
+
+    class Static(EmptyCompartment):
+        k: Parameter = 1
+        A: Species = k
+
+        class Inner(EmptyCompartment):
+            k: Parameter = 2
+            A: Species = k  # noqa: F821
+
+    Dynamic = EmptyCompartment.to_builder()
+    k_outer = Dynamic.add_parameter("k", 1)
+    Dynamic.add_species("A", k_outer)
+    Inner = Dynamic.add_compartment("Inner")
+    k_inner = Inner.add_parameter("k", 2)
+    Inner.add_species("A", k_inner)
+    Dynamic = Dynamic.build()
+
+    assert Static == Dynamic
+
+
 def test_shared_parameter():
     """A multi-level model with a shared Parameter."""
 
@@ -18,7 +40,7 @@ def test_shared_parameter():
     Dynamic = EmptyCompartment.to_builder()
     k = Dynamic.add_parameter("k", 1)
     Dynamic.add_species("A", k)
-    Inner = EmptyCompartment.add_compartment("Inner")
+    Inner = Dynamic.add_compartment("Inner")
     Inner.add_species("A", k)
     Dynamic = Dynamic.build()
 

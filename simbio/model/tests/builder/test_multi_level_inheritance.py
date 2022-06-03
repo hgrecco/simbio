@@ -1,9 +1,9 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Parameter, Species
+from simbio.model import EmptyCompartment, Override, Parameter, Species
 
 
-def test_add_species():
+def test_add_species_to_outer():
     class Outer(EmptyCompartment):
         """Base model."""
 
@@ -25,6 +25,16 @@ def test_add_species():
             A: Species = 0
 
     assert ExtendedOuter == ExpectedOuter
+
+
+def test_add_species_to_inner():
+    class Outer(EmptyCompartment):
+        """Base model."""
+
+        A: Species = 0
+
+        class Inner(EmptyCompartment):
+            A: Species = 0
 
     class ExtendedInner(Outer):
         """Inherits Outer and extends inner."""
@@ -79,10 +89,10 @@ def test_override():
             k: Parameter = 0
 
     class OverridenOuter(Outer):
-        A: Species.override = 1
+        A: Species[Override] = 1
 
         class Inner(Outer.Inner):
-            A: Species.override = 1
+            A: Species[Override] = 1
 
     class ExpectedOuter(EmptyCompartment):
         A: Species = 1
