@@ -8,16 +8,8 @@
     :license: BSD, see LICENSE for more details.
 """
 
-from . import reactions
-from .compartments import Compartment
-from .components import Parameter, Species
-from .simulator import Simulator
+# from .simulator import Simulator
 
 __all__ = [
-    "Compartment",
-    "Parameter",
-    "Species",
-    "reactions",
-    "Compartment",
-    "Simulator",
+    # "Simulator",
 ]
