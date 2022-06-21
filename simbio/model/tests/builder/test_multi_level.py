@@ -1,7 +1,6 @@
 from pytest import raises
 
-from simbio.model import EmptyCompartment, Parameter, Species
-from simbio.model.types import ReactionGroup
+from simbio.model import EmptyCompartment, EmptyGroup, Parameter, Species, reactions
 
 
 def test_multi_level_model():
@@ -76,7 +75,7 @@ def test_shared_species_group():
     class Static(EmptyCompartment):
         A: Species = 0
 
-        class Inner(ReactionGroup):
+        class Inner(EmptyGroup):
             A: Species
 
     Dynamic = EmptyCompartment.to_builder()
@@ -103,14 +102,14 @@ def test_missing_parameter():
     with raises(NameError):
 
         class First(EmptyCompartment):  # noqa: F811
-            class Second(ReactionGroup):
+            class Second(EmptyGroup):
                 k: Parameter
                 A: Species = k  # noqa: F821
 
     with raises(NameError):
 
-        class First(ReactionGroup):  # noqa: F811
-            class Second(ReactionGroup):
+        class First(EmptyGroup):  # noqa: F811
+            class Second(EmptyGroup):
                 k: Parameter
                 A: Species = k  # noqa: F821
 
@@ -160,11 +159,11 @@ def test_skip_level_species():
 
 
 def test_add_group():
-    class Single(ReactionGroup):
+    class Single(EmptyGroup):
         A: Species
         B: Species = 0
 
-    class Compound(ReactionGroup):
+    class Compound(EmptyGroup):
         X: Species = 0
         group_X = Single(A=X)  # outer species
         group_Y = Single(A=1)  # inner species
@@ -172,17 +171,30 @@ def test_add_group():
 
     with raises(ValueError):
 
-        class InexistentOuter(ReactionGroup):
+        class InexistentOuter(EmptyGroup):
             # It references an outer Species X.
             group_X = Compound.group_X
 
     with raises(ValueError):
 
-        class ExistentOuter(ReactionGroup):
+        class ExistentOuter(EmptyGroup):
             X: Species = 0
             # It references an outer Species X.
             group_X = Compound.group_X
 
-    class ReplacedOuter(ReactionGroup):
+    class ReplacedOuter(EmptyGroup):
         X: Species = 0
         group_X = Compound.group_X(A=X)  # Is this allowed?
+
+
+def test_intergroup_reaction():
+    class Model(EmptyCompartment):
+        class GroupA(EmptyGroup):
+            A: Species = 1
+
+        class GroupB(EmptyGroup):
+            B: Species = 0
+
+        A_to_B = reactions.Conversion(A=GroupA.A, B=GroupB.B, rate=1)
+
+    assert Model.A_to_B.A.resolve(recursive=True) == Model.GroupA.A.resolve()
