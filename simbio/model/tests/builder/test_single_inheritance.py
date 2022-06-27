@@ -89,27 +89,27 @@ def test_collision():
     must raise a NameError.
     """
 
-    with raises(NameError):
+    with raises(ValueError):
 
         class Collision(Base):
             A: Species = 1
 
-    with raises(NameError):
+    with raises(ValueError):
 
         class Collision(Base):  # noqa: F811
             k: Parameter = 1
 
-    with raises(NameError):
+    with raises(ValueError):
 
         class Collision(Base):  # noqa: F811
             create_A = reactions.Creation(A=1, rate=1)
 
     Collision = Base.to_builder()  # noqa: F811
-    with raises(NameError):
+    with raises(ValueError):
         Collision.add_species("A", 1)
-    with raises(NameError):
+    with raises(ValueError):
         Collision.add_parameter("k", 1)
-    with raises(NameError):
+    with raises(ValueError):
         Collision.add_reaction("create_A", reactions.Creation(A=1, rate=1))
 
 
