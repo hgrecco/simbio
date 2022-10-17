@@ -1,5 +1,5 @@
 import pytest
-from pytest import raises
+from pytest import raises, xfail
 
 from simbio.components import EmptyCompartment, Override, Parameter, Species
 from simbio.reactions.single import Creation, Destruction
@@ -169,6 +169,7 @@ def test_cyclic_override():
     Cycles can only happen between components of a particular level,
     as a component cannot depend on a lower level component.
     """
+    xfail("Not implemented")
 
     class Base(EmptyCompartment):
         a: Parameter = 0

@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises, xfail
 
 from simbio.components import EmptyCompartment, EmptyGroup, Parameter, Species
 from simbio.reactions.single import Conversion
@@ -28,6 +28,7 @@ def test_multi_level_model():
 
 def test_shared_parameter():
     """A multi-level model with a shared Parameter."""
+    xfail("Not implemented")
 
     class Static(EmptyCompartment):
         k: Parameter = 1
@@ -53,6 +54,7 @@ def test_shared_species_compartment():
 
     Species must belong to a single Compartment.
     """
+    xfail("Not implemented")
     with raises(TypeError):
 
         class Static(EmptyCompartment):
@@ -72,6 +74,7 @@ def test_shared_species_group():
     """A multi-level model with a shared Species
     between a Compartment and a Group.
     """
+    xfail("Not implemented")
 
     class Static(EmptyCompartment):
         A: Species = 0
@@ -93,6 +96,7 @@ def test_missing_parameter():
     which is not available in the parent Comparment
     or Group must raise a NameError.
     """
+    xfail("Not implemented")
     with raises(NameError):
 
         class First(EmptyCompartment):
@@ -117,11 +121,12 @@ def test_missing_parameter():
     # Can't be replicated dynamically
 
 
-def test_skip_level_parameter():
+def test_xfail_level_parameter():
     """A multi-level model with a free Parameter
     which is not available in the parent Comparment
     or Group must raise a NameError.
     """
+    xfail("Not implemented")
     with raises(NameError):
 
         class Static(EmptyCompartment):
@@ -139,8 +144,9 @@ def test_skip_level_parameter():
         Second.add_species("A", k)
 
 
-def test_skip_level_species():
+def test_xfail_level_species():
     """A Species can only be "linked" from its first parent."""
+    xfail("Not implemented")
     First = EmptyCompartment.to_builder()
     Second = First.add_group("Second")
     Third = Second.add_group("Third")
@@ -160,6 +166,8 @@ def test_skip_level_species():
 
 
 def test_add_group():
+    xfail("Not implemented")
+
     class Single(EmptyGroup):
         A: Species
         B: Species = 0

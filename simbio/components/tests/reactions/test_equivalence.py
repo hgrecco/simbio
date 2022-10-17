@@ -1,13 +1,13 @@
-from pytest import raises, skip, xfail
+from pytest import raises, xfail
 
 from simbio.components import Parameter, Species
 from simbio.components.types import SingleReaction
 from simbio.reactions.single import Synthesis
 
-skip("Not implemented", allow_module_level=True)
-
 
 def test_reaction_equivlence():
+    xfail("Not implemented")
+
     class Reaction(SingleReaction):
         A: Species
         B: Species
@@ -41,8 +41,8 @@ def test_reaction_equivlence():
         assert not reaction.equivalent(r)
 
 
-@xfail("Not implemented yet. Will raise error on simulation.")
 def test_repeated_reactant():
+    xfail("Not implemented")
     A, B = (Species(0, name=name) for name in "AB")
     k = Parameter(0, name="k")
 
