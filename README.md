@@ -1,73 +1,48 @@
 # SimBio
-`simbio` is a Python-based library of biological systems simulation. As a comparison with other libraries we can enumerate:
 
-- Models are composables, so you can create bigger models using smaller ones
-- Models are python classes, so it is easier to understand the inners and easy to compose into bigger models
+`simbio` is a Python-based library of biological systems simulation.
+As a comparison with other libraries we can enumerate:
+
+- Models are composables,
+  so you can create bigger models using smaller ones
+- Models are python classes,
+  so it is easier to understand the inners
+  and easy to compose into bigger models
 - Posibility to do `numba` JIT compilation
-- Small footprint library, can be imported on a bigger application without fuzz
+- Small footprint library,
+  can be imported on a bigger application without fuzz
 
 ## Installation
-The package is not yet available at PyPI. To install the package, clone or download the repository. Or, if you're using pip:
+
+The package is not yet available at PyPI.
+If you are using pip,
+it can be installed directly from GitHub:
 
 ```
 > pip install git+https://github.com/hgrecco/simbio
 ```
 
 ## Examples
-On the folder `examples`, we included several examples for the library usage. Run them with:
+
+On the folder `tests/examples`, we included several examples for the library usage. Run them with:
 
 ```
-> python examples/<example>.py
+> python tests/examples/<example>.py
 ```
 
-## Developers
+## Development
 
-### Installation notes
-To install the package for development, use the [dev] option.
+We are using pytest for testing,
+and pre-commit hooks to format and lint the codebase.
 
-It's recommended to create a virtual environment first:
-
-```
-> python -m venv .venv
-```
-
-or, if using conda,
+To easily set-up a development environment,
+run the following commands:
 
 ```
-> conda create -n simbio python
-> conda activate simbio
+git clone https://github.com/hgrecco/simbio
+cd simbio
+conda env create --file environment-dev.yml
+pre-commit install
 ```
 
-Then, after cloning the repository, install with:
-
-```
-> pip install -e .[dev]
-```
-
-which includes all the needed packages to develop.
-
-### pre-commit
-We have in place pre-commit hooks, to have a common style. We use
-
-- black
-- flake8
-- isort
-
-They can be executed, without any commit, with
-
-```
-> pre-commit run --all-files
-```
-
-or installed to run before each commit with:
-
-```
-> pre-commit install
-```
-
-### Running tests
-For testing, we are using [ward](https://wardpy.com/). To execute the tests use this command
-
-```
-> ward
-```
+which assume you have git and conda preinstalled.
