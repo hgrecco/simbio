@@ -1,11 +1,48 @@
+[project]
+name = "SimBio"
+authors = [
+    { name="Hernán E. Grecco", email="hernan.grecco@gmail.com" },
+    { name="Mauro Silberberg", email="maurosilber@gmail.com" },
+]
+description = "Simulation of Biological Systems"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = [
+"mass actions",
+"michaelis-menten",
+"ode",
+"compartment",
+"reaction",
+]
+license = { file="LICENSE" }
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "plum-dispatch",
+    "typing_extensions; python_version < '3.10'",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+dev = ["pre-commit", "pytest"]
+
+[project.urls]
+"Homepage" = "https://github.com/hgrecco/simbio"
+"Bug Tracker" = "https://github.com/hgrecco/simbio/issues"
+
 [build-system]
-requires = ["setuptools>=41", "wheel", "setuptools_scm[toml]>=3.4.3"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
 
 [tool.isort]
 profile = "black"
-
-[tool.ward]
-path = ["simbio", "examples"]
-
-[tool.setuptools_scm]
