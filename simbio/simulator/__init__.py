@@ -31,17 +31,17 @@ class Simulator:
         model: Compartment,
         *,
         t0: float = 0,
-        values: dict[str | Species | Parameter, float] = None,
+        values: dict[str | Species | Parameter, float] = {},
         solver: type[Solver] = ODEint,
-        solver_kwargs: dict | None = None,
+        solver_kwargs: dict = {},
         compiler: type[Compiler] = NumpyCompiler,
     ):
         self.model = model
         # TODO: Validate concentrations and parameters?
-        self.values = values or {}
+        self.values = values
         self.t0 = t0
         self.solver = solver
-        self.solver_kwargs = solver_kwargs or {}
+        self.solver_kwargs = solver_kwargs
         self.compiler = compiler(model)
 
     def create_solver(
@@ -49,7 +49,7 @@ class Simulator:
         *,
         t0: float = None,
         values: dict[str | Species | Parameter, float] = {},
-        **kwargs,
+        **solver_kwargs,
     ) -> Solver:
         """Create a solver instance.
 
@@ -62,7 +62,12 @@ class Simulator:
             t0 = self.t0
         y0, p = self.compiler.build_value_vectors({**self.values, **values})
         rhs = self.compiler.build_rhs(p.values)
-        return self.solver(rhs, t0, y0.values, **{**self.solver_kwargs, **kwargs})
+        return self.solver(
+            rhs,
+            t0,
+            y0.values,
+            **{**self.solver_kwargs, **solver_kwargs},
+        )
 
     def run(
         self,
