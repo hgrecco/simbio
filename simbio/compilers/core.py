@@ -136,13 +136,6 @@ class Compiler(ABC):
     def build_value_vectors(
         self,
         values: dict[str | Reference, float] = {},
-    ) -> tuple[np.ndarray, np.ndarray]:
-        species, parameters = self._build_value_vectors(values)
-        return species.values, parameters.values
-
-    def _build_value_vectors(
-        self,
-        values: dict[str | Reference, float] = {},
     ) -> tuple[pd.Series, pd.Series]:
         def resolve(k):
             if isinstance(k, Reference):

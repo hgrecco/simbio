@@ -61,8 +61,8 @@ class Simulator:
         if t0 is None:
             t0 = self.t0
         y0, p = self.compiler.build_value_vectors({**self.values, **values})
-        rhs = self.compiler.build_rhs(p)
-        return self.solver(rhs, t0, y0, **{**self.solver_kwargs, **kwargs})
+        rhs = self.compiler.build_rhs(p.values)
+        return self.solver(rhs, t0, y0.values, **{**self.solver_kwargs, **kwargs})
 
     def run(
         self,
