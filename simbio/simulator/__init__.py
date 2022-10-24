@@ -34,7 +34,7 @@ class Simulator:
         values: dict[str | Species | Parameter, float] = None,
         solver: type[Solver] = ODEint,
         solver_kwargs: dict | None = None,
-        builder: type[Compiler] = NumpyCompiler,
+        compiler: type[Compiler] = NumpyCompiler,
     ):
         self.model = model
         # TODO: Validate concentrations and parameters?
@@ -42,10 +42,7 @@ class Simulator:
         self.t0 = t0
         self.solver = solver
         self.solver_kwargs = solver_kwargs or {}
-
-        if isinstance(builder, str):
-            builder = Compiler.BUILDERS[builder]
-        self.compiler = builder(model)
+        self.compiler = compiler(model)
 
     def create_solver(
         self,
