@@ -89,6 +89,9 @@ class Simulator:
             self.current_solver = self.create_solver(t0=t0, values=values)
 
         t, y = self.current_solver.run(t)
+        return self.to_dataframe(t, y)
+
+    def to_dataframe(self, t, y):
         return pd.DataFrame(
             data=y,
             index=pd.Series(t, name="time"),
