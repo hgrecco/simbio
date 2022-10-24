@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Protocol
-
 import numpy as np
 import pandas as pd
 
@@ -10,11 +8,6 @@ from ..compilers.numpy import NumpyCompiler
 from ..components.types import Compartment, Parameter, Species
 from .solvers.core import Solver
 from .solvers.scipy import ODEint
-
-
-class Output(Protocol):
-    index: np.ndarray
-    values: np.ndarray
 
 
 class Simulator:
@@ -80,7 +73,7 @@ class Simulator:
         t0: float = None,
         values: dict[str | Species | Parameter, float] = None,
         resume=False,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> pd.DataFrame:
         """Run simulation and return solution evaluated at t.
 
         If resume is False (default), create a new solver instance
