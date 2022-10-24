@@ -65,7 +65,7 @@ class Compiler(ABC):
     def parameter_indexes(self, full_name: str, reaction: SingleReaction) -> tuple[int]:
         indexes = []
         for name in reaction.parameters:
-            name = self.resolve(f"{full_name}.{name}")
+            name = f"{full_name}.{name}"
             index = self.get_parameter_index(name)
             indexes.append(index)
         return tuple(indexes)
