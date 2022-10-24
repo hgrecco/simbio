@@ -31,7 +31,13 @@ class ScipySolver(NumpySolver):
     """
 
     def __init__(
-        self, rhs, t, y, *, method: Union[str, Type[OdeSolver]] = "RK45", **kwargs,
+        self,
+        rhs,
+        t,
+        y,
+        *,
+        method: Union[str, Type[OdeSolver]] = "RK45",
+        **kwargs,
     ):
         super().__init__(rhs=rhs, t=t, y=y)
         method = _method(method)
