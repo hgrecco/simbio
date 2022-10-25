@@ -210,5 +210,8 @@ def first_common_parent(*paths: list[Container]) -> Container | None:
 
 
 def get_full_name(x: Container | Reference, *, root: Container = None):
-    path = [p.name for p in yield_parents(x, up_to=root)]
-    return ".".join(path[::-1])
+    path = []
+    if isinstance(x, Reference):
+        path.append(x.name)
+    path.extend(p.name for p in yield_parents(x, up_to=root))
+    return ".".join(reversed(path))

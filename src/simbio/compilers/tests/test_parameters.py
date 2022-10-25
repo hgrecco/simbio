@@ -51,3 +51,13 @@ def test_resolve_with_override_both():
         "r1.rate": 3,
         "r2.rate": 2,
     }
+
+
+def test_resolve_references():
+    override = {Model.k: 2}
+    y0, p = Compiler(Model).build_value_vectors(override)
+    assert p.to_dict() == {
+        "k": 2,
+        "r1.rate": 2,
+        "r2.rate": 2,
+    }
