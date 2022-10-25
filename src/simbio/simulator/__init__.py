@@ -74,7 +74,7 @@ class Simulator:
         t: np.ndarray,
         *,
         t0: float = None,
-        values: dict[str | Species | Parameter, float] = None,
+        values: dict[str | Species | Parameter, float] = {},
         resume=False,
     ) -> pd.DataFrame:
         """Run simulation and return solution evaluated at t.
