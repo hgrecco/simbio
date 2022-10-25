@@ -20,13 +20,13 @@ class Content(Generic[Overridable]):
 
 class Container(Generic[Overridable]):
     """A Container is a tree-like data structure
-    which contains `Content`s and `Container`s as children.
+    which contains Contents and Containers as children.
     It has an optional parent Container.
 
-    When accessing its non-Container children through `getattr`,
-    they are returned as `Reference`s.
+    Its children can be accessed as attributes,
+    and non-Container ones are returned as References.
 
-    When Content.value is a Reference to another Content,
+    When adding a Content whose value is a Reference to another Content,
     that Reference must be converted to a RelativeReference
     before adding it to the Container._contents dict.
     Therefore, we can check for equality by comparing the _contents.
@@ -37,6 +37,7 @@ class Container(Generic[Overridable]):
     _contents: dict[str, Content | Container]
 
     def __copy__(self, new=None, *, name: str = None, parent: Container = None):
+        """Recursively copy this Container and its Container children."""
         if new is None:
             new = object.__new__(self.__class__)
 
@@ -63,6 +64,11 @@ class Container(Generic[Overridable]):
     def _filter_contents(
         self, *types: type[T], recursive: bool = False
     ) -> Iterator[tuple[str, T]]:
+        """Yield (name, content) pairs of the given types.
+
+        Optionally, search recursively in its Container children.
+        In that case, name is f"{parent}.{child}".
+        """
         for k, v in self._contents.items():
             if isinstance(v, types):
                 yield k, v
