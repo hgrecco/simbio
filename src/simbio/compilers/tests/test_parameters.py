@@ -14,8 +14,11 @@ class Model(EmptyCompartment):
     r2 = Creation(A=0, rate=k)
 
 
+compiler = Compiler(Model)
+
+
 def test_resolve():
-    y0, p = Compiler(Model).build_value_vectors()
+    y0, p = compiler.build_value_vectors()
     assert p.to_dict() == {
         "k": 1,
         "r1.rate": 1,
@@ -25,7 +28,7 @@ def test_resolve():
 
 def test_resolve_with_override_top():
     override = {"k": 2}
-    y0, p = Compiler(Model).build_value_vectors(override)
+    y0, p = compiler.build_value_vectors(override)
     assert p.to_dict() == {
         "k": 2,
         "r1.rate": 2,
@@ -35,7 +38,7 @@ def test_resolve_with_override_top():
 
 def test_resolve_with_override_bottom():
     override = {"r1.rate": 2}
-    y0, p = Compiler(Model).build_value_vectors(override)
+    y0, p = compiler.build_value_vectors(override)
     assert p.to_dict() == {
         "k": 1,
         "r1.rate": 2,
@@ -45,7 +48,7 @@ def test_resolve_with_override_bottom():
 
 def test_resolve_with_override_both():
     override = {"k": 2, "r1.rate": 3}
-    y0, p = Compiler(Model).build_value_vectors(override)
+    y0, p = compiler.build_value_vectors(override)
     assert p.to_dict() == {
         "k": 2,
         "r1.rate": 3,
@@ -55,7 +58,7 @@ def test_resolve_with_override_both():
 
 def test_resolve_references():
     override = {Model.k: 2}
-    y0, p = Compiler(Model).build_value_vectors(override)
+    y0, p = compiler.build_value_vectors(override)
     assert p.to_dict() == {
         "k": 2,
         "r1.rate": 2,
