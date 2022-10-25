@@ -47,5 +47,9 @@ where = ["src"]
 
 [tool.setuptools_scm]
 
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+pythonpath = "."
+
 [tool.isort]
 profile = "black"
