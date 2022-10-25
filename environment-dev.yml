@@ -11,3 +11,4 @@ dependencies:
   - matplotlib
   - pre-commit
   - pytest
+  - typer
