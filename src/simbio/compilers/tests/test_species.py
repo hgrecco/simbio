@@ -1,3 +1,5 @@
+from pytest import raises
+
 from ...components import EmptyCompartment, Species
 from ...reactions.single import Creation
 from ..core import Compiler
@@ -31,3 +33,11 @@ def test_build_initial_conditions():
 
     y0, _ = compiler.build_value_vectors({Model.A: 2, Model.r3.A: 4})
     assert y0.to_dict() == {"A": 2, "r3.A": 4}
+
+
+def test_error_on_inexistent_species():
+    with raises(ValueError):
+        y0, _ = compiler.build_value_vectors({"r1.A": 1})
+
+    with raises(ValueError):
+        y0, _ = compiler.build_value_vectors({"inexistent": 1})

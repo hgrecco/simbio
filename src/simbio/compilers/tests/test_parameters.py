@@ -1,3 +1,5 @@
+from pytest import raises
+
 from ...components import EmptyCompartment, Parameter
 from ...reactions.single import Creation
 from ..core import Compiler
@@ -64,3 +66,8 @@ def test_resolve_references():
         "r1.rate": 2,
         "r2.rate": 2,
     }
+
+
+def test_error_on_inexistent_parameter():
+    with raises(ValueError):
+        y0, _ = compiler.build_value_vectors({"inexistent": 1})

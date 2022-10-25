@@ -146,10 +146,10 @@ class Compiler(ABC):
                 raise TypeError
 
         values = {resolve(k): v for k, v in values.items()}
-        species = {k: values.get(k, v) for k, v in self.species.items()}
+        species = {k: values.pop(k, v) for k, v in self.species.items()}
         parameters = {}
         for name, value in self.parameters.items():
-            value = values.get(name, value)
+            value = values.pop(name, value)
             if isinstance(value, RelativeReference):
                 value = self.values[name]
             parameters[name] = value
@@ -157,5 +157,8 @@ class Compiler(ABC):
             while isinstance(value, str):
                 value = parameters[value]
             parameters[name] = value
+
+        if len(values) > 0:
+            raise ValueError
 
         return pd.Series(species), pd.Series(parameters)
