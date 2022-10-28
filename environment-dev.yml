@@ -12,3 +12,5 @@ dependencies:
   - pre-commit
   - pytest
   - typer
+  - jupyer-book
+  - jupytext
