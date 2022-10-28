@@ -109,7 +109,7 @@ class Reference:
 
         return content
 
-    def relative_to(self, container: Container, /) -> RelativeReference:
+    def relative_to(self, container: Container) -> RelativeReference:
         self_path = list(yield_parents(self))
         container_path = list(yield_parents(container))
         parent = first_common_parent(reversed(self_path), reversed(container_path))
@@ -153,7 +153,7 @@ class RelativeReference:
         else:
             return f"{names[0]}.{self.name}"
 
-    def to_reference_from(self, container: Container, /) -> Reference:
+    def to_reference_from(self, container: Container) -> Reference:
         parent = container
 
         for level in range(self.parent):

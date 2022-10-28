@@ -63,7 +63,9 @@ class ODEint(Solver):
 
     def run(self, t: Union[Real, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
         if t[0] < self.t:
-            raise ValueError(f"{t[0]=} is less than solvers current time {self.t=}.")
+            raise ValueError(
+                f"t[0]={t[0]} is less than solvers current time self.t={self.t}."
+            )
 
         elif t[0] > self.t:
             # The first value for t must coincide with the initial condition for y.

@@ -3,17 +3,23 @@ from __future__ import annotations
 import dataclasses
 import inspect
 import sys
-import typing
 from contextlib import suppress
+from typing import TYPE_CHECKING
+
+try:
+    from typing import get_args
+    from typing import get_origin as _get_origin
+except ImportError:
+    from typing_extensions import get_args, get_origin as _get_origin
 
 from ._container import Container, Content, Override, RelativeReference
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ._builder import Builder
 
 
 def get_origin(t):
-    o = typing.get_origin(t)
+    o = _get_origin(t)
     return o if o is not None else t
 
 
@@ -179,7 +185,7 @@ class DSL(Container, type):
 
 
 def is_content_overriding(annotation: type) -> bool:
-    return Override in typing.get_args(annotation)
+    return Override in get_args(annotation)
 
 
 def is_container_overriding(name: str, container: DSL, inheriting: tuple[DSL]) -> bool:

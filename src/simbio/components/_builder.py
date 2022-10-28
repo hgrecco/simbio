@@ -82,7 +82,9 @@ class Builder(Container):
                 raise ValueError(f"{name} does not exist.")
 
             if type(value) is not type(current):
-                raise TypeError(f"{type(value)=} does not match {type(current)=}.")
+                raise TypeError(
+                    f"type(value)={type(value)} does not match type(current)={type(current)}."
+                )
         elif name in self._contents:
             raise ValueError(f"{name} already exists.")
 

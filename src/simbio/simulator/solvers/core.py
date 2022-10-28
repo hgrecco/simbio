@@ -63,7 +63,9 @@ class NumpySolver(Solver):
     def skip(self, *, n: int = None, upto_t: float = None) -> None:
         if upto_t is not None:
             if upto_t > self.t_bound:
-                raise ValueError(f"{upto_t=} is greater than {self.t_bound=}.")
+                raise ValueError(
+                    f"upto_t={upto_t} is greater than self.t_bound={self.t_bound}."
+                )
             elif upto_t < self.t:
                 return
 
@@ -93,7 +95,9 @@ class NumpySolver(Solver):
     def step(self, *, n: int = None, upto_t: float = None) -> Tuple[np.array, np.array]:
         if upto_t is not None:
             if upto_t > self.t_bound:
-                raise ValueError(f"{upto_t=} is greater than {self.t_bound=}.")
+                raise ValueError(
+                    f"upto_t={upto_t} is greater than self.t_bound={self.t_bound}."
+                )
             elif upto_t < self.t:
                 return np.array(()), np.array(())
 

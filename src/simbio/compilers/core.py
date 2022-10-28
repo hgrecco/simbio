@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import numbers
 from abc import ABC, abstractmethod
-from functools import cached_property, partial
+from functools import partial
+
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 import numpy as np
 import pandas as pd
