@@ -14,21 +14,23 @@ As a comparison with other libraries we can enumerate:
 
 ## Installation
 
-The package is not yet available at PyPI.
 If you are using pip,
-it can be installed directly from GitHub:
+it can be installed directly from PyPI:
 
 ```
-> pip install git+https://github.com/hgrecco/simbio
+pip install simbio
+```
+
+or the latest version from GitHub:
+
+```
+pip install git+https://github.com/hgrecco/simbio
 ```
 
 ## Examples
 
-On the folder `tests/examples`, we included several examples for the library usage. Run them with:
-
-```
-> python tests/examples/<example>.py
-```
+On the folder `src/simbio/tests/examples`,
+we included some examples for the library usage.
 
 ## Development
 
