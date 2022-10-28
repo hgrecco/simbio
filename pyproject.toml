@@ -39,6 +39,7 @@ where = ["src"]
 [tool.setuptools.dynamic]
 dependencies = {file = "requirements.txt"}
 optional-dependencies.sim = {file = "requirements.sim.txt"}
+optional-dependencies.test = {file = "requirements.test.txt"}
 readme = {file = "README.md"}
 
 [tool.setuptools_scm]
