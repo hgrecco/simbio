@@ -14,14 +14,26 @@ class CompartmentBuilder:
     groups: Mapping[str, Group]
     compartments: Mapping[str, Compartment]
 
-    def add_parameter(self, name: str, value: float | Parameter): ...
-    def add_species(self, name: str, value: float | Parameter): ...
-    def add_reaction(self, name: str, reaction: Reaction): ...
-    def add_group(self, name: str, group: Group=None): ...
-    def add_compartment(self, name: str, compartment: Compartment=None): ...
+    def add_parameter(self, name: str, value: float | Parameter):
+        ...
 
-    def rename(self, old_name: str, new_name: str): ...
-    def remove(self, name: str, value=None): ...
+    def add_species(self, name: str, value: float | Parameter):
+        ...
+
+    def add_reaction(self, name: str, reaction: Reaction):
+        ...
+
+    def add_group(self, name: str, group: Group = None):
+        ...
+
+    def add_compartment(self, name: str, compartment: Compartment = None):
+        ...
+
+    def rename(self, old_name: str, new_name: str):
+        ...
+
+    def remove(self, name: str, value=None):
+        ...
 ```
 
 ## Species
@@ -80,7 +92,7 @@ We search for the `k_free` inside `cell`. To search, we can either:
 
 1. check for identity (`is`) within `cell.parameters`
 
-2. If `Parameter` knows its name, we check for `k_free is cell.parameters[k_free.name]
+1. If `Parameter` knows its name, we check for \`k_free is cell.parameters\[k_free.name\]
 
 This approach excludes using upper level parameters:
 
@@ -95,8 +107,8 @@ A = nucleus.add_species("A", k)
 as `k not in nucleus.parameters.values()`.
 
 ### Option 2
- 
- `k_free` and `k`, the variable `k` cannot be a `Parameter` instance. 
+
+`k_free` and `k`, the variable `k` cannot be a `Parameter` instance.
 
 ## Reactions
 

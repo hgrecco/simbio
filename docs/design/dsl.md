@@ -63,7 +63,8 @@ class ExtendedModelA(ModelA):
 ```
 
 Disadvantage of this approach:
-- "go to definition" stp[s at the type annotation `k: Parameter` instead of continuing into `ModelA.k`.
+
+- "go to definition" stp\[s at the type annotation `k: Parameter` instead of continuing into `ModelA.k`.
 - Renaming `ModelA.k` with refactoring tools won't rename `k` in `ExtendedModelA`.
 
 ### Solution 3: Self type (Python 3.11)
@@ -72,6 +73,7 @@ Other solution is to define a helper `Self` type as:
 
 ```python
 T = typing.TypeVarTuple("T")
+
 
 def Self(*cls: *T) -> typing.Union[*T]:
     pass
@@ -88,9 +90,11 @@ class ExtendedModel(ModelA):
 ```
 
 Advantages of this approach:
+
 - "Go to definition" goes to `ModelA`.
 
 Disadvanges of this approach:
+
 - Refactoring tools' "Rename" is tricky when inheriting from multiple models.
 
 ## Combining models
@@ -102,6 +106,7 @@ class ModelB(Compartment):
     B = Species(0)
     k = Parameter(1)
     create_B = reactions.Creation(B, k)
+
 
 class Combined(ModelA, ModelB):
     pass
@@ -135,8 +140,10 @@ If the models have collisions between their components, it raises an exception, 
 class ModelA(Compartment):
     A = Species(0)
 
+
 class ModelB(Compartment):
     A = Species(1)
+
 
 class Combined(ModelA, ModelB):
     pass
@@ -149,7 +156,7 @@ we need to override it.
 ```python
 class Combined(ModelA, ModelB):
     A = ModelA.A.replace(1)
-    
+
     # it would also work from ModelB:
     # A = ModelB.A.replace(1)
 ```

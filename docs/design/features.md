@@ -20,6 +20,7 @@ A Model is composed of a Compartment, its Species and Reactions. But Compartment
 ## Model comparisons and equivalence classes
 
 Model can be compared and composed with set-like operators:
+
 - union: `|` (`__or__`)
 - intersection: `&` (`__and__`)
 - difference: `-` (`__sub__`)
@@ -29,19 +30,19 @@ Additionally, different equivalence classes are defined to compare models. From 
 
 1. Topological equivalence
 
-    The same species are connected by (possibly different) reactions.
+   The same species are connected by (possibly different) reactions.
 
-2. Reaction equivalence
+1. Reaction equivalence
 
-    The reactions have the same rate law, but possibly having a different rate constant.
+   The reactions have the same rate law, but possibly having a different rate constant.
 
-3. Parametric equivalence
+1. Parametric equivalence
 
-    The reactions have the same rate constants.
-    
-4. Equality
-    
-    The same initial conditions for the Species.
+   The reactions have the same rate constants.
+
+1. Equality
+
+   The same initial conditions for the Species.
 
 The set operators use the last equivalence class, Equality, to compare models.
 

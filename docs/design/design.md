@@ -99,24 +99,27 @@ class Stoichiometry:
 
 It implies the following differential equations:
 
-1. $A \rightarrow B$
-    - $\dot{A} = -kA$
-    - $\dot{B} = +kA$
+1. $A \\rightarrow B$
 
-2. A + B -> B
-    - $\dot{A} = -kAB$
-    - $\dot{B} = 0$
+   - $\\dot{A} = -kA$
+   - $\\dot{B} = +kA$
 
-3. 2A -> B
-    - $\dot{A} = -2 k A^2 / 2!$
-    - $\dot{B} = -k A^2 / 2!$
+1. A + B -> B
+
+   - $\\dot{A} = -kAB$
+   - $\\dot{B} = 0$
+
+1. 2A -> B
+
+   - $\\dot{A} = -2 k A^2 / 2!$
+   - $\\dot{B} = -k A^2 / 2!$
 
 ### Uniqueness of Reactions
 
 To avoid inadvertently adding the same reaction more than once, two restrictions are enforced:
 
 1. a Reaction must be unique within a given Compartment.
-2. a Reaction can only be added to the first common parent of its Species.
+1. a Reaction can only be added to the first common parent of its Species.
 
 For this purpose, two reactions are equivalent if they have the same set of reactants and products, independently of its rate.
 
@@ -153,6 +156,7 @@ In contrast to `Compartment`, `Group`s can be used to define "macros", by leavin
 @dataclass  # optional for type-hints
 class MyGroup(Group):
     """A -> B"""
+
     A: Species  # uninitialized
     k: Parameter  # uninitialized
     B = Species(0)
