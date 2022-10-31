@@ -5,6 +5,7 @@ import types
 from functools import cached_property
 
 import numba
+import numpy as np
 
 from ..components import SingleReaction
 from .core import Compiler
@@ -59,4 +60,5 @@ class NumbaCompiler(Compiler):
 
     def build_rhs(self, p):
         rhs = self.rhs
+        p = np.asarray(p, float)
         return numba.njit(lambda t, y: rhs(t, y, p))
