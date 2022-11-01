@@ -36,8 +36,8 @@ def test_build_initial_conditions():
 
 
 def test_error_on_inexistent_species():
-    with raises(ValueError):
+    with raises(ValueError, match="r1.A"):
         y0, _ = compiler.build_value_vectors({"r1.A": 1})
 
-    with raises(ValueError):
+    with raises(ValueError, match="inexistent"):
         y0, _ = compiler.build_value_vectors({"inexistent": 1})

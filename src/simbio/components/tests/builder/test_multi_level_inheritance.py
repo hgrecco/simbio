@@ -70,7 +70,7 @@ def test_collision():
         class Inner(EmptyCompartment):
             A: Species = 0
 
-    with raises(ValueError):
+    with raises(ValueError, match="must inherit from"):
 
         class Collision(Outer):
             """Inner Compartment collides with inherited Inner."""

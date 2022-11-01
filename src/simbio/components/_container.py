@@ -114,7 +114,9 @@ class Reference:
         container_path = list(yield_parents(container))
         parent = first_common_parent(reversed(self_path), reversed(container_path))
         if parent is None:
-            raise ValueError
+            raise ValueError(
+                f"No common parent between {self.name} and {container.name}."
+            )
 
         self_path = self_path[: self_path.index(parent)]
         self_path = [c.name for c in self_path]

@@ -178,6 +178,13 @@ def check_collisions(*containers: Container, overrides: set[str] = ()) -> None:
     )
 
     if len(type_collisions) > 0:
-        raise TypeError
+        raise TypeError(
+            "Collision with existing components of different types."
+            f" Collisions: {value_collisions}"
+        )
     elif len(value_collisions) > 0:
-        raise ValueError
+        raise ValueError(
+            "Collision with existing components."
+            " Use Species[Override] or Parameter[Override]."
+            f" Collisions: {value_collisions}"
+        )

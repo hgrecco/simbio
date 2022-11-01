@@ -164,6 +164,6 @@ class Compiler(ABC):
             parameters[name] = value
 
         if len(values) > 0:
-            raise ValueError
+            raise ValueError(f"non-existent values: {values.keys()}")
 
         return pd.Series(species), pd.Series(parameters)

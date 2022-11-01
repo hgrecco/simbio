@@ -87,30 +87,30 @@ def test_extension_using_inherited():
 
 def test_collision():
     """Adding a previously existing components
-    must raise a NameError.
+    must raise a ValueError.
     """
 
-    with raises(ValueError):
+    with raises(ValueError, match="Collision with existing"):
 
         class Collision(Base):
             A: Species = 1
 
-    with raises(ValueError):
+    with raises(ValueError, match="Collision with existing"):
 
         class Collision(Base):  # noqa: F811
             k: Parameter = 1
 
-    with raises(ValueError):
+    with raises(ValueError, match="Collision with existing"):
 
         class Collision(Base):  # noqa: F811
             create_A = Creation(A=1, rate=1)
 
     Collision = Base.to_builder()  # noqa: F811
-    with raises(ValueError):
+    with raises(ValueError, match="A already exists"):
         Collision.add_species("A", 1)
-    with raises(ValueError):
+    with raises(ValueError, match="k already exists"):
         Collision.add_parameter("k", 1)
-    with raises(ValueError):
+    with raises(ValueError, match="create_A already exists"):
         Collision.add_reaction("create_A", Creation(A=1, rate=1))
 
 

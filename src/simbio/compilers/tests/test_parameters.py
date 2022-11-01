@@ -69,5 +69,5 @@ def test_resolve_references():
 
 
 def test_error_on_inexistent_parameter():
-    with raises(ValueError):
+    with raises(ValueError, match="inexistent"):
         y0, _ = compiler.build_value_vectors({"inexistent": 1})

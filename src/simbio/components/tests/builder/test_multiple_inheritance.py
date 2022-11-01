@@ -54,7 +54,7 @@ def test_colliding():
     class ModelB(EmptyCompartment):
         C: Species = 1
 
-    with raises(ValueError):
+    with raises(ValueError, match="Collision with existing"):
 
         class CollidingJoint(ModelA, ModelB):
             pass

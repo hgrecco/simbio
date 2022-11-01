@@ -63,6 +63,8 @@ class ReactionBuilder(Builder):
             else:
                 v = v.relative_to(self._container)
                 value = value.__class__(v)
+        elif isinstance(value, Content):
+            raise TypeError(f"must be a number or Reference, not a {type(value)}.")
         else:
             raise TypeError
 
@@ -87,6 +89,8 @@ class ReactionBuilder(Builder):
             else:
                 v = v.relative_to(self._container)
                 value = value.__class__(v)
+        elif isinstance(value, Content):
+            raise TypeError(f"must be a number or Reference, not a {type(value)}.")
         else:
             raise TypeError
 

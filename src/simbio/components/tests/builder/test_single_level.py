@@ -35,13 +35,13 @@ def test_add_external_species():
 
     X = Species(0)
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):
             A: Species = X
 
     Dynamic = EmptyCompartment.to_builder()
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_species("A", X)
 
 
@@ -50,13 +50,13 @@ def test_add_external_parameter():
 
     X = Parameter(0)
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):
             k: Parameter = X
 
     Dynamic = EmptyCompartment.to_builder()
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_parameter("k", X)
 
 
@@ -65,13 +65,13 @@ def test_use_external_species():
 
     X = Species(0)
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):
             create = Creation(A=X, rate=1)
 
     Dynamic = EmptyCompartment.to_builder()
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_reaction("create", Creation(A=X, rate=1))
 
 
@@ -80,27 +80,27 @@ def test_use_external_parameter():
 
     X = Parameter(0)
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):
             k: Parameter = X
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):  # noqa: F811
             A: Species = X
 
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
 
         class Static(EmptyCompartment):  # noqa: F811
             create = Creation(A=0, rate=X)
 
     Dynamic = EmptyCompartment.to_builder()
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_parameter("k", X)
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_species("A", X)
-    with raises(TypeError):
+    with raises(TypeError, match="number or Reference"):
         Dynamic.add_reaction("create", Creation(A=0, rate=X))
 
 
@@ -110,7 +110,7 @@ def test_use_component_from_external_compartment():
         k: Parameter = 0
 
     # Species
-    with raises(ValueError):
+    with raises(ValueError, match="No common parent"):
 
         class Static(EmptyCompartment):
             A: Species = 1
@@ -118,11 +118,11 @@ def test_use_component_from_external_compartment():
 
     Dynamic = EmptyCompartment.to_builder()
     Dynamic.add_species("A", 1)
-    with raises(ValueError):
+    with raises(ValueError, match="No common parent"):
         Dynamic.add_reaction("create", Creation(A=External.A, rate=1))
 
     # Parameter
-    with raises(ValueError):
+    with raises(ValueError, match="No common parent"):
 
         class Static(EmptyCompartment):  # noqa: F811
             k: Parameter = 1
@@ -130,5 +130,5 @@ def test_use_component_from_external_compartment():
 
     Dynamic = EmptyCompartment.to_builder()
     Dynamic.add_parameter("k", 1)
-    with raises(ValueError):
+    with raises(ValueError, match="No common parent"):
         Dynamic.add_species("A", External.k)

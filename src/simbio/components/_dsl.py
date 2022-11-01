@@ -95,7 +95,9 @@ class DSLDict(dict):
         if isinstance(value, Container):
             self.contents[key] = value
         elif isinstance(value, Content):
-            raise TypeError
+            raise TypeError(
+                f"{key} must be a number or Reference, not a {type(value)}."
+            )
         else:
             super().__setitem__(key, value)
 
@@ -197,7 +199,7 @@ def is_container_overriding(name: str, container: DSL, inheriting: tuple[DSL]) -
     elif inherited.issubset(container.__bases__):
         return True
     else:
-        raise ValueError
+        raise ValueError(f"{container} must inherit from {inherited}")
 
 
 def create_signature(cls: Container):
