@@ -148,7 +148,9 @@ class Compiler(ABC):
             elif isinstance(k, str):
                 return k
             else:
-                raise TypeError
+                raise TypeError(
+                    f"values' keys must be str or References, not {type(k)}"
+                )
 
         values = {resolve(k): v for k, v in values.items()}
         species = {k: values.pop(k, v) for k, v in self.species.items()}

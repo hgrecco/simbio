@@ -7,7 +7,7 @@ from ..core import Compiler
 
 class Compiler(Compiler):
     def _build_reaction_ip_rhs(self, full_name: str, reaction) -> callable:
-        raise RuntimeError
+        raise NotImplementedError
 
 
 class Model(EmptyCompartment):

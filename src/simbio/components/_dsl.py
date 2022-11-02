@@ -148,7 +148,7 @@ class DSL(Container, type):
                 annotation = namespace.annotations.get(name)
                 replace = is_content_overriding(annotation)
             else:
-                raise TypeError
+                raise TypeError(f"Unexpected type: {type(v)}")
 
             if replace:
                 overrides.add(name)

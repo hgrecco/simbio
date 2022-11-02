@@ -42,7 +42,7 @@ class ReactionBuilder(Builder):
 
     @dispatch
     def _check(self, value):
-        raise TypeError
+        raise TypeError(f"Unexpected type: {type(value)}")
 
     @dispatch
     def _check(self, value: Parameter):  # noqa: F811
@@ -50,13 +50,19 @@ class ReactionBuilder(Builder):
 
         if isinstance(v, numbers.Number):
             if v < 0:
-                raise ValueError
+                raise ValueError("value must be >= 0.")
         elif isinstance(v, RelativeReference):
             if v.type is not Parameter:
-                raise TypeError
+                raise TypeError(
+                    "A Parameter's value can only be a reference to another Parameter"
+                    f", not a {v.type}."
+                )
         elif isinstance(v, Reference):
             if v.type is not Parameter:
-                raise TypeError
+                raise TypeError(
+                    "A Parameter's value can only be a reference to another Parameter"
+                    f", not a {v.type}."
+                )
 
             if isinstance(self._container, Reaction):
                 pass
@@ -66,7 +72,7 @@ class ReactionBuilder(Builder):
         elif isinstance(value, Content):
             raise TypeError(f"must be a number or Reference, not a {type(value)}.")
         else:
-            raise TypeError
+            raise TypeError(f"Unexpected type: {type(value)}")
 
         return value
 
@@ -76,13 +82,19 @@ class ReactionBuilder(Builder):
 
         if isinstance(v, numbers.Number):
             if v < 0:
-                raise ValueError
+                raise ValueError("value must be >= 0.")
         elif isinstance(v, RelativeReference):
             if v.type not in (Parameter, Species):
-                raise TypeError
+                raise TypeError(
+                    "A Species' value can only be a reference to another Parameter or Species"
+                    f", not a {v.type}."
+                )
         elif isinstance(v, Reference):
             if v.type not in (Parameter, Species):
-                raise TypeError
+                raise TypeError(
+                    "A Species' value can only be a reference to another Parameter or Species"
+                    f", not a {v.type}."
+                )
 
             if isinstance(self._container, Reaction):
                 pass
@@ -92,7 +104,7 @@ class ReactionBuilder(Builder):
         elif isinstance(value, Content):
             raise TypeError(f"must be a number or Reference, not a {type(value)}.")
         else:
-            raise TypeError
+            raise TypeError(f"Unexpected type: {type(value)}")
 
         return value
 

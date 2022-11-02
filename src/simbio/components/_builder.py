@@ -48,7 +48,7 @@ class Builder(Container):
     @name.setter
     def name(self, value):
         if self.name is not None:
-            raise ValueError
+            raise RuntimeError("Cannot modify name.")
 
         self._container.name = value
 
@@ -59,7 +59,7 @@ class Builder(Container):
     @parent.setter
     def parent(self, value):
         if self.parent is not None:
-            raise ValueError
+            raise RuntimeError("Cannot modify parent.")
 
         self._container.parent = value
 
@@ -100,7 +100,9 @@ class Builder(Container):
 
     def update(self, value: Container, *, replace: bool = False) -> Builder:
         if type(value) not in (type(self), type(self._container)):
-            raise TypeError
+            raise TypeError(
+                f"value must be of type {type(self._container)}, not {type(value)}"
+            )
 
         overrides = value._contents.keys() if replace else ()
         check_collisions(self, value, overrides=overrides)
