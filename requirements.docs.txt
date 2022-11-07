@@ -1,0 +1,3 @@
+simbio[test]
+jupyter-book
+jupytext
