@@ -4,4 +4,4 @@
 format: jb-book
 root: intro
 chapters:
-- file: model/dynamic.md
+- file: compilers/index.md
