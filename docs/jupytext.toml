@@ -1,0 +1,2 @@
+formats = ["md:myst", "ipynb"]
+notebook_metadata_filter = "-all,jupytext,kernelspec"

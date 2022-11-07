@@ -1,4 +1,9 @@
 repos:
+-   repo: https://github.com/mwouts/jupytext
+    rev: v1.14.1
+    hooks:
+    - id: jupytext
+      args: [--from, ipynb, --to, md]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0
     hooks:
@@ -23,5 +28,5 @@ repos:
     hooks:
     - id: mdformat
       additional_dependencies:
-      - mdformat-gfm  # GitHub-flavored Markdown
+      - mdformat-myst
       - mdformat-black

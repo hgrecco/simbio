@@ -17,3 +17,4 @@ MANIFEST
 
 # Sphinx documentation
 docs/_build/
+docs/**/*.ipynb
