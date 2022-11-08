@@ -167,3 +167,143 @@ values = {
 
 Simulator(Model).run(t=t, values=values).plot()
 ```
+
+## Extending models
+
+We can extend a `Compartment` by inheriting from it:
+
+```{code-cell} ipython3
+class Base(EmptyCompartment):
+    create = single.Creation(A=0, rate=0.1)
+
+
+class Extended(Base):
+    remove = single.Destruction(A=1, rate=1)
+
+
+Simulator(Extended).run(t=t).plot()
+```
+
+Note that two *anonymous* species were created in each reaction.
+
+To reuse an `Species` across models,
+we need to add an annotation:
+
+```{code-cell} ipython3
+class Base(EmptyCompartment):
+    A: Species = 1
+    create = single.Creation(A=A, rate=0.1)
+
+
+class Extended(Base):
+    A: Species
+    remove = single.Destruction(A=A, rate=1)
+
+
+Simulator(Extended).run(t=t).plot()
+```
+
+### Overriding
+
+When extending models,
+`SimBio` raises an error if we are redefining some `Species`:
+
+```{code-cell} ipython3
+---
+tags: [raises-exception]
+---
+class Base(EmptyCompartment):
+    A: Species = 1
+
+class Extended(Base):
+    A: Species = 2
+```
+
+This is useful to prevent mistakes.
+
+If we want to override an species' initial condition,
+we need to be explicit about it:
+
+```{code-cell} ipython3
+from simbio.components import Override
+
+
+class Base(EmptyCompartment):
+    A: Species = 1
+
+
+class Extended(Base):
+    A: Species[Override] = 2
+```
+
+The same is valid for reactions:
+
+```{code-cell} ipython3
+from simbio.components import Reaction
+
+
+class Base(EmptyCompartment):
+    my_reaction = single.Creation(A=1, rate=1)
+
+
+class Extended(Base):
+    my_reaction: Reaction[Override] = single.Destruction(A=1, rate=1)
+```
+
+### Combining multiple models
+
++++
+
+It is also possible to inherit from multiple compartments simultaneously:
+
+```{code-cell} ipython3
+class ModelA(EmptyCompartment):
+    A: Species = 1
+    S: Species = 3
+
+class ModelB(EmptyCompartment):
+    B: Species = 2
+    S: Species = 3
+
+class Joint(ModelA, ModelB):
+    pass
+```
+
+As there are no collisions,
+`Joint` has three species:
+`A`, `B` and `S`.
+
+If there are collisions between the models,
+`SimBio` raises an error:
+
+```{code-cell} ipython3
+---
+tags: [raises-exception]
+---
+class ModelA(EmptyCompartment):
+    A: Species = 1
+    S: Species = 3
+
+class ModelB(EmptyCompartment):
+    B: Species = 2
+    S: Species = 30
+
+class Joint(ModelA, ModelB):
+    pass
+```
+
+We have to be explicit which one we want to keep,
+by overriding with a (possibly new) value:
+
+```{code-cell} ipython3
+class ModelA(EmptyCompartment):
+    A: Species = 1
+    S: Species = 3
+
+class ModelB(EmptyCompartment):
+    B: Species = 2
+    S: Species = 30
+
+class Joint(ModelA, ModelB):
+    S: Species[Override] = 42
+```
