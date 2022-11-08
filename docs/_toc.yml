@@ -5,4 +5,6 @@ format: jb-book
 root: intro
 chapters:
 - file: model/index.md
+  sections:
+  - file: model/static.md
 - file: compilers/index.md
