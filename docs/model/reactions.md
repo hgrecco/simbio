@@ -18,7 +18,7 @@ that relate reactants with products
 and a well defined kinetics.
 But,
 new reactions can be easily defined,
-to excend SimBio's capabilities.
+to extend SimBio's capabilities.
 
 There are two main types of reactions,
 
@@ -34,7 +34,7 @@ converting species $A$ and $B$ to $C$,
 
 $$ n_A A + n_B B \xrightarrow{k} n_C C $$
 
-where $n_A$, $n_B$, and $n_C$ are the stochiometric coefficients,
+where $n_A$, $n_B$, and $n_C$ are the stoichiometric coefficients,
 corresponds to the following differential equations:
 
 $$

@@ -62,7 +62,7 @@ df = sim.run(t=t)
 df.head()
 ```
 
-Behides the scene,
+Behinds the scene,
 `Simulator` compiles the model into a function,
 creates a `Solver` (by default, `scipy.integrate.odeint`),
 and returns a `pandas.DataFrame` with the result.
@@ -119,7 +119,7 @@ t = np.linspace(0, 10, 100)
 Simulator(Model).run(t=t).plot()
 ```
 
-## Varying initial concetrations and parameters
+## Varying initial concentrations and parameters
 
 While we set the initial concentrations and parameter values when we create a model,
 they can be varied at the simulation stage.

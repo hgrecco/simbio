@@ -27,7 +27,7 @@ from simbio.simulator import Simulator
 ```
 
 Here,
-we define a modul consisting of two inner compartments,
+we define a model consisting of two inner compartments,
 both containing hydrogen, oxygen and water.
 Water is synthesized in one compartment, and
 transported to the other compartment,

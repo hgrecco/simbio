@@ -12,7 +12,7 @@ it can be installed directly from PyPI:
 pip install simbio
 ```
 
-or install the latest developtment version from GitHub:
+or install the latest development version from GitHub:
 
 ```
 pip install git+https://github.com/hgrecco/simbio
