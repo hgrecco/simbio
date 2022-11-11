@@ -17,3 +17,4 @@ parts:
     - file: examples/basic.md
     - file: examples/enzymatic.md
     - file: examples/compartments.md
+    - file: examples/chained-reactions.md
