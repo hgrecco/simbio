@@ -98,10 +98,10 @@ As in the class-based models,
 adding an existing species raises an error:
 
 ```{code-cell} ipython3
----
-tags: [raises-exception]
----
-builder.add_species("A", 2)
+try:
+    builder.add_species("A", 2)
+except ValueError as e:
+    print(e)
 ```
 
 If we want to replace it,
