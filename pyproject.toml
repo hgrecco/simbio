@@ -22,8 +22,12 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
-dynamic = ["dependencies", "optional-dependencies", "readme", "version"]
+dynamic = ["dependencies", "optional-dependencies", "version"]
 requires-python = ">=3.7"
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 [project.urls]
 "Homepage" = "https://github.com/hgrecco/simbio"
@@ -41,7 +45,6 @@ dependencies = {file = "requirements.txt"}
 optional-dependencies.sim = {file = "requirements.sim.txt"}
 optional-dependencies.test = {file = "requirements.test.txt"}
 optional-dependencies.docs = {file = "requirements.docs.txt"}
-readme = {file = "README.md"}
 
 [tool.setuptools_scm]
 
