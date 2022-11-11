@@ -9,6 +9,7 @@ parts:
     - file: model/index.md
     - file: model/static.md
     - file: model/dynamic.md
+    - file: model/reactions.md
   - caption: Compilation
     chapters:
     - file: compilers/index.md
