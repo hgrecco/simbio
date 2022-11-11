@@ -22,6 +22,11 @@ from simbio.components import EmptyCompartment
 from simbio.reactions import single
 ```
 
+SimBio includes a comprehensive set of predefined reactions that relate reactants with products.
+While they are described later [in the docs](./reactions.md),
+for now,
+it is enough to understand that they can be used as primitives for your model.
+
 To create a model,
 we define a `Compartment` by creating class inheriting from `EmptyCompartment`:
 
