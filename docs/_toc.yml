@@ -12,3 +12,8 @@ parts:
   - caption: Compilation
     chapters:
     - file: compilers/index.md
+  - caption: Examples
+    chapters:
+    - file: examples/basic.md
+    - file: examples/enzymatic.md
+    - file: examples/compartments.md
