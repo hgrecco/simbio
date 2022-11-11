@@ -209,14 +209,14 @@ When extending models,
 `SimBio` raises an error if we are redefining some `Species`:
 
 ```{code-cell} ipython3
----
-tags: [raises-exception]
----
 class Base(EmptyCompartment):
     A: Species = 1
 
-class Extended(Base):
-    A: Species = 2
+try:
+    class Extended(Base):
+        A: Species = 2
+except ValueError as e:
+    print(e)
 ```
 
 This is useful to prevent mistakes.
@@ -277,9 +277,6 @@ If there are collisions between the models,
 `SimBio` raises an error:
 
 ```{code-cell} ipython3
----
-tags: [raises-exception]
----
 class ModelA(EmptyCompartment):
     A: Species = 1
     S: Species = 3
@@ -288,8 +285,11 @@ class ModelB(EmptyCompartment):
     B: Species = 2
     S: Species = 30
 
-class Joint(ModelA, ModelB):
-    pass
+try:
+    class Joint(ModelA, ModelB):
+        pass
+except ValueError as e:
+    print(e)
 ```
 
 We have to be explicit which one we want to keep,
