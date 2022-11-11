@@ -3,9 +3,12 @@
 
 format: jb-book
 root: index.md
-chapters:
-- file: model/index.md
-  sections:
-  - file: model/static.md
-  - file: model/dynamic.md
-- file: compilers/index.md
+parts:
+  - caption: Definition
+    chapters:
+    - file: model/index.md
+    - file: model/static.md
+    - file: model/dynamic.md
+  - caption: Compilation
+    chapters:
+    - file: compilers/index.md
