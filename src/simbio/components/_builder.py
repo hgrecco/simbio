@@ -23,7 +23,7 @@ class Builder(Container):
         for name, value in dsls:
             container._contents[name] = value._builder(value)
 
-        self._container = container
+        self.__container = container
 
         for base in inheriting:
             self._update(base)
@@ -36,6 +36,15 @@ class Builder(Container):
     def __copy__(self, new=None, *, name: str = None, parent: Container = None):
         container = self._container.__copy__(new, name=name, parent=parent)
         return self.__class__(container)
+
+    @property
+    def _container(self):
+        container = self.__container
+        if container is None:
+            raise RuntimeError(
+                f"{self} was already built, and cannot be modified anymore."
+            )
+        return container
 
     @property
     def _contents(self) -> dict[str, Content | Builder]:
@@ -69,7 +78,9 @@ class Builder(Container):
     def build(self) -> Container:
         for name, value in self._filter_contents(Builder):
             self._contents[name] = value.build()
-        return self._container
+        container = self._container
+        self.__container = None
+        return container
 
     def _check(self, value):
         raise NotImplementedError

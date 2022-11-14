@@ -132,3 +132,11 @@ def test_use_component_from_external_compartment():
     Dynamic.add_parameter("k", 1)
     with raises(ValueError, match="No common parent"):
         Dynamic.add_species("A", External.k)
+
+
+def test_modify_builder_after_built():
+    builder = EmptyCompartment.to_builder()
+    builder.add_species("A", 1)
+    builder.build()
+    with raises(RuntimeError, match="built"):
+        builder.add_species("B", 2)
