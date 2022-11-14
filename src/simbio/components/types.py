@@ -4,8 +4,12 @@ import dataclasses
 import numbers
 from typing import Union
 
+try:
+    from typing import dataclass_transform
+except ImportError:
+    from typing_extensions import dataclass_transform
+
 from plum import Dispatcher
-from typing_extensions import dataclass_transform
 
 from ._builder import Builder
 from ._container import Container, Content, Overridable, Reference, RelativeReference
