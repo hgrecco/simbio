@@ -1,4 +1,1 @@
-plum-dispatch
-typing_extensions; python_version < '3.11'
-typer
-pytest
+poincare
