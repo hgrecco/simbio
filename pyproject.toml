@@ -52,5 +52,6 @@ optional-dependencies.docs = {file = "requirements.docs.txt"}
 addopts = "--import-mode=importlib"
 pythonpath = "."
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+select = ["E", "F", "I"]
+ignore = ["E501"]
