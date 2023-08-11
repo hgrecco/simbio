@@ -1,1 +1,1 @@
-simbio[sim]
+pytest

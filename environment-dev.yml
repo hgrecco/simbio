@@ -6,7 +6,6 @@ dependencies:
   - pandas >= 1
   - scipy
   - numba
-  - plum-dispatch
   - typing_extensions
   - matplotlib
   - pre-commit
@@ -14,3 +13,6 @@ dependencies:
   - typer
   - jupyer-book
   - jupytext
+  - pip
+  - pip:
+    - poincare
