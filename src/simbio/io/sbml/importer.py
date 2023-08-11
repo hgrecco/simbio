@@ -81,10 +81,10 @@ class SBMLImporter:
         self.mapper = ChainMap({}, mapper)
 
         self.functions = {}
+        self.mapper[libsbml.AST_FUNCTION] = self.functions
         for f in model.getListOfFunctionDefinitions():
             f: libsbml.FunctionDefinition
             self.functions[f.getId()] = self.create_function(f)
-        self.mapper[libsbml.AST_FUNCTION] = self.functions
 
         for p in model.getListOfParameters():
             self.add_parameter(p)
@@ -188,7 +188,8 @@ class SBMLImporter:
     def create_function(self, func: libsbml.FunctionDefinition):
         f: libsbml.ASTNode = func.getMath()
         children: list[Symbol] = [
-            from_mathML(f.getChild(i)) for i in range(f.getNumChildren())
+            from_mathML(f.getChild(i), mapper=self.mapper)
+            for i in range(f.getNumChildren())
         ]
         params = children[:-1]
         body = children[-1]
