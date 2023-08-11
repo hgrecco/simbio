@@ -36,6 +36,14 @@ def root(*args):
             raise TypeError(f"unexpected number of arguments: {len(args)}")
 
 
+def log(*args):
+    match args:
+        case (10, x) | (x,):
+            return scalar.log10(x)
+        case _:
+            raise TypeError(f"unexpected arguments for log: {args}")
+
+
 mapper = {
     libsbml.AST_PLUS: symbol.add,
     libsbml.AST_MINUS: minus,
@@ -80,7 +88,7 @@ mapper = {
     libsbml.AST_FUNCTION_FACTORIAL: scalar.factorial,
     libsbml.AST_FUNCTION_FLOOR: scalar.floor,
     libsbml.AST_FUNCTION_LN: scalar.log,
-    libsbml.AST_FUNCTION_LOG: scalar.log10,
+    libsbml.AST_FUNCTION_LOG: log,
     libsbml.AST_FUNCTION_PIECEWISE: "AST_FUNCTION_PIECEWISE",
     libsbml.AST_FUNCTION_POWER: symbol.pow,
     libsbml.AST_FUNCTION_ROOT: root,
