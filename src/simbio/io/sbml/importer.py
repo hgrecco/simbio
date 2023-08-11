@@ -141,6 +141,9 @@ class SBMLImporter:
 
     def formula_to_symbolite(self, ast_node: libsbml.ASTNode):
         symbolite_node: Symbol = from_mathML(ast_node, self.mapper)
+        if not isinstance(symbolite_node, Symbol):
+            return symbolite_node
+
         names = symbolite_node.symbol_names()
         mapper = {}
         for n in names:
