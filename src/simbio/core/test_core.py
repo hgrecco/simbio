@@ -143,6 +143,21 @@ def test_mass_action():
         }
 
 
+def test_duplicate_species():
+    class Duplicate(Compartment):
+        x: Species = initial(default=1)
+        eq = MassAction(reactants=[x, x], products=[], rate=1)
+
+    class Double(Compartment):
+        x: Species = initial(default=1)
+        eq = MassAction(reactants=[2 * x], products=[], rate=1)
+
+    times = np.linspace(0, 1, 10)
+    duplicate = Simulator(Duplicate).solve(times=times)
+    double = Simulator(Double).solve(times=times)
+    assert np.allclose(duplicate, double)
+
+
 def test_simulator():
     class Model(Compartment):
         x: Species = initial(default=1)
