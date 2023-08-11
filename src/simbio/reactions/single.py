@@ -1,140 +1,74 @@
 from __future__ import annotations
 
-from ..components import Parameter, SingleReaction, Species
+from ..core import Compartment, MassAction, Parameter, Species, assign, initial
 
 
-class Creation(SingleReaction):
+class Creation(Compartment):
     """A substance is created from nothing at a constant rate.
 
     ∅ -> A
     """
 
-    A: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return ()
-
-    @property
-    def products(self):
-        return (self.A,)
-
-    @staticmethod
-    def reaction_rate(t, rate):
-        return rate
+    A: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[], products=[A], rate=rate)
 
 
-class AutoCreation(SingleReaction):
+class AutoCreation(Compartment):
     """A substance is created at a rate proportional to its abundance.
 
     A -> 2A
     """
 
-    A: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return (self.A,)
-
-    @property
-    def products(self):
-        return (2 * self.A,)
-
-    @staticmethod
-    def reaction_rate(t, A, rate):
-        return rate * A
+    A: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[A], products=[2 * A], rate=rate)
 
 
-class Destruction(SingleReaction):
+class Destruction(Compartment):
     """A substance degrades into nothing.
 
     A -> ∅
     """
 
-    A: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return (self.A,)
-
-    @property
-    def products(self):
-        return ()
-
-    @staticmethod
-    def reaction_rate(t, A, rate):
-        return rate * A
+    A: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[A], products=[], rate=rate)
 
 
-class Conversion(SingleReaction):
+class Conversion(Compartment):
     """A substance convert to another.
 
     A -> B
     """
 
-    A: Species
-    B: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return (self.A,)
-
-    @property
-    def products(self):
-        return (self.B,)
-
-    @staticmethod
-    def reaction_rate(t, A, rate):
-        return rate * A
+    A: Species = initial(default=0)
+    B: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[A], products=[B], rate=rate)
 
 
-class Synthesis(SingleReaction):
+class Synthesis(Compartment):
     """Two or more simple substances combine to form a more complex substance.
 
     A + B -> AB
     """
 
-    A: Species
-    B: Species
-    AB: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return (self.A, self.B)
-
-    @property
-    def products(self):
-        return (self.AB,)
-
-    @staticmethod
-    def reaction_rate(t, A, B, rate):
-        return rate * A * B
+    A: Species = initial(default=0)
+    B: Species = initial(default=0)
+    AB: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[A, B], products=[AB], rate=rate)
 
 
-class Dissociation(SingleReaction):
+class Dissociation(Compartment):
     """A more complex substance breaks down into its more simple parts.
 
     AB -> A + B
     """
 
-    AB: Species
-    A: Species
-    B: Species
-    rate: Parameter
-
-    @property
-    def reactants(self):
-        return (self.AB,)
-
-    @property
-    def products(self):
-        return (self.A, self.B)
-
-    @staticmethod
-    def reaction_rate(t, AB, rate):
-        return rate * AB
+    AB: Species = initial(default=0)
+    A: Species = initial(default=0)
+    B: Species = initial(default=0)
+    rate: Parameter = assign(default=0)
+    reaction = MassAction(reactants=[AB], products=[A, B], rate=rate)

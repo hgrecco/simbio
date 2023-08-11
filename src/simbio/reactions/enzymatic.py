@@ -1,28 +1,28 @@
-from ..components import Parameter, ReactionGroup, SingleReaction, Species
+from ..core import Compartment, MassAction, Parameter, Species, assign, initial
 from .compound import Dissociation, ReversibleSynthesis
 
 
-class MichaelisMenten(ReactionGroup):
-    E: Species
-    S: Species
-    ES: Species
-    P: Species
-    forward_rate: Parameter
-    reverse_rate: Parameter
-    catalytic_rate: Parameter
+class MichaelisMenten(Compartment):
+    E: Species = initial(default=0)
+    S: Species = initial(default=0)
+    ES: Species = initial(default=0)
+    P: Species = initial(default=0)
+    forward_rate: Parameter = assign(default=0)
+    reverse_rate: Parameter = assign(default=0)
+    catalytic_rate: Parameter = assign(default=0)
 
     binding_reaction = ReversibleSynthesis(
-        A=E,  # noqa: F821
-        B=S,  # noqa: F821
-        AB=ES,  # noqa: F821
-        forward_rate=forward_rate,  # noqa: F821
-        reverse_rate=reverse_rate,  # noqa: F821
+        A=E,
+        B=S,
+        AB=ES,
+        forward_rate=forward_rate,
+        reverse_rate=reverse_rate,
     )
     dissociation_reaction = Dissociation(
-        AB=ES,  # noqa: F821
-        A=E,  # noqa: F821
-        B=P,  # noqa: F821
-        rate=catalytic_rate,  # noqa: F821
+        AB=ES,
+        A=E,
+        B=P,
+        rate=catalytic_rate,
     )
 
     def to_eq_approx(self):
@@ -50,39 +50,25 @@ class MichaelisMenten(ReactionGroup):
         # )
 
 
-class MichaelisMentenEqApprox(SingleReaction):
-    S: Species
-    P: Species
-    maximum_velocity: Parameter
-    dissociation_constant: Parameter
-
-    @property
-    def reactants(self):
-        return (self.S,)
-
-    @property
-    def products(self):
-        return (self.P,)
-
-    @staticmethod
-    def reaction_rate(t, S, maximum_velocity, dissociation_constant):
-        return maximum_velocity * S / (dissociation_constant + S)
+class MichaelisMentenEqApprox(Compartment):
+    S: Species = initial(default=0)
+    P: Species = initial(default=0)
+    maximum_velocity: Parameter = assign(default=0)
+    dissociation_constant: Parameter = assign(default=0)
+    reaction = MassAction(
+        reactants=[S],
+        products=[P],
+        rate=maximum_velocity * S / (dissociation_constant + S),
+    )
 
 
-class MichaelisMentenQuasiSSAprox(SingleReaction):
-    S: Species
-    P: Species
-    maximum_velocity: Parameter
-    michaelis_constant: Parameter
-
-    @property
-    def reactants(self):
-        return (self.S,)
-
-    @property
-    def products(self):
-        return (self.P,)
-
-    @staticmethod
-    def reaction_rate(t, S, maximum_velocity, michaelis_constant):
-        return maximum_velocity * S / (michaelis_constant + S)
+class MichaelisMentenQuasiSSAprox(Compartment):
+    S: Species = initial(default=0)
+    P: Species = initial(default=0)
+    maximum_velocity: Parameter = assign(default=0)
+    michaelis_constant: Parameter = assign(default=0)
+    reaction = MassAction(
+        reactants=[S],
+        products=[P],
+        rate=maximum_velocity * S / (michaelis_constant + S),
+    )
