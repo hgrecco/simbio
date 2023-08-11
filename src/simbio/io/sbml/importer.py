@@ -4,8 +4,8 @@ from typing import Callable, TypeVar
 
 import libsbml
 from symbolite import Symbol
+from symbolite import abstract as libabstract
 from symbolite.core import as_function
-from symbolite.impl import libstd
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
 from .mathML.importer import from_mathML, mapper
@@ -196,5 +196,5 @@ class SBMLImporter:
             body,
             func.getId(),
             tuple(map(str, params)),
-            libsl=libstd,
+            libsl=libabstract,
         )
