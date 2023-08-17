@@ -1,3 +1,4 @@
+import keyword
 import math
 from collections import ChainMap
 from typing import Callable, TypeVar
@@ -65,6 +66,19 @@ def convert_model(
     ).simbio.compartment
 
 
+def _extra_check(func: Callable[[str], str]):
+    def is_python_identifier(x: str) -> str:
+        y = func(x)
+        if keyword.iskeyword(y):
+            raise NameError(
+                f"{y} is not a valid name, it is a Python reserved keyword."
+            )
+        else:
+            return y
+
+    return is_python_identifier
+
+
 class SBMLImporter:
     def __init__(
         self,
@@ -77,7 +91,7 @@ class SBMLImporter:
             name: str = model.getName()
         self.model = model
         self.simbio = DynamicCompartment(name)
-        self.identity = identity_mapper
+        self.identity = _extra_check(identity_mapper)
         self.mapper = ChainMap({}, mapper)
 
         self.functions = {}
