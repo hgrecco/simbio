@@ -11,6 +11,7 @@ from poincare._utils import class_and_instance_method
 from poincare.simulator import Simulator as _Simulator
 from poincare.types import Equation, EquationGroup, Initial, System, assign
 from symbolite import Symbol
+from symbolite.core import substitute
 
 
 def initial(*, default: Initial | None = None, init: bool = True) -> Species:
@@ -120,9 +121,9 @@ class Reaction(EquationGroup):
     def _copy_from(self, parent: System):
         mapper = NodeMapper(parent)
         return self.__class__(
-            reactants=[mapper.get(v) for v in self.reactants],
-            products=[mapper.get(v) for v in self.products],
-            rate_law=mapper.get(self.rate_law),
+            reactants=[substitute(v, mapper) for v in self.reactants],
+            products=[substitute(v, mapper) for v in self.products],
+            rate_law=substitute(self.rate_law, mapper),
         )
 
     def yield_equations(self) -> Iterator[Equation]:
@@ -162,9 +163,9 @@ class MassAction(Reaction):
     def _copy_from(self, parent: System):
         mapper = NodeMapper(parent)
         return self.__class__(
-            reactants=[mapper.get(v) for v in self.reactants],
-            products=[mapper.get(v) for v in self.products],
-            rate=mapper.get(self.rate),
+            reactants=[substitute(v, mapper) for v in self.reactants],
+            products=[substitute(v, mapper) for v in self.products],
+            rate=substitute(self.rate, mapper),
         )
 
 
