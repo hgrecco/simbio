@@ -3,13 +3,13 @@ from .compound import Dissociation, ReversibleSynthesis
 
 
 class MichaelisMenten(Compartment):
-    E: Species = initial(default=0)
-    S: Species = initial(default=0)
-    ES: Species = initial(default=0)
-    P: Species = initial(default=0)
-    forward_rate: Parameter = assign(default=0)
-    reverse_rate: Parameter = assign(default=0)
-    catalytic_rate: Parameter = assign(default=0)
+    E: Species = initial()
+    S: Species = initial()
+    ES: Species = initial()
+    P: Species = initial()
+    forward_rate: Parameter = assign()
+    reverse_rate: Parameter = assign()
+    catalytic_rate: Parameter = assign()
 
     binding_reaction = ReversibleSynthesis(
         A=E,
@@ -51,10 +51,10 @@ class MichaelisMenten(Compartment):
 
 
 class MichaelisMentenEqApprox(Compartment):
-    S: Species = initial(default=0)
-    P: Species = initial(default=0)
-    maximum_velocity: Parameter = assign(default=0)
-    dissociation_constant: Parameter = assign(default=0)
+    S: Species = initial()
+    P: Species = initial()
+    maximum_velocity: Parameter = assign()
+    dissociation_constant: Parameter = assign()
     reaction = MassAction(
         reactants=[S],
         products=[P],
@@ -63,10 +63,10 @@ class MichaelisMentenEqApprox(Compartment):
 
 
 class MichaelisMentenQuasiSSAprox(Compartment):
-    S: Species = initial(default=0)
-    P: Species = initial(default=0)
-    maximum_velocity: Parameter = assign(default=0)
-    michaelis_constant: Parameter = assign(default=0)
+    S: Species = initial()
+    P: Species = initial()
+    maximum_velocity: Parameter = assign()
+    michaelis_constant: Parameter = assign()
     reaction = MassAction(
         reactants=[S],
         products=[P],

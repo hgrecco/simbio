@@ -19,11 +19,11 @@ class ReversibleSynthesis(Compartment):
     A + B <-> AB
     """
 
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    AB: Species = initial(default=0)
-    forward_rate: Parameter = assign(default=0)
-    reverse_rate: Parameter = assign(default=0)
+    A: Species = initial()
+    B: Species = initial()
+    AB: Species = initial()
+    forward_rate: Parameter = assign()
+    reverse_rate: Parameter = assign()
 
     forward_reaction = Synthesis(A=A, B=B, AB=AB, rate=forward_rate)
     backward_reaction = Dissociation(AB=AB, A=A, B=B, rate=reverse_rate)
@@ -35,10 +35,10 @@ class Equilibration(Compartment):
     A <-> B
     """
 
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    forward_rate: Parameter = assign(default=0)
-    reverse_rate: Parameter = assign(default=0)
+    A: Species = initial()
+    B: Species = initial()
+    forward_rate: Parameter = assign()
+    reverse_rate: Parameter = assign()
 
     forward_reaction = Conversion(A=A, B=B, rate=forward_rate)
     backward_reaction = Conversion(A=B, B=A, rate=reverse_rate)
@@ -50,13 +50,13 @@ class CatalyzeConvert(Compartment):
     A + B <--> A:B --> P
     """
 
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    AB: Species = initial(default=0)
-    P: Species = initial(default=0)
-    forward_rate: Parameter = assign(default=0)
-    reverse_rate: Parameter = assign(default=0)
-    conversion_rate: Parameter = assign(default=0)
+    A: Species = initial()
+    B: Species = initial()
+    AB: Species = initial()
+    P: Species = initial()
+    forward_rate: Parameter = assign()
+    reverse_rate: Parameter = assign()
+    conversion_rate: Parameter = assign()
 
     binding_reaction = ReversibleSynthesis(
         A=A, B=B, AB=AB, forward_rate=forward_rate, reverse_rate=reverse_rate

@@ -13,6 +13,6 @@ for mod in (single, compound, enzymatic):
 
 @mark.parametrize("reaction", reactions)
 def test_reactions(reaction):
-    model = reaction()
+    model = reaction(**dict.fromkeys(reaction._required, 0))
     times = np.linspace(0, 1, 10)
     Simulator(model).solve(times=times)

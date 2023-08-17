@@ -9,8 +9,8 @@ class Creation(Compartment):
     ∅ -> A
     """
 
-    A: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    A: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[], products=[A], rate=rate)
 
 
@@ -20,8 +20,8 @@ class AutoCreation(Compartment):
     A -> 2A
     """
 
-    A: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    A: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[A], products=[2 * A], rate=rate)
 
 
@@ -31,8 +31,8 @@ class Destruction(Compartment):
     A -> ∅
     """
 
-    A: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    A: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[A], products=[], rate=rate)
 
 
@@ -42,9 +42,9 @@ class Conversion(Compartment):
     A -> B
     """
 
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    A: Species = initial()
+    B: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[A], products=[B], rate=rate)
 
 
@@ -54,10 +54,10 @@ class Synthesis(Compartment):
     A + B -> AB
     """
 
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    AB: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    A: Species = initial()
+    B: Species = initial()
+    AB: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[A, B], products=[AB], rate=rate)
 
 
@@ -67,8 +67,8 @@ class Dissociation(Compartment):
     AB -> A + B
     """
 
-    AB: Species = initial(default=0)
-    A: Species = initial(default=0)
-    B: Species = initial(default=0)
-    rate: Parameter = assign(default=0)
+    AB: Species = initial()
+    A: Species = initial()
+    B: Species = initial()
+    rate: Parameter = assign()
     reaction = MassAction(reactants=[AB], products=[A, B], rate=rate)
