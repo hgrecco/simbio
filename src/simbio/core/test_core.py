@@ -168,11 +168,11 @@ def test_simulator():
     assert set(sim.compiled.variables) == {Model.x.variable}
     assert set(sim.compiled.parameters) == {Model.k}
     assert sim.compiled.mapper == {Model.x.variable: 1, Model.k: 1}
-    assert set(sim.variable_names) == {"x"}
+    assert set(sim.transform.output) == {"x"}
 
     times = np.linspace(0, 1, 10)
     result = sim.solve(times=times)
     assert np.allclose(result["x"], np.exp(-times))
 
-    assert sim.create_problem({Model.x.variable: 2}).y[0] == 2
-    assert sim.create_problem({Model.x: 2}).y[0] == 2
+    assert sim.create_problem({Model.x.variable: 2}).y[Model.x.variable] == 2
+    assert sim.create_problem({Model.x: 2}).y[Model.x.variable] == 2
