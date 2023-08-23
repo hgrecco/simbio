@@ -1,6 +1,7 @@
 import numpy as np
 from poincare import Variable
 from poincare.types import Initial
+from pytest import mark
 
 from . import (
     Compartment,
@@ -13,6 +14,14 @@ from . import (
     assign,
     initial,
 )
+
+
+def non_instance(model):
+    return model
+
+
+def instance(model):
+    return model()
 
 
 def check_species(
@@ -109,7 +118,8 @@ def test_yield_variables():
     assert set(Model._yield(Variable)) == {Model.x.variable}
 
 
-def test_reaction():
+@mark.parametrize("f", [non_instance, instance])
+def test_reaction(f):
     class Model(Compartment):
         x: Species = initial(default=0)
         c: Constant = assign(default=0, constant=True)
@@ -117,14 +127,15 @@ def test_reaction():
         eq2 = Reaction(reactants=[], products=[x], rate_law=c)
         eq3 = Reaction(reactants=[2 * x], products=[3 * x], rate_law=c)
 
-    for model in [Model, Model()]:
-        model: Model
-        assert set(model.eq1.equations) == {model.x.variable.derive() << -1 * model.c}
-        assert set(model.eq2.equations) == {model.x.variable.derive() << 1 * model.c}
-        assert set(model.eq3.equations) == {model.x.variable.derive() << 1 * model.c}
+    model: Model = f(Model)
+    assert model.x.variable.equation_order == 1
+    assert set(model.eq1.equations) == {model.x.variable.derive() << -1 * model.c}
+    assert set(model.eq2.equations) == {model.x.variable.derive() << 1 * model.c}
+    assert set(model.eq3.equations) == {model.x.variable.derive() << 1 * model.c}
 
 
-def test_mass_action():
+@mark.parametrize("f", [non_instance, instance])
+def test_mass_action(f):
     class Model(Compartment):
         x: Species = initial(default=0)
         c: Constant = assign(default=0, constant=True)
@@ -132,15 +143,15 @@ def test_mass_action():
         eq2 = MassAction(reactants=[], products=[x], rate=c)
         eq3 = MassAction(reactants=[2 * x], products=[3 * x], rate=c)
 
-    for model in [Model, Model()]:
-        model: Model
-        assert set(model.eq1.equations) == {
-            model.x.variable.derive() << -1 * (model.c * (model.x.variable**1))
-        }
-        assert set(model.eq2.equations) == {model.x.variable.derive() << 1 * model.c}
-        assert set(model.eq3.equations) == {
-            model.x.variable.derive() << 1 * (model.c * (model.x.variable**2))
-        }
+    model: Model = f(Model)
+    assert model.x.variable.equation_order == 1
+    assert set(model.eq1.equations) == {
+        model.x.variable.derive() << -1 * (model.c * (model.x.variable**1))
+    }
+    assert set(model.eq2.equations) == {model.x.variable.derive() << 1 * model.c}
+    assert set(model.eq3.equations) == {
+        model.x.variable.derive() << 1 * (model.c * (model.x.variable**2))
+    }
 
 
 def test_duplicate_species():
