@@ -22,9 +22,9 @@ def initial(*, default: Initial | None = None, init: bool = True) -> Species:
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(initial, assign))
-class Compartment(System):
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
+class Compartment(System, abstract=True):
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
         for k in cls._annotations.keys():
             v = getattr(cls, k)
             if isinstance(v, Species) and v.variable.initial is None:
