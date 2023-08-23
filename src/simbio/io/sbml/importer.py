@@ -100,14 +100,29 @@ class SBMLImporter:
             f: libsbml.FunctionDefinition
             self.functions[f.getId()] = self.create_function(f)
 
+        if model.getNumCompartments() > 1:
+            raise NotImplementedError("compartments")
+
         for p in model.getListOfParameters():
             self.add_parameter(p)
 
         for s in model.getListOfSpecies():
             self.add_species(s)
 
+        for a in model.getListOfConstraints():
+            raise NotImplementedError("constraints")
+
+        for a in model.getListOfEvents():
+            raise NotImplementedError("events")
+
+        for a in model.getListOfRules():
+            raise NotImplementedError("rules")
+
         for r in model.getListOfReactions():
             self.add_reaction(r)
+
+    def add_compartment(self, c: libsbml.Compartment):
+        raise NotImplementedError
 
     def add_parameter(self, p: libsbml.Parameter):
         name = self.identity(p.getId())
