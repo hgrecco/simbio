@@ -174,6 +174,9 @@ def test_simulator():
     result = sim.solve(times=times)
     assert np.allclose(result["x"], np.exp(-times))
 
+    assert sim.create_problem({Model.x.variable: 2}).y[0] == 2
+    assert sim.create_problem({Model.x: 2}).y[0] == 2
+
 
 def test_transform():
     class Model(Compartment):
