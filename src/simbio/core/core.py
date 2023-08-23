@@ -10,7 +10,8 @@ from poincare._node import Node, NodeMapper, T, _ClassInfo
 from poincare._utils import class_and_instance_method
 from poincare.simulator import Simulator as _Simulator
 from poincare.types import Equation, EquationGroup, Initial, System, assign
-from symbolite import Symbol
+from symbolite import Scalar, Symbol
+from symbolite.abstract import symbol
 from symbolite.core import substitute
 
 
@@ -54,10 +55,14 @@ class Compartment(System):
             yield from super()._yield(type, exclude=exclude, recursive=recursive)
 
 
-@dataclass(frozen=True)
-class Species(Node):
-    variable: Variable
-    stoichiometry: float = 1
+class Species(Node, Scalar):
+    def __init__(
+        self,
+        variable: Variable,
+        stoichiometry: float = 1,
+    ):
+        self.variable = variable
+        self.stoichiometry = stoichiometry
 
     def __set_name__(self, cls: Node, name: str):
         return self.variable.__set_name__(cls, name)
@@ -84,24 +89,56 @@ class Species(Node):
     def __set__(self, obj, value: Initial | Species):
         if isinstance(value, Initial):
             species = initial(default=value)
-        elif isinstance(value, Species):
-            species = Species(value.variable, self.stoichiometry * value.stoichiometry)
         else:
-            raise TypeError(f"unexpected type {type(value)} for {self.name}")
+            try:
+                species = Species.from_mul(value)
+            except TypeError:
+                raise TypeError(f"unexpected type {type(value)} for {self.name}")
+            else:
+                species.stoichiometry *= self.stoichiometry
 
         super().__set__(obj, species)
+
+    def __repr__(self):
+        return f"{self.stoichiometry} * {self.variable}"
 
     def __str__(self):
         return str(self.variable)
 
-    def __mul__(self, other: float) -> Self:
-        if not isinstance(other, int | float):
-            raise TypeError
+    def __hash__(self):
+        return hash((self.variable, self.stoichiometry))
 
-        return Species(self.variable, self.stoichiometry * other)
+    def __eq__(self, other: Self):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return (self.variable, self.stoichiometry) == (
+            other.variable,
+            other.stoichiometry,
+        )
 
-    def __rmul__(self, other: float):
-        return self.__mul__(other)
+    @classmethod
+    def from_mul(cls, expr: Symbol):
+        match expr:
+            case Species(variable=var, stoichiometry=st):
+                return Species(var, st)
+
+            case Symbol(
+                expression=symbol.Expression(
+                    func=symbol.mul,
+                    args=(
+                        int(st2) | float(st2),
+                        Species(variable=var, stoichiometry=st),
+                    )
+                    | (
+                        Species(variable=var, stoichiometry=st),
+                        int(st2) | float(st2),
+                    ),
+                )
+            ):
+                return Species(var, st * st2)
+
+            case _:
+                raise TypeError
 
 
 @dataclass
@@ -113,8 +150,8 @@ class Reaction(EquationGroup):
         products: Sequence[Species],
         rate_law: Callable | float | Symbol,
     ):
-        self.reactants = reactants
-        self.products = products
+        self.reactants = tuple(map(Species.from_mul, reactants))
+        self.products = tuple(map(Species.from_mul, products))
         self.rate_law = rate_law
         self.equations = tuple(self.yield_equations())
 
@@ -149,8 +186,8 @@ class MassAction(Reaction):
         products: Sequence[Species],
         rate: float | Symbol,
     ):
-        self.reactants = reactants
-        self.products = products
+        self.reactants = tuple(map(Species.from_mul, reactants))
+        self.products = tuple(map(Species.from_mul, products))
         self.rate = rate
         self.equations = tuple(self.yield_equations())
 
