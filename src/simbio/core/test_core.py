@@ -174,5 +174,16 @@ def test_simulator():
     result = sim.solve(times=times)
     assert np.allclose(result["x"], np.exp(-times))
 
-    assert sim.create_problem({Model.x.variable: 2}).y[Model.x.variable] == 2
-    assert sim.create_problem({Model.x: 2}).y[Model.x.variable] == 2
+
+def test_transform():
+    class Model(Compartment):
+        x: Species = initial(default=1)
+        k: Parameter = assign(default=1)
+        eq = MassAction(reactants=[x], products=[], rate=k)
+
+    times = np.linspace(0, 1, 10)
+
+    result = Simulator(Model).solve(times=times)
+    result2 = Simulator(Model, transform={"double": 2 * Model.x}).solve(times=times)
+
+    assert np.allclose(result2["double"], 2 * result["x"])

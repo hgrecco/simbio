@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Iterator, Self, Sequence, dataclass_transform
+from typing import Callable, Iterator, Mapping, Self, Sequence, dataclass_transform
 
 import numpy as np
 from poincare import Constant, Parameter, Variable
 from poincare._node import Node, NodeMapper, T, _ClassInfo
 from poincare._utils import class_and_instance_method
+from poincare.simulator import Backend
 from poincare.simulator import Simulator as _Simulator
 from poincare.types import Equation, EquationGroup, Initial, System, assign
 from symbolite import Scalar, Symbol
@@ -213,7 +214,28 @@ def species_to_variable(x):
         return x
 
 
+class SpeciesToVariable:
+    def get(self, key, default=None):
+        return species_to_variable(key)
+
+
 class Simulator(_Simulator):
+    def __init__(
+        self,
+        system: System | type[System],
+        /,
+        *,
+        backend: Backend = Backend.FIRST_ORDER_VECTORIZED_NUMPY,
+        transform: Sequence[Symbol] | Mapping[str, Symbol] | None = None,
+    ):
+        if isinstance(transform, Sequence):
+            transform = [substitute(v, SpeciesToVariable) for v in transform]
+        elif isinstance(transform, Mapping):
+            transform = {
+                k: substitute(v, SpeciesToVariable) for k, v in transform.items()
+            }
+        super().__init__(system, backend=backend, transform=transform)
+
     def create_problem(
         self,
         values: dict[Constant | Parameter | Species, Initial | Symbol] = {},
