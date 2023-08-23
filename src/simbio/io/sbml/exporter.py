@@ -5,7 +5,7 @@ from poincare import Parameter, Variable
 from poincare.types import Node, System
 
 from ...core import Constant, Reaction
-from .mathML import mathMLExporter
+from ..mathML import mathMLExporter
 
 
 @mathMLExporter.to_mathML.register

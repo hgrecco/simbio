@@ -9,7 +9,7 @@ from symbolite import abstract as libabstract
 from symbolite.core import as_function
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
-from .mathML.importer import from_mathML, mapper
+from ..mathML.importer import from_mathML, mapper
 
 T = TypeVar("T")
 
