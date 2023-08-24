@@ -1,6 +1,7 @@
 import keyword
 import math
 from collections import ChainMap
+from functools import singledispatchmethod
 from typing import Callable, TypeVar
 
 import libsbml
@@ -116,29 +117,22 @@ class SBMLImporter:
             raise NotImplementedError("compartment")
 
         for p in model.parameters:
-            self.add_parameter(p)
+            self.add(p)
 
         for s in model.species:
-            self.add_species(s)
+            self.add(s)
 
         for r in model.rules:
-            if isinstance(r, types.AssignmentRule):
-                continue
-            elif isinstance(r, types.RateRule):
-                raise NotImplementedError("rate rules")
-            elif isinstance(r, types.AlgebraicRule):
-                raise NotImplementedError("algebraic rules are not yet supported")
-            else:
-                raise NotImplementedError("this rule type is not supported", type(r))
+            self.add(r)
 
         for r in model.reactions:
-            self.add_reaction(r)
+            self.add(r)
 
         for a in model.constraints:
-            raise NotImplementedError("constraints")
+            self.add(a)
 
         for a in model.events:
-            raise NotImplementedError("events")
+            self.add(a)
 
     def get(self, item, default=None):
         match item:
@@ -149,9 +143,15 @@ class SBMLImporter:
             case _:
                 return item
 
-    def add_compartment(self, c: types.Compartment):
-        raise NotImplementedError
+    @singledispatchmethod
+    def add(self, x):
+        raise NotImplementedError(type(x))
 
+    @add.register
+    def add_compartment(self, c: types.Compartment):
+        raise NotImplementedError(type(c))
+
+    @add.register
     def add_parameter(self, p: types.Parameter):
         try:
             value = self.initial_assignments[p.id]
@@ -165,6 +165,7 @@ class SBMLImporter:
         else:
             self.simbio.add(p.id, Parameter(default=value))
 
+    @add.register
     def add_species(self, s: types.Species):
         try:
             value = self.initial_assignments[s.id]
@@ -201,6 +202,7 @@ class SBMLImporter:
             st = 1
         return Species(species.variable, st)
 
+    @add.register
     def add_reaction(self, r: types.Reaction):
         reactants = [self.get_species_reference(s) for s in r.reactants]
         products = [self.get_species_reference(s) for s in r.products]
