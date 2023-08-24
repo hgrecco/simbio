@@ -227,8 +227,12 @@ class SBMLImporter:
                 raise ValueError(
                     f"{r.name} is a reversible formula without minus: {formula}"
                 )
-            for k, v in zip(["forward", "reverse"], formula.expression.args):
-                self.simbio.add(
-                    f"{r.name}_{k}",
-                    Reaction(reactants=reactants, products=products, rate_law=v),
-                )
+            forward, reverse = formula.expression.args
+            self.simbio.add(
+                f"{r.name}_forward",
+                Reaction(reactants=reactants, products=products, rate_law=forward),
+            )
+            self.simbio.add(
+                f"{r.name}_reverse",
+                Reaction(reactants=products, products=reactants, rate_law=reverse),
+            )
