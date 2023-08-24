@@ -228,6 +228,23 @@ class SBMLImporter:
                 Reaction(reactants=products, products=reactants, rate_law=reverse),
             )
 
+    @add.register
+    def add_assignment_rule(self, r: types.AssignmentRule):
+        rule = substitute(r.math, GetAsVariable(self.get))
+        p = Parameter(default=rule)
+        self.simbio.add(r.id, p)
+
+    @add.register
+    def add_rate_rule(self, r: types.RateRule):
+        species: Species = getattr(self.simbio, r.id)
+        formula: Symbol = substitute(r.math, GetAsVariable(self.get))
+        eq = species.variable.derive() << formula
+        self.simbio.add(f"{r.id}_rate_rule", eq)
+
+    @add.register
+    def add_algebraic_rule(self, r: types.AlgebraicRule):
+        raise NotImplementedError("algebraic rules are not yet supported")
+
 
 class GetAsVariable:
     def __init__(self, getter):
