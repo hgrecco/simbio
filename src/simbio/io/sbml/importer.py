@@ -60,7 +60,7 @@ def parse_model(
         raise RuntimeError("error reading the SBML file")
 
     model: libsbml.Model = document.getModel()
-    converted_model = from_libsbml.convert(model)
+    converted_model: types.Model = from_libsbml.convert(model)
     return convert_model(converted_model, name=name, identity_mapper=identity_mapper)
 
 
