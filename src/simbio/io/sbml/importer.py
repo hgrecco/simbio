@@ -195,17 +195,21 @@ class SBMLImporter:
             raise TypeError(f"unexpected type: {type(value)}")
         return value
 
-    def get_species_reference(self, s: types.SpeciesReference) -> Species:
+    def get_species_reference(self, s: types.SimpleSpeciesReference) -> Species:
         species = self.get_symbol(s.species, Species)
-        st = s.stoichiometry
-        if st is None:
-            st = 1
-        return Species(species.variable, st)
+        if isinstance(s, types.SpeciesReference) and s.stoichiometry is not None:
+            return Species(species.variable, s.stoichiometry)
+        else:
+            return Species(species.variable)
 
     @add.register
     def add_reaction(self, r: types.Reaction):
         reactants = [self.get_species_reference(s) for s in r.reactants]
         products = [self.get_species_reference(s) for s in r.products]
+        modifiers = [self.get_species_reference(s) for s in r.modifiers]
+        for m in modifiers:
+            reactants.append(m)
+            products.append(m)
         kinetic_law = r.kinetic_law
         formula = substitute(kinetic_law.math, GetAsVariable(self.get))
         if not r.reversible:
