@@ -113,8 +113,8 @@ class SBMLImporter:
             if isinstance(r, types.AssignmentRule)
         }
 
-        if len(model.compartments) > 1:
-            raise NotImplementedError("compartment")
+        for c in model.compartments:
+            self.add(c)
 
         for p in model.parameters:
             self.add(p)
@@ -149,7 +149,16 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
-        raise NotImplementedError(type(c))
+        if c.size is None:
+            size = 1
+        else:
+            size = c.size
+
+        if c.constant:
+            self.simbio.add(c.id, Constant(default=size))
+        else:
+            # TODO: or Variable?
+            self.simbio.add(c.id, Parameter(default=size))
 
     @add.register
     def add_parameter(self, p: types.Parameter):
