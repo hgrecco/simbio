@@ -106,31 +106,20 @@ class SBMLImporter:
         for f in model.functions:
             self.functions[f.id] = f.math
 
-        self.initial_assignments = {a.symbol: a.math for a in model.initial_assignments}
-        self.assignment_rules = {
-            r.variable: r.math
-            for r in model.rules
-            if isinstance(r, types.AssignmentRule)
-        }
-
         for c in model.compartments:
-            self.add(c)
-
-        for p in model.parameters:
-            self.add(p)
-
+            self.add_compartment(c)
         for s in model.species:
-            self.add(s)
-
+            self.add_species(s)
+        for p in model.parameters:
+            self.add_parameter(p)
+        for i in model.initial_assignments:
+            self.add_initial_assignment(i)
         for r in model.rules:
             self.add(r)
-
         for r in model.reactions:
-            self.add(r)
-
+            self.add_reaction(r)
         for a in model.constraints:
             self.add(a)
-
         for a in model.events:
             self.add(a)
 
@@ -149,6 +138,8 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
+        # spatial_dimensions
+        # units
         if c.size is None:
             size = 1
         else:
@@ -162,39 +153,26 @@ class SBMLImporter:
 
     @add.register
     def add_parameter(self, p: types.Parameter):
-        try:
-            value = self.initial_assignments[p.id]
-        except KeyError:
-            value = p.value
-        else:
-            value = substitute(value, self)
-
         if p.constant:
-            self.simbio.add(p.id, Constant(default=value))
+            self.simbio.add(p.id, Constant(default=p.value))
         else:
-            self.simbio.add(p.id, Parameter(default=value))
+            self.simbio.add(p.id, Parameter(default=p.value))
 
     @add.register
     def add_species(self, s: types.Species):
-        try:
-            value = self.initial_assignments[s.id]
-        except KeyError:
-            match [s.initial_amount, s.initial_concentration]:
-                case [math.nan | None, math.nan | None]:
-                    value = None
-                case [value, math.nan | None]:
-                    pass
-                case [math.nan | None, value]:
-                    # TODO: use units!
-                    # raise NotImplementedError("should use units?")
-                    pass
-                case _:
-                    raise ValueError(
-                        f"both amount an concentration specified for Species {s.id}"
-                    )
-
-        else:
-            value = substitute(value, self)
+        match [s.initial_amount, s.initial_concentration]:
+            case [math.nan | None, math.nan | None]:
+                value = None
+            case [value, math.nan | None]:
+                pass
+            case [math.nan | None, value]:
+                # TODO: use units!
+                # raise NotImplementedError("should use units?")
+                pass
+            case _:
+                raise ValueError(
+                    f"both amount an concentration specified for Species {s.id}"
+                )
 
         self.simbio.add(s.id, initial(default=value))
 
@@ -244,10 +222,23 @@ class SBMLImporter:
             )
 
     @add.register
+    def add_initial_assignment(self, a: types.InitialAssignment):
+        value = substitute(a.math, GetAsVariable(self.get))
+        component = self.get_symbol(a.id)
+        if isinstance(component, Species):
+            component.variable.initial = value
+        elif isinstance(component, Constant | Parameter):
+            component.default = value
+        else:
+            raise TypeError(
+                f"cannot perform initial assignment for {a.id} of type {type(value)}"
+            )
+
+    @add.register
     def add_assignment_rule(self, r: types.AssignmentRule):
-        rule = substitute(r.math, GetAsVariable(self.get))
-        p = Parameter(default=rule)
-        self.simbio.add(r.id, p)
+        value = substitute(r.math, GetAsVariable(self.get))
+        component = self.get_symbol(r.id, Parameter)
+        component.default = value
 
     @add.register
     def add_rate_rule(self, r: types.RateRule):
