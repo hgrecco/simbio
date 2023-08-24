@@ -6,26 +6,31 @@ from typing import Callable, TypeVar
 import libsbml
 from symbolite import Symbol
 from symbolite import abstract as libabstract
-from symbolite.core import as_function
+from symbolite.core import substitute
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
-from ..mathML.importer import from_mathML, mapper
+from ..mathML.importer import mapper
+from . import from_libsbml, types
 
 T = TypeVar("T")
 
 
 class DynamicCompartment:
-    def __init__(self, name: str):
+    def __init__(self, name: str, *, name_mapper: Callable[[str], str] = lambda x: x):
+        self.mapping = {}
+        self.name_mapper = name_mapper
         self.compartment = type(name, (Compartment,), {})
 
     def add(self, name: str, value):
+        self.mapping[name] = name = self.name_mapper(name)
         value.__set_name__(self.compartment, name)
         setattr(self.compartment, name, value)
 
     def __getattr__(self, name):
         try:
+            name = self.mapping[name]
             return getattr(self.compartment, name)
-        except AttributeError as e:
+        except (KeyError, AttributeError) as e:
             e.add_note("component not found in Compartment")
             raise
 
@@ -52,11 +57,12 @@ def parse_model(
         raise RuntimeError("error reading the SBML file")
 
     model: libsbml.Model = document.getModel()
-    return convert_model(model, name=name, identity_mapper=identity_mapper)
+    converted_model = from_libsbml.convert(model)
+    return convert_model(converted_model, name=name, identity_mapper=identity_mapper)
 
 
 def convert_model(
-    model: libsbml.Model,
+    model: types.Model,
     *,
     name: str | None = None,
     identity_mapper: Callable[[str], str] = lambda x: x,
@@ -82,77 +88,107 @@ def _extra_check(func: Callable[[str], str]):
 class SBMLImporter:
     def __init__(
         self,
-        model: libsbml.Model,
+        model: types.Model,
         *,
         name: str | None = None,
         identity_mapper: Callable[[str], str] = lambda x: x,
     ):
         if name is None:
-            name: str = model.getName()
+            name = model.name
         self.model = model
-        self.simbio = DynamicCompartment(name)
-        self.identity = _extra_check(identity_mapper)
-        self.mapper = ChainMap({}, mapper)
+        self.simbio = DynamicCompartment(
+            name,
+            name_mapper=_extra_check(identity_mapper),
+        )
 
+        self.mapper = ChainMap({}, mapper)
         self.functions = {}
         self.mapper[libsbml.AST_FUNCTION] = self.functions
-        for f in model.getListOfFunctionDefinitions():
-            f: libsbml.FunctionDefinition
-            self.functions[f.getId()] = self.create_function(f)
+        for f in model.functions:
+            self.functions[f.id] = f.math
 
-        if model.getNumCompartments() > 1:
-            raise NotImplementedError("compartments")
+        self.initial_assignments = {a.symbol: a.math for a in model.initial_assignments}
+        self.assignment_rules = {
+            r.variable: r.math
+            for r in model.rules
+            if isinstance(r, types.AssignmentRule)
+        }
 
-        for p in model.getListOfParameters():
+        if len(model.compartments) > 1:
+            raise NotImplementedError("compartment")
+
+        for p in model.parameters:
             self.add_parameter(p)
 
-        for s in model.getListOfSpecies():
+        for s in model.species:
             self.add_species(s)
 
-        for a in model.getListOfConstraints():
-            raise NotImplementedError("constraints")
+        for r in model.rules:
+            if isinstance(r, types.AssignmentRule):
+                continue
+            elif isinstance(r, types.RateRule):
+                raise NotImplementedError("rate rules")
+            elif isinstance(r, types.AlgebraicRule):
+                raise NotImplementedError("algebraic rules are not yet supported")
+            else:
+                raise NotImplementedError("this rule type is not supported", type(r))
 
-        for a in model.getListOfEvents():
-            raise NotImplementedError("events")
-
-        for a in model.getListOfRules():
-            raise NotImplementedError("rules")
-
-        for r in model.getListOfReactions():
+        for r in model.reactions:
             self.add_reaction(r)
 
-    def add_compartment(self, c: libsbml.Compartment):
+        for a in model.constraints:
+            raise NotImplementedError("constraints")
+
+        for a in model.events:
+            raise NotImplementedError("events")
+
+    def get(self, item, default=None):
+        match item:
+            case Symbol(name=None):
+                return item
+            case Symbol(name=name):
+                return getattr(self.simbio, name)
+            case _:
+                return item
+
+    def add_compartment(self, c: types.Compartment):
         raise NotImplementedError
 
-    def add_parameter(self, p: libsbml.Parameter):
-        name = self.identity(p.getId())
-        if not math.isnan(value := p.getValue()):
-            pass
+    def add_parameter(self, p: types.Parameter):
+        try:
+            value = self.initial_assignments[p.id]
+        except KeyError:
+            value = p.value
         else:
-            value = self.get_assignment(p)
-        if p.getConstant():
-            self.simbio.add(name, Constant(default=value))
+            value = substitute(value, self)
+
+        if p.constant:
+            self.simbio.add(p.id, Constant(default=value))
         else:
-            self.simbio.add(name, Parameter(default=value))
+            self.simbio.add(p.id, Parameter(default=value))
 
-    def get_assignment(self, node: libsbml.ASTNode):
-        assign: libsbml.InitialAssignment = self.model.getInitialAssignment(
-            node.getId()
-        )
-        math_ast: libsbml.ASTNode = assign.getMath()
-        value = self.formula_to_symbolite(math_ast)
-        return value
+    def add_species(self, s: types.Species):
+        try:
+            value = self.initial_assignments[s.id]
+        except KeyError:
+            match [s.initial_amount, s.initial_concentration]:
+                case [math.nan | None, math.nan | None]:
+                    raise ValueError(f"Species {s.id} has no initial condition")
+                case [value, math.nan | None]:
+                    pass
+                case [math.nan | None, value]:
+                    # TODO: use units!
+                    # raise NotImplementedError("should use units?")
+                    pass
+                case _:
+                    raise ValueError(
+                        f"both amount an concentration specified for Species {s.id}"
+                    )
 
-    def add_species(self, s: libsbml.Species):
-        name = self.identity(s.getId())
-        if not math.isnan(value := s.getInitialConcentration()):
-            pass
-        elif not math.isnan(value := s.getInitialAmount()):
-            pass
         else:
-            value = self.get_assignment(s)
+            value = substitute(value, self)
 
-        self.simbio.add(name, initial(default=value))
+        self.simbio.add(s.id, initial(default=value))
 
     def get_symbol(self, name: str, expected_type: type[T] = object) -> T:
         value = getattr(self.simbio, name)
@@ -160,74 +196,30 @@ class SBMLImporter:
             raise TypeError(f"unexpected type: {type(value)}")
         return value
 
-    def get_species_reference(self, s: libsbml.SpeciesReference) -> Species:
-        name = self.identity(s.getSpecies())
-        species = self.get_symbol(name, Species)
-        st = s.getStoichiometry()
-        if math.isnan(st):
+    def get_species_reference(self, s: types.SpeciesReference) -> Species:
+        species = self.get_symbol(s.species, Species)
+        st = s.stoichiometry
+        if st is None:
             st = 1
-        return st * species
+        return Species(species.variable, st)
 
-    def formula_to_symbolite(self, ast_node: libsbml.ASTNode):
-        symbolite_node: Symbol = from_mathML(ast_node, self.mapper)
-        if not isinstance(symbolite_node, Symbol):
-            return symbolite_node
-
-        names = symbolite_node.symbol_names()
-        mapper = {}
-        for n in names:
-            s = self.get_symbol(self.identity(n))
-            if isinstance(s, Species):
-                s = s.variable
-            mapper[n] = s
-        formula = symbolite_node.subs_by_name(**mapper)
-        return formula
-
-    def _add_reaction(
-        self,
-        name: str,
-        reactants: list[Species],
-        products: list[Species],
-        formula: libsbml.ASTNode,
-    ):
-        self.simbio.add(
-            name,
-            Reaction(
-                reactants=reactants,
-                products=products,
-                rate_law=self.formula_to_symbolite(formula),
-            ),
-        )
-
-    def add_reaction(self, r: libsbml.Reaction):
-        reactants = [self.get_species_reference(s) for s in r.getListOfReactants()]
-        products = [self.get_species_reference(s) for s in r.getListOfProducts()]
-        kinetic_law: libsbml.KineticLaw = r.getKineticLaw()
-        formula: libsbml.ASTNode = kinetic_law.getMath()
-        name = r.getName()
-        if r.getReversible():
-            if formula.getType() != libsbml.AST_MINUS:
-                raise ValueError(
-                    "reversible formula without minus", kinetic_law.getFormula()
-                )
-            forward: libsbml.ASTNode = formula.getLeftChild()
-            reverse: libsbml.ASTNode = formula.getRightChild()
-            self._add_reaction(f"{name}_forward", reactants, products, forward)
-            self._add_reaction(f"{name}_reverse", products, reactants, reverse)
+    def add_reaction(self, r: types.Reaction):
+        reactants = [self.get_species_reference(s) for s in r.reactants]
+        products = [self.get_species_reference(s) for s in r.products]
+        kinetic_law = r.kinetic_law
+        formula = substitute(kinetic_law.math, self)
+        if not r.reversible:
+            self.simbio.add(
+                r.id,
+                Reaction(reactants=reactants, products=products, rate_law=formula),
+            )
         else:
-            self._add_reaction(name, reactants, products, formula)
-
-    def create_function(self, func: libsbml.FunctionDefinition):
-        f: libsbml.ASTNode = func.getMath()
-        children: list[Symbol] = [
-            from_mathML(f.getChild(i), mapper=self.mapper)
-            for i in range(f.getNumChildren())
-        ]
-        params = children[:-1]
-        body = children[-1]
-        return as_function(
-            body,
-            func.getId(),
-            tuple(map(str, params)),
-            libsl=libabstract,
-        )
+            if formula.expression.func is not libabstract.symbol.sub:
+                raise ValueError(
+                    f"{r.name} is a reversible formula without minus: {formula}"
+                )
+            for k, v in zip(["forward", "reverse"], formula.expression.args):
+                self.simbio.add(
+                    f"{r.name}_{k}",
+                    Reaction(reactants=reactants, products=products, rate_law=v),
+                )

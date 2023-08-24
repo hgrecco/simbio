@@ -1,12 +1,31 @@
+from typing import Mapping
+
 import libsbml
 from libsbml import ASTNode
-from symbolite import Symbol, scalar
+from symbolite import Symbol, abstract, scalar
 from symbolite.abstract import symbol
+from symbolite.core import as_function
+
+
+def compile_function(func: libsbml.AST_FUNCTION | libsbml.AST_LAMBDA, mapper: Mapping):
+    name = func.getId()
+    if not name:
+        name = "_lambda"
+    children = (
+        from_mathML(func.getChild(i), mapper=mapper)
+        for i in range(func.getNumChildren())
+    )
+    *params, body = children
+    return as_function(
+        body,
+        name,
+        tuple(map(str, params)),
+        libsl=abstract,
+    )
 
 
 def as_symbol(node: libsbml.ASTNode):
     return Symbol(node.getName())
-    return Symbol(node.getId())
 
 
 def get_value(cast_to: type):
@@ -61,8 +80,8 @@ mapper = {
     libsbml.AST_CONSTANT_FALSE: False,
     libsbml.AST_CONSTANT_PI: scalar.pi,
     libsbml.AST_CONSTANT_TRUE: True,
-    libsbml.AST_LAMBDA: "AST_LAMBDA",
-    libsbml.AST_FUNCTION: "AST_FUNCTION",
+    libsbml.AST_LAMBDA: compile_function,
+    libsbml.AST_FUNCTION: compile_function,
     libsbml.AST_FUNCTION_ABS: scalar.abs,
     libsbml.AST_FUNCTION_ARCCOS: scalar.acos,
     libsbml.AST_FUNCTION_ARCCOSH: scalar.acosh,
@@ -210,6 +229,9 @@ def from_mathML(node: libsbml.ASTNode, mapper: dict = mapper):
         raise NotImplementedError(func)
     elif isinstance(func, dict):
         func = func[node.getName()]
+
+    if func is compile_function:
+        return compile_function(node, mapper=mapper)
 
     n: int = node.getNumChildren()
     if n > 0:
