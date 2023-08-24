@@ -16,21 +16,23 @@ T = TypeVar("T")
 
 
 class DynamicCompartment:
-    def __init__(self, name: str, *, name_mapper: Callable[[str], str] = lambda x: x):
-        self.mapping = {}
+    def __init__(self, *, name_mapper: Callable[[str], str] = lambda x: x):
+        self.name_mapping = {}
         self.name_mapper = name_mapper
-        self.compartment = type(name, (Compartment,), {})
+        self.namespace = Compartment.__prepare__(None, ())
+
+    def build(self, name: str):
+        return type(name, (Compartment,), self.namespace)
 
     def add(self, name: str, value):
-        self.mapping[name] = name = self.name_mapper(name)
-        value.__set_name__(self.compartment, name)
-        setattr(self.compartment, name, value)
+        self.name_mapping[name] = name = self.name_mapper(name)
+        self.namespace[name] = value
 
     def __getattr__(self, name):
         try:
-            name = self.mapping[name]
-            return getattr(self.compartment, name)
-        except (KeyError, AttributeError) as e:
+            name = self.name_mapping[name]
+            return self.namespace[name]
+        except KeyError as e:
             e.add_note("component not found in Compartment")
             raise
 
@@ -67,9 +69,11 @@ def convert_model(
     name: str | None = None,
     identity_mapper: Callable[[str], str] = lambda x: x,
 ) -> type[Compartment]:
-    return SBMLImporter(
-        model, name=name, identity_mapper=identity_mapper
-    ).simbio.compartment
+    if name is None:
+        name = model.name
+        if name is None:
+            raise ValueError("must provide a name for the model")
+    return SBMLImporter(model, identity_mapper=identity_mapper).simbio.build(name=name)
 
 
 def _extra_check(func: Callable[[str], str]):
@@ -90,16 +94,10 @@ class SBMLImporter:
         self,
         model: types.Model,
         *,
-        name: str | None = None,
         identity_mapper: Callable[[str], str] = lambda x: x,
     ):
-        if name is None:
-            name = model.name
         self.model = model
-        self.simbio = DynamicCompartment(
-            name,
-            name_mapper=_extra_check(identity_mapper),
-        )
+        self.simbio = DynamicCompartment(name_mapper=_extra_check(identity_mapper))
 
         self.mapper = ChainMap({}, mapper)
         self.functions = {}
