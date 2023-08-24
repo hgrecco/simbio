@@ -137,7 +137,7 @@ class Reaction(Base):
     compartment: ID | None = None
     reactants: Sequence[SpeciesReference]
     products: Sequence[SpeciesReference]
-    modifiers: list
+    modifiers: list[ModifierSpeciesReference]
     kinetic_law: KineticLaw
 
 
