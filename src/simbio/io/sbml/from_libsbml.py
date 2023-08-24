@@ -252,7 +252,7 @@ def SimpleSpeciesReference(
 ) -> types.SimpleSpeciesReference:
     return types.SimpleSpeciesReference(
         **asdict(Base(x)),
-        species=types.ID(x.getId()),
+        species=types.ID(x.getSpecies()),
     )
 
 
@@ -262,7 +262,7 @@ def ModifierSpeciesReference(
 ) -> types.ModifierSpeciesReference:
     return types.ModifierSpeciesReference(
         **asdict(Base(x)),
-        species=types.ID(x.getId()),
+        species=types.ID(x.getSpecies()),
     )
 
 
