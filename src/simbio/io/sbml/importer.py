@@ -220,6 +220,8 @@ class SBMLImporter:
             reactants.append(m)
             products.append(m)
         kinetic_law = r.kinetic_law
+        if len(kinetic_law.parameters) > 0:
+            raise NotImplementedError("local parameters are not yet implemented")
         formula = substitute(kinetic_law.math, GetAsVariable(self.get))
         if not r.reversible:
             self.simbio.add(
