@@ -172,7 +172,7 @@ class SBMLImporter:
         except KeyError:
             match [s.initial_amount, s.initial_concentration]:
                 case [math.nan | None, math.nan | None]:
-                    raise ValueError(f"Species {s.id} has no initial condition")
+                    value = None
                 case [value, math.nan | None]:
                     pass
                 case [math.nan | None, value]:
