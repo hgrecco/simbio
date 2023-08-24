@@ -202,19 +202,10 @@ class SBMLImporter:
         return Species(species.variable, st)
 
     def add_reaction(self, r: types.Reaction):
-        class GetAsVariable:
-            @staticmethod
-            def get(key, default=None):
-                value = self.get(key, default=None)
-                if isinstance(value, Species):
-                    return value.variable
-                else:
-                    return value
-
         reactants = [self.get_species_reference(s) for s in r.reactants]
         products = [self.get_species_reference(s) for s in r.products]
         kinetic_law = r.kinetic_law
-        formula = substitute(kinetic_law.math, GetAsVariable)
+        formula = substitute(kinetic_law.math, GetAsVariable(self.get))
         if not r.reversible:
             self.simbio.add(
                 r.id,
@@ -234,3 +225,15 @@ class SBMLImporter:
                 f"{r.name}_reverse",
                 Reaction(reactants=products, products=reactants, rate_law=reverse),
             )
+
+
+class GetAsVariable:
+    def __init__(self, getter):
+        self.getter = getter
+
+    def get(self, key, default=None):
+        value = self.getter(key, default=None)
+        if isinstance(value, Species):
+            return value.variable
+        else:
+            return value
