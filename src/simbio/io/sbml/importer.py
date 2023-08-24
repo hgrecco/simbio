@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 class DynamicCompartment:
     def __init__(self, *, name_mapper: Callable[[str], str] = lambda x: x):
-        self.name_mapping = {}
+        self.name_mapping: dict[str, str] = {}
         self.name_mapper = name_mapper
         self.namespace = Compartment.__prepare__(None, ())
 
@@ -26,13 +26,13 @@ class DynamicCompartment:
         return type(name, (Compartment,), self.namespace)
 
     def add(self, name: str, value):
-        self.name_mapping[name] = name = self.name_mapper(name)
-        self.namespace[name] = value
+        self.name_mapping[name] = new_name = self.name_mapper(name)
+        self.namespace[new_name] = value
 
     def __getattr__(self, name):
         try:
-            name = self.name_mapping[name]
-            return self.namespace[name]
+            new_name = self.name_mapping[name]
+            return self.namespace[new_name]
         except KeyError as e:
             e.add_note("component not found in Compartment")
             raise
