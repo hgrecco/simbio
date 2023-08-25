@@ -1,5 +1,6 @@
 import keyword
 import math
+from dataclasses import replace
 from functools import singledispatchmethod
 from typing import Callable, TypeVar
 
@@ -200,9 +201,15 @@ class SBMLImporter:
             reactants.append(m)
             products.append(m)
         kinetic_law = r.kinetic_law
+        formula: Symbol = kinetic_law.math
         if len(kinetic_law.parameters) > 0:
-            raise NotImplementedError("local parameters are not yet implemented")
-        formula = substitute(kinetic_law.math, GetAsVariable(self.get))
+            mapping = {}
+            for p in kinetic_law.parameters:
+                new_id = f"{r.id}.{p.id}"
+                self.add_parameter(replace(p, id=new_id))
+                mapping[p.id] = Symbol(new_id)
+            formula = formula.subs_by_name(**mapping)
+        formula = substitute(formula, GetAsVariable(self.get))
 
         if not r.reversible:
             self.simbio.add(
