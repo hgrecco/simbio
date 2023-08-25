@@ -130,8 +130,8 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
-        # spatial_dimensions
-        # units
+        # c.spatial_dimensions
+        # c.units
         if c.size is None:
             size = 1
         else:
@@ -145,6 +145,7 @@ class SBMLImporter:
 
     @add.register
     def add_parameter(self, p: types.Parameter):
+        # p.units
         if p.constant:
             self.simbio.add(p.id, Constant(default=p.value))
         else:
@@ -152,6 +153,13 @@ class SBMLImporter:
 
     @add.register
     def add_species(self, s: types.Species):
+        # compartment: ID
+        # substance_units: ID | None = None
+        # has_only_substance_units: bool
+        # conversion_factor: ID | None = None
+        if s.boundary_condition:
+            raise NotImplementedError("boundary condition")
+
         match [s.initial_amount, s.initial_concentration]:
             case [math.nan | None, math.nan | None]:
                 value = None
@@ -175,6 +183,7 @@ class SBMLImporter:
         return value
 
     def get_species_reference(self, s: types.SimpleSpeciesReference) -> Species:
+        # s.constant: bool
         species = self.get_symbol(s.species, Species)
         if isinstance(s, types.SpeciesReference) and s.stoichiometry is not None:
             return Species(species.variable, s.stoichiometry)
@@ -183,6 +192,7 @@ class SBMLImporter:
 
     @add.register
     def add_reaction(self, r: types.Reaction):
+        # r.compartment
         reactants = [self.get_species_reference(s) for s in r.reactants]
         products = [self.get_species_reference(s) for s in r.products]
         modifiers = [self.get_species_reference(s) for s in r.modifiers]
