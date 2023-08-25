@@ -2,7 +2,7 @@ import keyword
 import math
 from dataclasses import replace
 from functools import singledispatchmethod
-from typing import Callable, TypeVar
+from typing import Callable, Mapping, Sequence, TypeVar
 
 import libsbml
 from symbolite import Symbol
@@ -99,22 +99,36 @@ class SBMLImporter:
         self.model = model
         self.simbio = DynamicCompartment(name_mapper=_extra_check(identity_mapper))
 
-        for c in model.compartments:
-            self.add_compartment(c)
-        for s in model.species:
-            self.add_species(s)
-        for p in model.parameters:
-            self.add_parameter(p)
-        for i in model.initial_assignments:
-            self.add_initial_assignment(i)
+        self.species = {s.id: s for s in model.species}
+        self.initials = {i.id: i for i in model.initial_assignments}
+        self.algebraic_rules: Sequence[types.AlgebraicRule] = []
+        self.assignment_rules: Mapping[types.ID, types.AssignmentRule] = {}
+        self.rate_rules: Mapping[types.ID, types.RateRule] = {}
+        for r in model.rules:
+            match r:
+                case types.AssignmentRule():
+                    self.assignment_rules[r.variable] = r
+                case types.RateRule():
+                    self.rate_rules[r.variable] = r
+                case types.AlgebraicRule():
+                    self.algebraic_rules.append(r)
+                case _:
+                    raise NotImplementedError(type(r))
+
+        for x in model.compartments:
+            self.add_compartment(x)
+        for x in model.parameters:
+            self.add_parameter(x)
+        for x in model.species:
+            self.add_species(x)
+        for x in model.reactions:
+            self.add_reaction(x)
         for r in model.rules:
             self.add(r)
-        for r in model.reactions:
-            self.add_reaction(r)
         for a in model.constraints:
-            self.add(a)
+            self.add_constaint(a)
         for a in model.events:
-            self.add(a)
+            self.add_event(a)
 
     def get(self, item, default=None):
         match item:
@@ -148,9 +162,18 @@ class SBMLImporter:
     def add_parameter(self, p: types.Parameter):
         # p.units
         if p.constant:
-            self.simbio.add(p.id, Constant(default=p.value))
+            value = Constant(default=p.value)
+        elif p.id in self.rate_rules:
+            # Variable, add rate rule later
+            if p.id in self.initials:
+                default = substitute(self.initials[p.id].math, self)
+            else:
+                default = p.value
+            value = initial(default=default)
         else:
-            self.simbio.add(p.id, Parameter(default=p.value))
+            value = Parameter(default=p.value)
+
+        self.simbio.add(p.id, value)
 
     @add.register
     def add_species(self, s: types.Species):
@@ -158,15 +181,13 @@ class SBMLImporter:
         # substance_units: ID | None = None
         # has_only_substance_units: bool
         # conversion_factor: ID | None = None
-        if s.boundary_condition:
-            raise NotImplementedError("boundary condition")
-
+        # boundary_condition
         match [s.initial_amount, s.initial_concentration]:
             case [math.nan | None, math.nan | None]:
-                value = None
-            case [value, math.nan | None]:
+                default = None
+            case [default, math.nan | None]:
                 pass
-            case [math.nan | None, value]:
+            case [math.nan | None, default]:
                 # TODO: use units!
                 # raise NotImplementedError("should use units?")
                 pass
@@ -175,7 +196,14 @@ class SBMLImporter:
                     f"both amount an concentration specified for Species {s.id}"
                 )
 
-        self.simbio.add(s.id, initial(default=value))
+        if s.constant:
+            value = Constant(default=default)
+        elif s.id in self.assignment_rules:
+            value = Parameter(default=default)
+        else:
+            value = initial(default=default)
+
+        self.simbio.add(s.id, value)
 
     def get_symbol(self, name: str, expected_type: type[T] = object) -> T:
         value = getattr(self.simbio, name)
@@ -194,9 +222,15 @@ class SBMLImporter:
     @add.register
     def add_reaction(self, r: types.Reaction):
         # r.compartment
-        reactants = [self.get_species_reference(s) for s in r.reactants]
-        products = [self.get_species_reference(s) for s in r.products]
-        modifiers = [self.get_species_reference(s) for s in r.modifiers]
+        def yield_species(references: Sequence[types.SimpleSpeciesReference]):
+            for r in references:
+                s = self.species[r.species]
+                if not s.boundary_condition and s.id not in self.assignment_rules:
+                    yield self.get_species_reference(r)
+
+        reactants = list(yield_species(r.reactants))
+        products = list(yield_species(r.products))
+        modifiers = list(yield_species(r.modifiers))
         for m in modifiers:
             reactants.append(m)
             products.append(m)
@@ -275,16 +309,20 @@ class SBMLImporter:
 
     @add.register
     def add_assignment_rule(self, r: types.AssignmentRule):
+        component = self.get_symbol(r.variable, Parameter)
         value = substitute(r.math, GetAsVariable(self.get))
-        component = self.get_symbol(r.id, Parameter)
         component.default = value
 
     @add.register
     def add_rate_rule(self, r: types.RateRule):
-        species = self.get_symbol(r.id, Species)
-        formula: Symbol = substitute(r.math, GetAsVariable(self.get))
-        eq = species.variable.derive() << formula
-        self.simbio.add(f"{r.id}_rate_rule", eq)
+        species = self.get_symbol(r.variable, Species)
+        value: Symbol = substitute(r.math, GetAsVariable(self.get))
+        eq = species.variable.derive() << value
+
+        name = r.id
+        if name is None or name == r.variable:
+            name = f"{r.variable}.rate_rule"
+        self.simbio.add(name, eq)
 
     @add.register
     def add_algebraic_rule(self, r: types.AlgebraicRule):
