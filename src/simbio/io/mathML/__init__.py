@@ -1,4 +1,4 @@
 from .exporter import mathMLExporter
-from .importer import from_mathML
+from .importer import mathMLImporter
 
-__all__ = ["from_mathML", "mathMLExporter"]
+__all__ = ["mathMLImporter", "mathMLExporter"]

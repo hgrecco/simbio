@@ -1,6 +1,5 @@
 import keyword
 import math
-from collections import ChainMap
 from functools import singledispatchmethod
 from typing import Callable, TypeVar
 
@@ -10,7 +9,6 @@ from symbolite.abstract import symbol
 from symbolite.core import substitute
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
-from ..mathML.importer import mapper
 from . import from_libsbml, types
 
 T = TypeVar("T")
@@ -60,7 +58,7 @@ def parse_model(
         raise RuntimeError("error reading the SBML file")
 
     model: libsbml.Model = document.getModel()
-    converted_model: types.Model = from_libsbml.convert(model)
+    converted_model: types.Model = from_libsbml.Converter().convert(model)
     return convert_model(converted_model, name=name, identity_mapper=identity_mapper)
 
 
@@ -99,12 +97,6 @@ class SBMLImporter:
     ):
         self.model = model
         self.simbio = DynamicCompartment(name_mapper=_extra_check(identity_mapper))
-
-        self.mapper = ChainMap({}, mapper)
-        self.functions = {}
-        self.mapper[libsbml.AST_FUNCTION] = self.functions
-        for f in model.functions:
-            self.functions[f.id] = f.math
 
         for c in model.compartments:
             self.add_compartment(c)

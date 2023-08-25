@@ -1,27 +1,10 @@
-from typing import Mapping
+from collections import ChainMap
 
 import libsbml
 from libsbml import ASTNode
 from symbolite import Symbol, abstract, scalar
 from symbolite.abstract import symbol
 from symbolite.core import as_function
-
-
-def compile_function(func: libsbml.AST_FUNCTION | libsbml.AST_LAMBDA, mapper: Mapping):
-    name = func.getId()
-    if not name:
-        name = "_lambda"
-    children = (
-        from_mathML(func.getChild(i), mapper=mapper)
-        for i in range(func.getNumChildren())
-    )
-    *params, body = children
-    return as_function(
-        body,
-        name,
-        tuple(map(str, params)),
-        libsl=abstract,
-    )
 
 
 def as_symbol(node: libsbml.ASTNode):
@@ -80,8 +63,8 @@ mapper = {
     libsbml.AST_CONSTANT_FALSE: False,
     libsbml.AST_CONSTANT_PI: scalar.pi,
     libsbml.AST_CONSTANT_TRUE: True,
-    libsbml.AST_LAMBDA: compile_function,
-    libsbml.AST_FUNCTION: compile_function,
+    libsbml.AST_LAMBDA: "AST_LAMBDA",
+    libsbml.AST_FUNCTION: "AST_FUNCTION",
     libsbml.AST_FUNCTION_ABS: scalar.abs,
     libsbml.AST_FUNCTION_ARCCOS: scalar.acos,
     libsbml.AST_FUNCTION_ARCCOSH: scalar.acosh,
@@ -223,22 +206,36 @@ mapper = {
 }
 
 
-def from_mathML(node: libsbml.ASTNode, mapper: dict = mapper):
-    func = mapper[node.getType()]
-    if isinstance(func, str):
-        raise NotImplementedError(func)
-    elif isinstance(func, dict):
-        func = func[node.getName()]
+class mathMLImporter:
+    def __init__(self) -> None:
+        self.mapper = ChainMap({}, mapper)
 
-    if func is compile_function:
-        return compile_function(node, mapper=mapper)
+    def convert(self, node: libsbml.ASTNode):
+        func = self.mapper[node.getType()]
+        if isinstance(func, str):
+            raise NotImplementedError(func)
+        elif isinstance(func, dict):
+            func = func[node.getName()]
 
-    n: int = node.getNumChildren()
-    if n > 0:
-        children = [from_mathML(node.getChild(i), mapper=mapper) for i in range(n)]
-        return func(*children)
+        if node.getNumChildren() > 0:
+            return func(*self.yield_children(node))
+        elif callable(func):
+            return func(node)
+        else:
+            return func
 
-    if callable(func):
-        return func(node)
-    else:
+    def yield_children(self, node: libsbml.ASTNode):
+        for i in range(node.getNumChildren()):
+            yield self.convert(node.getChild(i))
+
+    def compile_function(self, name: str, node: libsbml.ASTNode):
+        *params, body = self.yield_children(node)
+        func = as_function(body, name, tuple(map(str, params)), libsl=abstract)
+        self.add_function(name, func)
         return func
+
+    def add_function(self, name: str, func):
+        if self.mapper[libsbml.AST_FUNCTION] == "AST_FUNCTION":
+            self.mapper[libsbml.AST_FUNCTION] = {}
+
+        self.mapper[libsbml.AST_FUNCTION][name] = func
