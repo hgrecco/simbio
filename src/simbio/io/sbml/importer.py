@@ -296,15 +296,15 @@ class SBMLImporter:
 
     @add.register
     def add_initial_assignment(self, a: types.InitialAssignment):
+        component = self.get_symbol(a.symbol)
         value = substitute(a.math, GetAsVariable(self.get))
-        component = self.get_symbol(a.id)
         if isinstance(component, Species):
             component.variable.initial = value
         elif isinstance(component, Constant | Parameter):
             component.default = value
         else:
             raise TypeError(
-                f"cannot perform initial assignment for {a.id} of type {type(value)}"
+                f"cannot perform initial assignment for {a.symbol} of type {type(component)}"
             )
 
     @add.register
