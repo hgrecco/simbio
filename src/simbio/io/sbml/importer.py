@@ -281,7 +281,7 @@ class SBMLImporter:
 
     @add.register
     def add_rate_rule(self, r: types.RateRule):
-        species: Species = getattr(self.simbio, r.id)
+        species = self.get_symbol(r.id, Species)
         formula: Symbol = substitute(r.math, GetAsVariable(self.get))
         eq = species.variable.derive() << formula
         self.simbio.add(f"{r.id}_rate_rule", eq)
