@@ -283,6 +283,14 @@ class SBMLImporter:
     def add_algebraic_rule(self, r: types.AlgebraicRule):
         raise NotImplementedError("algebraic rules are not yet supported")
 
+    @add.register
+    def add_event(self, r: types.Event):
+        raise NotImplementedError("Event")
+
+    @add.register
+    def add_constaint(self, r: types.Constraint):
+        raise NotImplementedError("Constraint")
+
 
 class GetAsVariable:
     def __init__(self, getter):
