@@ -252,11 +252,11 @@ class SBMLImporter:
                 )
 
         self.simbio.add(
-            f"{r.id}_forward",
+            f"{r.id}.forward",
             Reaction(reactants=reactants, products=products, rate_law=forward),
         )
         self.simbio.add(
-            f"{r.id}_reverse",
+            f"{r.id}.reverse",
             Reaction(reactants=products, products=reactants, rate_law=reverse),
         )
 
