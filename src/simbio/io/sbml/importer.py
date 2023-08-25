@@ -6,7 +6,7 @@ from typing import Callable, TypeVar
 
 import libsbml
 from symbolite import Symbol
-from symbolite import abstract as libabstract
+from symbolite.abstract import symbol
 from symbolite.core import substitute
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
@@ -201,25 +201,55 @@ class SBMLImporter:
         if len(kinetic_law.parameters) > 0:
             raise NotImplementedError("local parameters are not yet implemented")
         formula = substitute(kinetic_law.math, GetAsVariable(self.get))
+
         if not r.reversible:
             self.simbio.add(
                 r.id,
                 Reaction(reactants=reactants, products=products, rate_law=formula),
             )
-        else:
-            if formula.expression.func is not libabstract.symbol.sub:
+            return
+
+        match formula:
+            case Symbol(
+                expression=symbol.Expression(func=symbol.sub, args=(forward, reverse))
+            ):
+                pass
+            case Symbol(
+                expression=symbol.Expression(
+                    func=symbol.mul,
+                    args=(
+                        compartment,
+                        Symbol(
+                            expression=symbol.Expression(
+                                func=symbol.sub, args=(forward, reverse)
+                            )
+                        ),
+                    )
+                    | (
+                        Symbol(
+                            expression=symbol.Expression(
+                                func=symbol.sub, args=(forward, reverse)
+                            )
+                        ),
+                        compartment,
+                    ),
+                )
+            ):
+                forward = compartment * forward
+                reverse = compartment * reverse
+            case _:
                 raise ValueError(
                     f"{r.name} is a reversible formula without minus: {formula}"
                 )
-            forward, reverse = formula.expression.args
-            self.simbio.add(
-                f"{r.name}_forward",
-                Reaction(reactants=reactants, products=products, rate_law=forward),
-            )
-            self.simbio.add(
-                f"{r.name}_reverse",
-                Reaction(reactants=products, products=reactants, rate_law=reverse),
-            )
+
+        self.simbio.add(
+            f"{r.name}_forward",
+            Reaction(reactants=reactants, products=products, rate_law=forward),
+        )
+        self.simbio.add(
+            f"{r.name}_reverse",
+            Reaction(reactants=products, products=reactants, rate_law=reverse),
+        )
 
     @add.register
     def add_initial_assignment(self, a: types.InitialAssignment):
