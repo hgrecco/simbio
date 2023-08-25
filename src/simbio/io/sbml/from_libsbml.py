@@ -297,8 +297,60 @@ class Converter:
         # x.isSetScale()
         # x.isSetMultiplier()
         return types.Unit(
-            kind=types.UnitKind(x.getKind()),
+            kind=unit_kind_map[x.getKind()],
             exponent=x.getExponent(),
             scale=x.getScale(),
             multiplier=x.getMultiplier(),
         )
+
+
+class _UnitKindMap(dict):
+    def __getitem__(self, item) -> types.UnitKind:
+        value = super().__getitem__(item)
+        if isinstance(value, str):
+            raise NotImplementedError(value)
+        else:
+            return value
+
+
+unit_kind_map: dict[int, types.UnitKind] = _UnitKindMap(
+    {
+        libsbml.UNIT_KIND_AMPERE: types.UnitKind.ampere,
+        libsbml.UNIT_KIND_COULOMB: types.UnitKind.coulomb,
+        libsbml.UNIT_KIND_GRAY: types.UnitKind.gray,
+        libsbml.UNIT_KIND_JOULE: types.UnitKind.joule,
+        libsbml.UNIT_KIND_LITRE: types.UnitKind.litre,
+        libsbml.UNIT_KIND_MOLE: types.UnitKind.mole,
+        libsbml.UNIT_KIND_RADIAN: types.UnitKind.radian,
+        libsbml.UNIT_KIND_STERADIAN: types.UnitKind.steradian,
+        libsbml.UNIT_KIND_WEBER: types.UnitKind.weber,
+        libsbml.UNIT_KIND_AVOGADRO: types.UnitKind.avogadro,
+        libsbml.UNIT_KIND_DIMENSIONLESS: types.UnitKind.dimensionless,
+        libsbml.UNIT_KIND_HENRY: types.UnitKind.henry,
+        libsbml.UNIT_KIND_KATAL: types.UnitKind.katal,
+        libsbml.UNIT_KIND_LUMEN: types.UnitKind.lumen,
+        libsbml.UNIT_KIND_NEWTON: types.UnitKind.newton,
+        libsbml.UNIT_KIND_SECOND: types.UnitKind.second,
+        libsbml.UNIT_KIND_TESLA: types.UnitKind.tesla,
+        libsbml.UNIT_KIND_BECQUEREL: types.UnitKind.becquerel,
+        libsbml.UNIT_KIND_FARAD: types.UnitKind.farad,
+        libsbml.UNIT_KIND_HERTZ: types.UnitKind.hertz,
+        libsbml.UNIT_KIND_KELVIN: types.UnitKind.kelvin,
+        libsbml.UNIT_KIND_LUX: types.UnitKind.lux,
+        libsbml.UNIT_KIND_OHM: types.UnitKind.ohm,
+        libsbml.UNIT_KIND_SIEMENS: types.UnitKind.siemens,
+        libsbml.UNIT_KIND_VOLT: types.UnitKind.volt,
+        libsbml.UNIT_KIND_CANDELA: types.UnitKind.candela,
+        libsbml.UNIT_KIND_GRAM: types.UnitKind.gram,
+        libsbml.UNIT_KIND_ITEM: types.UnitKind.item,
+        libsbml.UNIT_KIND_KILOGRAM: types.UnitKind.kilogram,
+        libsbml.UNIT_KIND_METRE: types.UnitKind.metre,
+        libsbml.UNIT_KIND_PASCAL: types.UnitKind.pascal,
+        libsbml.UNIT_KIND_SIEVERT: types.UnitKind.sievert,
+        libsbml.UNIT_KIND_WATT: types.UnitKind.watt,
+        libsbml.UNIT_KIND_LITER: types.UnitKind.litre,
+        libsbml.UNIT_KIND_METER: types.UnitKind.metre,
+        libsbml.UNIT_KIND_CELSIUS: "UNIT_KIND_CELSIUS",
+        libsbml.UNIT_KIND_INVALID: "UNIT_KIND_INVALID",
+    }
+)

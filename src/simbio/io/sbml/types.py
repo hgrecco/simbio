@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, auto
+from enum import Enum, auto
 from typing import NewType, Sequence
 
 ID = NewType("ID", str)  # Identifier.
@@ -221,7 +221,8 @@ class Unit:
     multiplier: float
 
 
-class UnitKind(IntEnum):
+class UnitKind(Enum):
+    ampere = auto()
     coulomb = auto()
     gray = auto()
     joule = auto()
