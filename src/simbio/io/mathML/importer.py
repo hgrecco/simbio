@@ -1,3 +1,4 @@
+import keyword
 from collections import ChainMap
 
 import libsbml
@@ -224,14 +225,25 @@ class mathMLImporter:
         else:
             return func
 
-    def yield_children(self, node: libsbml.ASTNode):
+    def yield_children(self, node: libsbml.ASTNode) -> Symbol:
         for i in range(node.getNumChildren()):
             yield self.convert(node.getChild(i))
 
-    def compile_function(self, name: str, node: libsbml.ASTNode):
+    def compile_function(self, func_name: str, node: libsbml.ASTNode):
         *params, body = self.yield_children(node)
-        func = as_function(body, name, tuple(map(str, params)), libsl=abstract)
-        self.add_function(name, func)
+
+        if any(keyword.iskeyword(p.name) for p in params):
+            name_mapping = {p.name: p for p in params}
+            for name in filter(keyword.iskeyword, name_mapping):
+                new_name = name
+                while new_name in name_mapping:
+                    new_name = f"_{new_name}"
+                name_mapping[name] = Symbol(new_name)
+            params = name_mapping.values()
+            body = body.subs_by_name(**name_mapping)
+
+        func = as_function(body, func_name, tuple(map(str, params)), libsl=abstract)
+        self.add_function(func_name, func)
         return func
 
     def add_function(self, name: str, func):
