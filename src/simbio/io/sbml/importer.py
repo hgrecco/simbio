@@ -80,9 +80,7 @@ def _extra_check(func: Callable[[str], str]):
     def is_python_identifier(x: str) -> str:
         y = func(x)
         if keyword.iskeyword(y):
-            raise NameError(
-                f"{y} is not a valid name, it is a Python reserved keyword."
-            )
+            return f".{y}"
         else:
             return y
 
