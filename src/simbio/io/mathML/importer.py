@@ -1,3 +1,4 @@
+import functools
 import keyword
 from collections import ChainMap
 
@@ -49,6 +50,13 @@ def log(*args):
             return scalar.log10(x)
         case _:
             raise TypeError(f"unexpected arguments for log: {args}")
+
+
+def reduced(func):
+    def impl(*args):
+        return functools.reduce(func, args)
+
+    return impl
 
 
 mapper = {
@@ -105,16 +113,16 @@ mapper = {
     libsbml.AST_FUNCTION_SINH: scalar.sinh,
     libsbml.AST_FUNCTION_TAN: scalar.tan,
     libsbml.AST_FUNCTION_TANH: scalar.tanh,
-    libsbml.AST_LOGICAL_AND: symbol.and_,
+    libsbml.AST_LOGICAL_AND: reduced(symbol.and_),
     libsbml.AST_LOGICAL_NOT: "AST_LOGICAL_NOT",
-    libsbml.AST_LOGICAL_OR: symbol.or_,
+    libsbml.AST_LOGICAL_OR: reduced(symbol.or_),
     libsbml.AST_LOGICAL_XOR: "AST_LOGICAL_XOR",
-    libsbml.AST_RELATIONAL_EQ: symbol.eq,
+    libsbml.AST_RELATIONAL_EQ: reduced(symbol.eq),
     libsbml.AST_RELATIONAL_GEQ: "AST_RELATIONAL_GEQ",
     libsbml.AST_RELATIONAL_GT: "AST_RELATIONAL_GT",
     libsbml.AST_RELATIONAL_LEQ: "AST_RELATIONAL_LEQ",
     libsbml.AST_RELATIONAL_LT: "AST_RELATIONAL_LT",
-    libsbml.AST_RELATIONAL_NEQ: symbol.ne,
+    libsbml.AST_RELATIONAL_NEQ: reduced(symbol.ne),
     libsbml.AST_END_OF_CORE: "AST_END_OF_CORE",
     libsbml.AST_FUNCTION_MAX: "AST_FUNCTION_MAX",
     libsbml.AST_FUNCTION_MIN: "AST_FUNCTION_MIN",
