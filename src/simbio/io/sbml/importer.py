@@ -10,6 +10,7 @@ from symbolite.abstract import symbol
 from symbolite.core import substitute
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
+from ..mathML.importer import MathMLSymbol
 from . import from_libsbml, types
 
 T = TypeVar("T")
@@ -134,7 +135,7 @@ class SBMLImporter:
         match item:
             case Symbol(name=None):
                 return item
-            case Symbol(name=name):
+            case MathMLSymbol(name=name):
                 return getattr(self.simbio, name)
             case _:
                 return item
@@ -225,7 +226,9 @@ class SBMLImporter:
         def yield_species(references: Sequence[types.SimpleSpeciesReference]):
             for r in references:
                 s = self.species[r.species]
-                if not s.boundary_condition and s.id not in self.assignment_rules:
+                if not (
+                    s.boundary_condition or s.constant or s.id in self.assignment_rules
+                ):
                     yield self.get_species_reference(r)
 
         reactants = list(yield_species(r.reactants))
@@ -241,7 +244,7 @@ class SBMLImporter:
             for p in kinetic_law.parameters:
                 new_id = f"{r.id}.{p.id}"
                 self.add_parameter(replace(p, id=new_id))
-                mapping[p.id] = Symbol(new_id)
+                mapping[p.id] = MathMLSymbol(new_id)
             formula = formula.subs_by_name(**mapping)
         formula = substitute(formula, GetAsVariable(self.get))
 

@@ -8,8 +8,12 @@ from symbolite.abstract import symbol
 from symbolite.core import as_function
 
 
+class MathMLSymbol(Symbol):
+    pass
+
+
 def as_symbol(node: libsbml.ASTNode):
-    return Symbol(node.getName())
+    return MathMLSymbol(node.getName())
 
 
 def get_value(cast_to: type):
