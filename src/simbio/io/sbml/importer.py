@@ -7,7 +7,7 @@ from typing import Callable, Mapping, Sequence, TypeVar
 import libsbml
 from symbolite import Symbol
 from symbolite.abstract import symbol
-from symbolite.core import substitute
+from symbolite.core import substitute, substitute_by_name
 
 from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
 from ..mathML.importer import MathMLSymbol
@@ -245,7 +245,7 @@ class SBMLImporter:
                 new_id = f"{r.id}.{p.id}"
                 self.add_parameter(replace(p, id=new_id))
                 mapping[p.id] = MathMLSymbol(new_id)
-            formula = formula.subs_by_name(**mapping)
+            formula = substitute_by_name(formula, **mapping)
         formula = substitute(formula, GetAsVariable(self.get))
 
         if not r.reversible:
