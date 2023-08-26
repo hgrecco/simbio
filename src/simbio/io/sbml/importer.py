@@ -119,6 +119,8 @@ class SBMLImporter:
             self.add_parameter(x)
         for x in model.species:
             self.add_species(x)
+        for x in model.initial_assignments:
+            self.add_initial_assignment(x)
         for x in model.reactions:
             self.add_reaction(x)
         for r in model.rules:
@@ -164,7 +166,7 @@ class SBMLImporter:
         elif p.id in self.rate_rules:
             # Variable, add rate rule later
             if p.id in self.initials:
-                default = substitute(self.initials[p.id].math, self)
+                default = None  # add assignment later
             else:
                 default = p.value
             value = initial(default=default)
