@@ -284,9 +284,12 @@ class SBMLImporter:
                 forward = compartment * forward
                 reverse = compartment * reverse
             case _:
-                raise ValueError(
-                    f"{r.id} is a reversible formula without minus: {formula}"
+                # Cannot split formula into forward and reverse
+                self.simbio.add(
+                    r.id,
+                    Reaction(reactants=reactants, products=products, rate_law=formula),
                 )
+                return
 
         self.simbio.add(
             f"{r.id}.forward",
