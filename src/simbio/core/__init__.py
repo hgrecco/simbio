@@ -1,9 +1,10 @@
-from poincare import Constant, Parameter, assign
+from poincare import Constant, Independent, Parameter, assign
 
 from .core import Compartment, MassAction, Reaction, Simulator, Species, initial
 
 __all__ = [
     "Constant",
+    "Independent",
     "Parameter",
     "assign",
 ]

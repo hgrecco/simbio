@@ -9,12 +9,20 @@ from symbolite.abstract import symbol
 from symbolite.core import as_function
 
 
+class MathMLSpecialSymbol(Symbol):
+    pass
+
+
 class MathMLSymbol(Symbol):
     pass
 
 
 def as_symbol(node: libsbml.ASTNode):
     return MathMLSymbol(node.getName())
+
+
+def as_special_symbol(node: libsbml.ASTNode):
+    return MathMLSpecialSymbol(node.getName())
 
 
 def get_value(cast_to: type):
@@ -71,7 +79,7 @@ mapper = {
     libsbml.AST_RATIONAL: "AST_RATIONAL",
     libsbml.AST_NAME: as_symbol,
     libsbml.AST_NAME_AVOGADRO: "AST_NAME_AVOGADRO",
-    libsbml.AST_NAME_TIME: as_symbol,
+    libsbml.AST_NAME_TIME: as_special_symbol,
     libsbml.AST_CONSTANT_E: scalar.e,
     libsbml.AST_CONSTANT_FALSE: False,
     libsbml.AST_CONSTANT_PI: scalar.pi,

@@ -9,8 +9,16 @@ from symbolite import Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute, substitute_by_name
 
-from ...core import Compartment, Constant, Parameter, Reaction, Species, initial
-from ..mathML.importer import MathMLSymbol
+from ...core import (
+    Compartment,
+    Constant,
+    Independent,
+    Parameter,
+    Reaction,
+    Species,
+    initial,
+)
+from ..mathML.importer import MathMLSpecialSymbol, MathMLSymbol
 from . import from_libsbml, types
 
 T = TypeVar("T")
@@ -34,8 +42,7 @@ class DynamicCompartment:
             new_name = self.name_mapping[name]
             return self.namespace[new_name]
         except KeyError as e:
-            e.add_note("component not found in Compartment")
-            raise
+            raise AttributeError(*e.args)
 
 
 def read_model(
@@ -137,12 +144,22 @@ class SBMLImporter:
                 return item
             case MathMLSymbol(name=name):
                 return getattr(self.simbio, name)
+            case MathMLSpecialSymbol(name=name):
+                return self.get_or_create_independent(name)
             case _:
                 return item
 
     @singledispatchmethod
     def add(self, x):
         raise NotImplementedError(type(x))
+
+    def get_or_create_independent(self, name: str):
+        try:
+            return getattr(self.simbio, name)
+        except AttributeError:
+            value = Independent(default=0)
+            self.simbio.add(name, value)
+            return value
 
     @add.register
     def add_compartment(self, c: types.Compartment):
