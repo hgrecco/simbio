@@ -1,10 +1,12 @@
 import keyword
 import math
 from dataclasses import replace
-from functools import singledispatchmethod
+from functools import reduce, singledispatchmethod
+from operator import mul
 from typing import Callable, Mapping, Sequence, TypeVar
 
 import libsbml
+import pint
 from symbolite import Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute, substitute_by_name
@@ -22,6 +24,13 @@ from ..mathML.importer import MathMLSpecialSymbol, MathMLSymbol
 from . import from_libsbml, types
 
 T = TypeVar("T")
+
+
+def nan_to_none(x):
+    if x is None or math.isnan(x):
+        return None
+    else:
+        return x
 
 
 class DynamicCompartment:
@@ -101,9 +110,18 @@ class SBMLImporter:
         model: types.Model,
         *,
         identity_mapper: Callable[[str], str] = lambda x: x,
+        units: bool = False,
     ):
         self.model = model
         self.simbio = DynamicCompartment(name_mapper=_extra_check(identity_mapper))
+
+        self.use_units = units
+        if self.use_units:
+            self.unit_registry = pint.get_application_registry()
+            self.units = {
+                u.id: reduce(mul, map(self.get_unit_from_registry, u.units))
+                for u in model.units
+            }
 
         self.species = {s.id: s for s in model.species}
         self.initials = {i.id: i for i in model.initial_assignments}
@@ -149,6 +167,10 @@ class SBMLImporter:
             case _:
                 return item
 
+    def get_unit_from_registry(self, u: types.Unit) -> pint.Quantity:
+        unit = getattr(self.unit_registry, u.kind.name)
+        return (u.multiplier * 10**u.scale * unit) ** u.exponent
+
     @singledispatchmethod
     def add(self, x):
         raise NotImplementedError(type(x))
@@ -163,67 +185,47 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
-        # c.spatial_dimensions
-        # c.units
-        if c.size is None:
-            size = 1
-        else:
-            size = c.size
+        size = nan_to_none(c.size)
+        if self.use_units and c.units is not None and size is not None:
+            size *= self.units[c.units]
 
-        if c.constant:
-            self.simbio.add(c.id, Constant(default=size))
-        else:
-            # TODO: or Variable?
-            self.simbio.add(c.id, Parameter(default=size))
+        self.simbio.add(c.id, Parameter(default=size))
 
     @add.register
     def add_parameter(self, p: types.Parameter):
-        # p.units
-        if p.constant:
-            value = Constant(default=p.value)
-        elif p.id in self.rate_rules:
-            # Variable, add rate rule later
-            if p.id in self.initials:
-                default = None  # add assignment later
-            else:
-                default = p.value
+        if p.id in self.initials:
+            default = None  # add assignment later
+        else:
+            default = nan_to_none(p.value)
+
+        if self.use_units and p.units is not None and default is not None:
+            default *= self.units[p.units]
+
+        if p.id in self.rate_rules:
             value = initial(default=default)
         else:
-            value = Parameter(default=p.value)
+            value = Parameter(default=default)
 
         self.simbio.add(p.id, value)
 
     @add.register
     def add_species(self, s: types.Species):
         # compartment: ID
-        # substance_units: ID | None = None
         # has_only_substance_units: bool
-        # conversion_factor: ID | None = None
-        # boundary_condition
-        match [s.initial_amount, s.initial_concentration]:
-            case [math.nan | None, math.nan | None]:
+        match [nan_to_none(s.initial_amount), nan_to_none(s.initial_concentration)]:
+            case [None, None]:
                 default = None
-            case [default, math.nan | None]:
+            case [default, None]:
                 pass
-            case [math.nan | None, default]:
-                # TODO: use units!
-                # raise NotImplementedError("should use units?")
-                pass
+            case [None, default]:
+                if self.use_units and s.substance_units is not None:
+                    default *= self.units[s.substance_units]
             case _:
                 raise ValueError(
                     f"both amount an concentration specified for Species {s.id}"
                 )
 
-        if math.isnan(default):
-            default = None
-
-        if s.constant:
-            value = Constant(default=default)
-        elif s.id in self.assignment_rules:
-            value = Parameter(default=default)
-        else:
-            value = initial(default=default)
-
+        value = initial(default=default)
         self.simbio.add(s.id, value)
 
     def get_symbol(self, name: str, expected_type: type[T] = object) -> T:
