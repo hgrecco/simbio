@@ -21,6 +21,9 @@ x, y = map(Symbol, ["x", "y"])
         x**0.5,
         scalar.cos(x),
         scalar.sqrt(x),
+        x < 1,
+        x < y,
+        ~x,
     ],
 )
 def test_mathML_roundtrip(expr: Symbol):

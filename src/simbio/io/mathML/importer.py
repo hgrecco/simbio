@@ -1,5 +1,6 @@
 import functools
 import keyword
+import warnings
 from collections import ChainMap
 
 import libsbml
@@ -116,14 +117,14 @@ mapper = {
     libsbml.AST_FUNCTION_TAN: scalar.tan,
     libsbml.AST_FUNCTION_TANH: scalar.tanh,
     libsbml.AST_LOGICAL_AND: reduced(symbol.and_),
-    libsbml.AST_LOGICAL_NOT: "AST_LOGICAL_NOT",
+    libsbml.AST_LOGICAL_NOT: symbol.invert,
     libsbml.AST_LOGICAL_OR: reduced(symbol.or_),
-    libsbml.AST_LOGICAL_XOR: "AST_LOGICAL_XOR",
+    libsbml.AST_LOGICAL_XOR: symbol.xor,
     libsbml.AST_RELATIONAL_EQ: reduced(symbol.eq),
-    libsbml.AST_RELATIONAL_GEQ: "AST_RELATIONAL_GEQ",
-    libsbml.AST_RELATIONAL_GT: "AST_RELATIONAL_GT",
-    libsbml.AST_RELATIONAL_LEQ: "AST_RELATIONAL_LEQ",
-    libsbml.AST_RELATIONAL_LT: "AST_RELATIONAL_LT",
+    libsbml.AST_RELATIONAL_GEQ: symbol.ge,
+    libsbml.AST_RELATIONAL_GT: symbol.gt,
+    libsbml.AST_RELATIONAL_LEQ: symbol.le,
+    libsbml.AST_RELATIONAL_LT: symbol.lt,
     libsbml.AST_RELATIONAL_NEQ: reduced(symbol.ne),
     libsbml.AST_END_OF_CORE: "AST_END_OF_CORE",
     libsbml.AST_FUNCTION_MAX: "AST_FUNCTION_MAX",
@@ -228,7 +229,9 @@ class mathMLImporter:
     def convert(self, node: libsbml.ASTNode):
         func = self.mapper[node.getType()]
         if isinstance(func, str):
-            raise NotImplementedError(func)
+            warnings.warn(func)
+            return 0
+            # raise NotImplementedError(func)
         elif isinstance(func, dict):
             func = func[node.getName()]
 
