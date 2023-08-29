@@ -8,13 +8,7 @@ from symbolite import Symbol, abstract, scalar
 from symbolite.abstract import symbol
 from symbolite.core import as_function
 
-
-class MathMLSpecialSymbol(Symbol):
-    pass
-
-
-class MathMLSymbol(Symbol):
-    pass
+from .symbol import MathMLSpecialSymbol, MathMLSymbol
 
 
 def as_symbol(node: libsbml.ASTNode):
