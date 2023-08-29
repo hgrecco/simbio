@@ -1,11 +1,10 @@
-from functools import singledispatchmethod as dispatch
-from typing import Any, Callable
+from functools import singledispatch as dispatch
 
 import libsbml
-from symbolite import Function, Symbol, scalar
+from symbolite import Symbol, scalar
 from symbolite.abstract import symbol
 
-mapper: dict[Function, int] = {
+mapper = {
     symbol.add: libsbml.AST_PLUS,
     symbol.sub: libsbml.AST_MINUS,
     symbol.neg: libsbml.AST_MINUS,
@@ -166,48 +165,40 @@ mapper: dict[Function, int] = {
 }  # type: ignore
 
 
-class mathMLExporter:
-    def __init__(
-        self,
-        *,
-        mapper=mapper,
-        namer: Callable[[str], str] = lambda x: x,
-        identity: Callable[[Any], str] = str,
-    ):
-        self.mapper = mapper
-        self.namer = namer
-        self.identity = identity
-
-    @dispatch
-    def to_mathML(self, x):
+@dispatch
+def to_mathML(x):
+    try:
+        return mapper[x]
+    except KeyError:
         raise NotImplementedError(f"got type {type(x)}")
 
-    @to_mathML.register
-    def _(self, x: int):
-        node = libsbml.ASTNode(libsbml.AST_INTEGER)
-        node.setValue(x)
+
+@to_mathML.register
+def int_to_mathML(x: int):
+    node = libsbml.ASTNode(libsbml.AST_INTEGER)
+    node.setValue(x)
+    return node
+
+
+@to_mathML.register
+def float_to_mathML(x: float):
+    node = libsbml.ASTNode(libsbml.AST_REAL)
+    node.setValue(x)
+    return node
+
+
+@to_mathML.register
+def symbol_to_mathML(x: Symbol):
+    if x.expression is None:
+        node = libsbml.ASTNode(libsbml.AST_NAME)
+        node.setId(str(x))
+        node.setName(x.name)
         return node
 
-    @to_mathML.register
-    def _(self, x: float):
-        node = libsbml.ASTNode(libsbml.AST_REAL)
-        node.setValue(x)
-        return node
+    if len(x.expression.kwargs) > 0:
+        raise NotImplementedError("mathML does not support functions with kwargs")
 
-    @to_mathML.register
-    def _(self, x: Symbol):
-        if x.expression is None:
-            node = libsbml.ASTNode(libsbml.AST_NAME)
-            node.setId(self.identity(x))
-            node.setName(self.namer(x.name))
-            return node
-
-        if len(x.expression.kwargs) > 0:
-            raise NotImplementedError
-
-        func = x.expression.func
-        args = x.expression.args
-        node = libsbml.ASTNode(self.mapper[func])
-        for arg in args:
-            node.addChild(self.to_mathML(arg))
-        return node
+    node = libsbml.ASTNode(to_mathML(x.expression.func))
+    for arg in x.expression.args:
+        node.addChild(to_mathML(arg))
+    return node

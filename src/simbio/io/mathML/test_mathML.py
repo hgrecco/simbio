@@ -1,7 +1,8 @@
 from pytest import mark
-from symbolite import Symbol, scalar
+from symbolite import scalar
 
-from . import from_mathML, mathMLExporter
+from . import mathMLImporter, to_mathML
+from .symbol import MathMLSymbol as Symbol
 
 
 @mark.parametrize(
@@ -21,6 +22,6 @@ from . import from_mathML, mathMLExporter
     ],
 )
 def test_mathML_roundtrip(expr: Symbol):
-    node = mathMLExporter().to_mathML(expr)
-    expr2 = from_mathML(node)
+    node = to_mathML(expr)
+    expr2 = mathMLImporter().convert(node)
     assert expr2 == expr
