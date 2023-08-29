@@ -37,16 +37,16 @@ class Model(Base):
     length_units: ID | None = None
     extent_units: ID | None = None
     conversion_factor: ID | None = None
-    functions: Sequence[FunctionDefinition]
-    units: Sequence[UnitDefinition]
-    compartments: Sequence[Compartment]
-    species: Sequence[Species]
-    parameters: Sequence[Parameter]
-    initial_assignments: Sequence[InitialAssignment]
-    rules: Sequence[Rule]
-    constraints: Sequence[Constraint]
-    reactions: Sequence[Reaction]
-    events: Sequence[Event]
+    functions: Sequence[FunctionDefinition] = ()
+    units: Sequence[UnitDefinition] = ()
+    compartments: Sequence[Compartment] = ()
+    species: Sequence[Species] = ()
+    parameters: Sequence[Parameter] = ()
+    initial_assignments: Sequence[InitialAssignment] = ()
+    rules: Sequence[Rule] = ()
+    constraints: Sequence[Constraint] = ()
+    reactions: Sequence[Reaction] = ()
+    events: Sequence[Event] = ()
 
 
 @dataclass(kw_only=True)
