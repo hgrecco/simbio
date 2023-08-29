@@ -214,6 +214,9 @@ class SBMLImporter:
                     f"both amount an concentration specified for Species {s.id}"
                 )
 
+        if math.isnan(default):
+            default = None
+
         if s.constant:
             value = Constant(default=default)
         elif s.id in self.assignment_rules:
