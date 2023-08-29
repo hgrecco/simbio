@@ -4,21 +4,23 @@ from symbolite import scalar
 from . import mathMLImporter, to_mathML
 from .symbol import MathMLSymbol as Symbol
 
+x, y = map(Symbol, ["x", "y"])
+
 
 @mark.parametrize(
     "expr",
     [
         1,
-        Symbol("x"),
-        Symbol("x") * Symbol("y"),
-        Symbol("x") + Symbol("y"),
-        Symbol("x") * 2,
-        2 * Symbol("x"),
-        2 * Symbol("x") + Symbol("y"),
-        Symbol("x") ** 2,
-        Symbol("x") ** 0.5,
-        scalar.cos(Symbol("x")),
-        scalar.sqrt(Symbol("x")),
+        x,
+        x * y,
+        x + y,
+        x * 2,
+        2 * x,
+        2 * x + y,
+        x**2,
+        x**0.5,
+        scalar.cos(x),
+        scalar.sqrt(x),
     ],
 )
 def test_mathML_roundtrip(expr: Symbol):
