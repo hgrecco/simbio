@@ -212,6 +212,12 @@ class SBMLImporter:
     def add_species(self, s: types.Species):
         # compartment: ID
         # has_only_substance_units: bool
+        if s.id in self.assignment_rules:
+            # Parameter
+            value = Parameter(default=None)  # AssignmentRule is set later
+            self.simbio.add(s.id, value)
+            return
+
         match [nan_to_none(s.initial_amount), nan_to_none(s.initial_concentration)]:
             case [None, None]:
                 default = None
