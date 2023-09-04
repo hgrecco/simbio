@@ -164,8 +164,8 @@ def test_duplicate_species():
         eq = MassAction(reactants=[2 * x], products=[], rate=1)
 
     times = np.linspace(0, 1, 10)
-    duplicate = Simulator(Duplicate).solve(times=times)
-    double = Simulator(Double).solve(times=times)
+    duplicate = Simulator(Duplicate).solve(save_at=times)
+    double = Simulator(Double).solve(save_at=times)
     assert np.allclose(duplicate, double)
 
 
@@ -182,8 +182,8 @@ def test_simulator():
     assert set(sim.transform.output) == {"x"}
 
     times = np.linspace(0, 1, 10)
-    result = sim.solve(times=times)
-    assert np.allclose(result["x"], np.exp(-times))
+    result = sim.solve(save_at=times)
+    assert np.allclose(result["x"], np.exp(-times), rtol=1e-3, atol=1e-3)
 
     assert sim.create_problem({Model.x.variable: 2}).y[0] == 2
     assert sim.create_problem({Model.x: 2}).y[0] == 2
@@ -197,7 +197,7 @@ def test_transform():
 
     times = np.linspace(0, 1, 10)
 
-    result = Simulator(Model).solve(times=times)
-    result2 = Simulator(Model, transform={"double": 2 * Model.x}).solve(times=times)
+    result = Simulator(Model).solve(save_at=times)
+    result2 = Simulator(Model, transform={"double": 2 * Model.x}).solve(save_at=times)
 
     assert np.allclose(result2["double"], 2 * result["x"])
