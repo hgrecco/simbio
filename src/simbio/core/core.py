@@ -17,8 +17,7 @@ from symbolite.core import substitute
 
 
 def initial(*, default: Initial | None = None, init: bool = True) -> Species:
-    variable = Variable(initial=default)
-    return Species(variable)
+    return Species(variable=default)
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(initial, assign))
@@ -59,9 +58,11 @@ class Compartment(System, abstract=True):
 class Species(Node, Scalar):
     def __init__(
         self,
-        variable: Variable,
+        variable: Variable | Initial,
         stoichiometry: float = 1,
     ):
+        if not isinstance(variable, Variable):
+            variable = Variable(initial=variable)
         self.variable = variable
         self.stoichiometry = stoichiometry
 
