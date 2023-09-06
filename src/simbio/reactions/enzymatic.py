@@ -58,7 +58,7 @@ class MichaelisMentenEqApprox(Compartment):
     reaction = MassAction(
         reactants=[S],
         products=[P],
-        rate=maximum_velocity * S.variable / (dissociation_constant + S.variable),
+        rate=maximum_velocity * S / (dissociation_constant + S),
     )
 
 
@@ -70,5 +70,5 @@ class MichaelisMentenQuasiSSAprox(Compartment):
     reaction = MassAction(
         reactants=[S],
         products=[P],
-        rate=maximum_velocity * S.variable / (michaelis_constant + S.variable),
+        rate=maximum_velocity * S / (michaelis_constant + S),
     )

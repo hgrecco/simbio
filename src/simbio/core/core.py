@@ -153,7 +153,7 @@ class Reaction(EquationGroup):
     ):
         self.reactants = tuple(map(Species.from_mul, reactants))
         self.products = tuple(map(Species.from_mul, products))
-        self.rate_law = rate_law
+        self.rate_law = substitute(rate_law, SpeciesToVariable)
         self.equations = tuple(self.yield_equations())
 
     def _copy_from(self, parent: System):
@@ -161,7 +161,7 @@ class Reaction(EquationGroup):
         return self.__class__(
             reactants=[substitute(v, mapper) for v in self.reactants],
             products=[substitute(v, mapper) for v in self.products],
-            rate_law=substitute(self.rate_law, mapper),
+            rate_law=substitute(substitute(self.rate_law, mapper), SpeciesToVariable),
         )
 
     def yield_equations(self) -> Iterator[Equation]:
@@ -189,7 +189,7 @@ class MassAction(Reaction):
     ):
         self.reactants = tuple(map(Species.from_mul, reactants))
         self.products = tuple(map(Species.from_mul, products))
-        self.rate = rate
+        self.rate = substitute(rate, SpeciesToVariable)
         self.equations = tuple(self.yield_equations())
 
     def rate_law(self, *reactants: Species):
@@ -203,7 +203,7 @@ class MassAction(Reaction):
         return self.__class__(
             reactants=[substitute(v, mapper) for v in self.reactants],
             products=[substitute(v, mapper) for v in self.products],
-            rate=substitute(self.rate, mapper),
+            rate=substitute(substitute(self.rate, mapper), SpeciesToVariable),
         )
 
 
