@@ -185,6 +185,8 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
+        if c.spatial_dimensions is not None:
+            raise NotImplementedError("spatial_dimensions in compartment")
         size = nan_to_none(c.size)
         if self.use_units and c.units is not None and size is not None:
             size *= self.units[c.units]
@@ -212,6 +214,8 @@ class SBMLImporter:
     def add_species(self, s: types.Species):
         # compartment: ID
         # has_only_substance_units: bool
+        if s.conversion_factor is not None:
+            raise NotImplementedError("conversion_factor in species")
         if s.id in self.assignment_rules:
             # Parameter
             value = Parameter(default=None)  # AssignmentRule is set later
