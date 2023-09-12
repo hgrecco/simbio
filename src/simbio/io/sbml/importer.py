@@ -276,6 +276,13 @@ class SBMLImporter:
             formula = substitute_by_name(formula, **mapping)
         formula = substitute(formula, GetAsVariable(self.get))
 
+        self.simbio.add(
+            r.id,
+            Reaction(reactants=reactants, products=products, rate_law=formula),
+        )
+        return
+
+        # Reversible equations
         if not r.reversible:
             self.simbio.add(
                 r.id,
@@ -318,15 +325,6 @@ class SBMLImporter:
                     Reaction(reactants=reactants, products=products, rate_law=formula),
                 )
                 return
-
-        self.simbio.add(
-            f"{r.id}.forward",
-            Reaction(reactants=reactants, products=products, rate_law=forward),
-        )
-        self.simbio.add(
-            f"{r.id}.reverse",
-            Reaction(reactants=products, products=reactants, rate_law=reverse),
-        )
 
     @add.register
     def add_initial_assignment(self, a: types.InitialAssignment):
