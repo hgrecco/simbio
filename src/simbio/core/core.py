@@ -223,7 +223,7 @@ class SpeciesToVariable:
 class Simulator(_Simulator):
     def __init__(
         self,
-        system: System | type[System],
+        system: Compartment | type[Compartment],
         /,
         *,
         backend: Backend = Backend.FIRST_ORDER_VECTORIZED_NUMPY,
