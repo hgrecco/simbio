@@ -38,13 +38,16 @@ class DynamicCompartment:
         self.name_mapping: dict[str, str] = {}
         self.name_mapper = name_mapper
         self.namespace = Compartment.__prepare__(None, ())
+        self._annotations = self.namespace.setdefault("__annotations__", {})
 
     def build(self, name: str):
         return type(name, (Compartment,), self.namespace)
 
-    def add(self, name: str, value):
+    def add(self, name: str, value, *, init: bool = True):
         self.name_mapping[name] = new_name = self.name_mapper(name)
         self.namespace[new_name] = value
+        if init:
+            self._annotations[new_name] = type(value)
 
     def __getattr__(self, name):
         try:
@@ -185,8 +188,8 @@ class SBMLImporter:
 
     @add.register
     def add_compartment(self, c: types.Compartment):
-        if c.spatial_dimensions is not None:
-            raise NotImplementedError("spatial_dimensions in compartment")
+        # if c.spatial_dimensions is not None:
+        # raise NotImplementedError("spatial_dimensions in compartment")
         size = nan_to_none(c.size)
         if self.use_units and c.units is not None and size is not None:
             size *= self.units[c.units]
