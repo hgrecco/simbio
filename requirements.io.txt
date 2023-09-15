@@ -1,0 +1,2 @@
+python-libsbml
+pydantic-xml
