@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Iterator, Mapping, Self, Sequence, dataclass_transform
+from typing import Callable, Iterator, Mapping, Sequence
 
 import numpy as np
 from poincare import Constant, Parameter, Variable
@@ -14,6 +14,7 @@ from poincare.types import Equation, EquationGroup, Initial, System, assign
 from symbolite import Scalar, Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute
+from typing_extensions import Self, dataclass_transform
 
 
 def initial(*, default: Initial | None = None, init: bool = True) -> Species:
