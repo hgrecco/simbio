@@ -1,2 +1,2 @@
 python-libsbml
-pydantic-xml
+biomodels
