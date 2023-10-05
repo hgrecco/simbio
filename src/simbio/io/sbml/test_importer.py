@@ -3,8 +3,8 @@ import math
 from pytest import mark, raises
 
 from ...core import Parameter, Species
-from . import convert_model, types
-from .importer import nan_to_none
+from . import types
+from .importer import convert, nan_to_none
 
 
 @mark.parametrize("value", [None, math.nan, 1.0])
@@ -23,7 +23,7 @@ def test_parameter(value, units, constant):
         ],
     )
 
-    compartment = convert_model(model, name="model")
+    compartment = convert(model, name="model")
     p = getattr(compartment, name)
     assert isinstance(p, Parameter)
     assert p.default == nan_to_none(value)
@@ -67,9 +67,9 @@ def test_species(
     initial_concentration = nan_to_none(initial_concentration)
     if initial_amount is not None and initial_concentration is not None:
         with raises(ValueError):
-            convert_model(model, name="model")
+            convert(model, name="model")
     else:
-        compartment = convert_model(model, name="model")
+        compartment = convert(model, name="model")
         s = getattr(compartment, name)
         assert isinstance(s, Species)
         if initial_amount is None:
@@ -96,7 +96,7 @@ def test_compartment(spatial_dimensions, size, units, constant):
         ],
     )
 
-    compartment = convert_model(model, name="model")
+    compartment = convert(model, name="model")
     p = getattr(compartment, name)
     assert isinstance(p, Parameter)
     assert p.default == nan_to_none(size)

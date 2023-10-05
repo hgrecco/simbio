@@ -1,3 +1,3 @@
-from .importer import convert_model, parse_model, read_model
+from .importer import load, loads
 
-__all__ = ["convert_model", "parse_model", "read_model"]
+__all__ = ["load", "loads"]

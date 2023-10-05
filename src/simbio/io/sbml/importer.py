@@ -3,6 +3,7 @@ import math
 from dataclasses import replace
 from functools import reduce, singledispatchmethod
 from operator import mul
+from os import PathLike
 from typing import Callable, Mapping, Sequence, TypeVar
 
 import libsbml
@@ -11,7 +12,7 @@ from symbolite import Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute, substitute_by_name
 
-from ...core import (
+from ... import (
     Compartment,
     Constant,
     Independent,
@@ -57,18 +58,18 @@ class DynamicCompartment:
             raise AttributeError(*e.args)
 
 
-def read_model(
-    file: str,
+def load(
+    file: PathLike,
     *,
     name: str | None = None,
     identity_mapper: Callable[[str], str] = lambda x: x,
 ):
     with open(file) as f:
         text = f.read()
-    return parse_model(text, name=name, identity_mapper=identity_mapper)
+    return loads(text, name=name, identity_mapper=identity_mapper)
 
 
-def parse_model(
+def loads(
     sbml: str,
     *,
     name: str | None = None,
@@ -80,10 +81,10 @@ def parse_model(
 
     model: libsbml.Model = document.getModel()
     converted_model: types.Model = from_libsbml.Converter().convert(model)
-    return convert_model(converted_model, name=name, identity_mapper=identity_mapper)
+    return convert(converted_model, name=name, identity_mapper=identity_mapper)
 
 
-def convert_model(
+def convert(
     model: types.Model,
     *,
     name: str | None = None,
