@@ -227,7 +227,7 @@ class Simulator(_Simulator):
         system: Compartment | type[Compartment],
         /,
         *,
-        backend: Backend = Backend.FIRST_ORDER_VECTORIZED_NUMPY,
+        backend: Backend = "numpy",
         transform: Sequence[Symbol] | Mapping[str, Symbol] | None = None,
     ):
         if isinstance(transform, Sequence):
