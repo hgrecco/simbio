@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, Iterator, Mapping, Sequence
@@ -25,10 +26,17 @@ def initial(*, default: Initial | None = None, init: bool = True) -> Species:
 class Compartment(System, abstract=True):
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
+        signature: inspect.Signature = cls.__signature__
+        parameters = dict(signature.parameters)
         for k in cls._annotations.keys():
             v = getattr(cls, k)
-            if isinstance(v, Species) and v.variable.initial is None:
-                cls._required.add(k)
+            if isinstance(v, Species):
+                default = v.variable.initial
+                if default is None:
+                    cls._required.add(k)
+                    default = inspect.Parameter.empty
+                parameters[k] = parameters[k].replace(default=default)
+        cls.__signature__ = signature.replace(parameters=parameters.values())
 
     @class_and_instance_method
     def _yield(
