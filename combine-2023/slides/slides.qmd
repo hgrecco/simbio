@@ -1,0 +1,431 @@
+---
+format:
+  revealjs:
+    incremental: true
+    scrollable: true
+    slide-number: true
+    menu:
+      numbers: true
+    embed-resources: true
+    highlight-style: github-light
+---
+
+# Poincaré and SimBio {.smaller}
+
+::: {.columns}
+::: {.column width=60%}
+**Mauro Silberberg**
+
+PhD Student in Physics
+
+Universidad de Buenos Aires, Argentina
+
+Currently doing an internship at EBI-EBML, UK
+
+![](media/flag_argentina.webp){height=150px} ![](media/rand_mcnally.webp){height=150px}
+:::
+::: {.column width=40%}
+**Tutorial's GitHub repo**
+
+https://bit.ly/simbio-combine2023
+
+![](media/bit.ly_simbio-combine2023.png){width=50% fig-align="center"}
+:::
+:::
+
+## In a nutshell
+
+::: {.columns}
+::: {.column width=40%}
+### Poincaré
+
+A Python library to
+
+::: {style="text-align: center;"}
+**define** and **simulate**
+:::
+
+::: {style="text-align: right;"}
+dynamical systems.
+:::
+
+:::
+::: {.column width=10%}
+:::
+::: {.column width=50% .fragment}
+### SimBio
+
+Built on top of **poincaré**, adding functionality to:
+
+- easily simulate mass-action reactions,
+- import from SBML,
+- and more to come...
+:::
+:::
+
+## Yet another Python tool?
+
+::: {.columns}
+::: {.column style="font-size: 36px; text-align: justify"}
+AMICI,
+Brian 2,
+CBMPy,
+COBRApy,
+COPASI,
+E-Cell 4,
+GillesPy2,
+GINsim,
+KaSim,
+Lattice Microbes,
+LibSBMLSim,
+MaBoSS,
+MASSpy,
+NetPyNe,
+NEURON,
+OpenCOR,
+pyNeuroML,
+PySB,
+PySceS,
+RBApy,
+Simmune,
+SimVascular,
+Smoldyn,
+tellurium,
+XP,
+...
+:::
+::: {.column}
+![](https://imgs.xkcd.com/comics/standards_2x.png)
+:::
+:::
+
+. . .
+
+And these are the ones listed in BioSimulators.org!
+
+## What's new?
+
+::: {.columns}
+::: {.column .fragment .nonincremental}
+#### Using modern Python
+
+- type annotations
+- dataclass_transform
+
+::: {.fragment}
+Integrated with IDEs:
+
+- autocomplete
+- refactoring
+- ...
+:::
+:::
+::: {.column .fragment}
+#### Being in Python
+
+::: {.fragment}
+![](media/being-in-python.jpg)
+:::
+::: {.fragment}
+What do we mean by this?
+:::
+:::
+:::
+
+## Being in Python
+
+::: {.columns}
+::: {.column width=35%}
+![](media/being-in-python-bad.jpg)
+:::
+::: {.column width=65%}
+**Wrappers** to libraries in other languages (C, C++)
+
+- **controlled** from Python
+- can **export** to Python
+  - pandas.DataFrame
+  - matplotlib
+
+::: {.fragment}
+But **not extendable** from Python.
+:::
+:::
+:::
+
+. . .
+
+PyData ecosystem just **used after the simulation** is done.
+
+## Being in Python
+
+::: {.columns}
+::: {.column width=35%}
+![](media/being-in-python-bad.jpg)
+:::
+::: {.column width=65%}
+**Example:**
+
+Random Parameter Scans in COPASI
+
+- Choose from: `uniform`, `normal`, `poisson` or `gamma`
+- Cannot:
+  - use one from `scipy.stats`?
+  - add a new integration method?
+:::
+:::
+
+. . .
+
+The main selling point of Python is it **huge ecosystem**.
+
+## Writing models
+
+::: {.columns}
+::: {.column}
+Interexchange standards:
+
+::: {.nonincremental}
+- SBML
+- CellML
+:::
+
+to (re)use with different tools.
+
+::: {.fragment}
+![](media/sbml_manually.jpg)
+:::
+:::
+::: {.column .fragment}
+Approaches to create them:
+
+- GUI <span style="font-size: 60%">(graphical user interface)</span>
+  - COPASI
+- DSL <span style="font-size: 60%">(domain specific language)</span>
+  - Antimony
+- Python <span style="font-size: 60%">(or whatever language)</span>
+:::
+:::
+
+## DSL: Antimony
+
+Simple reaction with first-order mass-action kinetics:
+
+::: {.columns}
+::: {.column}
+```{.antimony code-line-numbers=|2|3-4|5|}
+model example1
+  S1 -> S2; k1*S1
+  S1 = 10
+  S2 = 0
+  k1 = 0.1
+end
+```
+
+::: {.fragment}
+And in Python:
+
+```python
+import tellurium as te
+
+r = te.loada('''
+model example1
+  S1 -> S2; k1*S1
+  S1 = 10
+  S2 = 0
+  k1 = 0.1
+end
+''')
+```
+:::
+:::
+::: {.column}
+
+::: {.columns .fragment}
+::: {.column width=40%}
+![](media/drake_yes.jpg)
+:::
+::: {.column width=50%}
+can be **reused as is** in other languages
+:::
+:::
+
+::: {.columns .fragment}
+::: {.column width=40%}
+![](media/drake_no.jpg)
+:::
+::: {.column width=50%}
+**strings!**
+:::
+:::
+
+:::
+:::
+
+## IDE don't like strings
+
+With strings, IDE cannot provide:
+
+::: {.columns}
+::: {.column width=40%}
+- Syntax highlighting
+- Code completion
+- Code search
+- Refactoring
+- Static analysis
+:::
+::: {.column width=60% .fragment}
+![](media/ide.mov)
+:::
+:::
+
+. . .
+
+Programming without them is like
+
+<p style="text-align: right">
+...parking without power steering?
+</p>
+
+##
+
+::: {style="display: flex; justify-content: center;"}
+![](media/notepad.jpg)
+:::
+
+## Antimony extension for VSCode
+
+By Steve Ma et. al from the University of Washington
+
+::: {.columns}
+::: {.column width=30%}
+![](media/antimony_1.jpg)
+:::
+::: {.column width=70%}
+Language Server Protocol (LSP)
+
+  $\rightarrow$ now easier to add support for a language.
+:::
+:::
+
+::: {.columns .fragment}
+::: {.column width=30%}
+![](media/antimony_2.jpg)
+:::
+::: {.column width=70%}
+But a **maintenance burden** for small community?
+
+Must adapt to changes in: Antimony, LSP, VSCode
+:::
+:::
+
+## Writing models in Python
+
+Using **standard Python to reuse tooling** from the community:
+
+::: {.columns}
+::: {.column width=35%}
+![](media/python-community.jpg)
+:::
+::: {.column width=65%}
+- linter $\rightarrow$ ruff ⚡️
+- formatter $\rightarrow$ black <small>(PSF project)</small>
+
+- type-checker $\rightarrow$ mypy, pyright <small>(Microsoft)</small>
+- LSP $\rightarrow$ multiple editors
+:::
+:::
+
+. . .
+
+Widely **used** tools $\rightarrow$
+highly **tested**
+and
+will be **maintained**
+
+## Now, to showcase them...
+
+::: {.fragment}
+![](media/live-coding.jpg)
+:::
+
+## SimBio vs Antimony
+
+Simple reaction with first-order mass-action kinetics:
+
+::: {.columns}
+::: {.column width=40%}
+```antimony
+model example1
+  S1 -> S2; k1*S1
+  S1 = 10
+  S2 = 0
+  k1 = 0.1
+end
+```
+:::
+::: {.column width=60%}
+```python
+class Example1(Compartment):
+    S1: Species = initial(default=10)
+    S2: Species = initial(default=0)
+    k1: Parameter = assign(default=0.1)
+    r = Reaction(
+        reactants=[S1],
+        products=[S2],
+        rate_law=k1 * S1,
+    )
+```
+::: {.fragment}
+```python
+class Example1(Compartment):
+    S1: Species = initial(default=10)
+    S2: Species = initial(default=0)
+    k1: Parameter = assign(default=0.1)
+    r = MassAction(
+        reactants=[S1],
+        products=[S2],
+        rate=k1,
+    )
+```
+:::
+:::
+:::
+
+## Roadmap
+
+- Add SED-ML import/export
+- Add SBML export
+
+- Add volume to `Compartment` (needed for units in `simbio`).
+
+- New integrators (stochastic integrators)
+- New simulations (parameter sweeps)
+- Events
+
+## Conclusion
+
+**Created** two modular Python packages:
+
+  - **poincare**, to define and simulate dynamical systems
+  - **simbio**, add-ons specific to Systems Biology
+
+::: {.columns}
+::: {.column width=35% .fragment}
+  **Modularity**
+
+  can be used* by a broader community
+
+  <small>*debugged, improved, maintained</small>
+
+:::
+::: {.column width=15% .fragment}
+![](media/being-in-python-good.jpg)
+:::
+::: {.column width=50% .fragment}
+  **Being in Python**
+
+  use tooling* and libraries from the (huge) Python community
+
+  <small>*linter, formatters, static analyzers, editor integration, etc.</small>
+:::
+:::

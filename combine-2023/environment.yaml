@@ -1,0 +1,21 @@
+name: combine-2023
+channels:
+  - conda-forge
+dependencies:
+  # Notebook dependencies
+  - ipykernel
+  - ipywidgets
+  - numba
+  # poincaré dependencies
+  - matplotlib
+  - typing_extensions
+  - numpy
+  - scipy
+  - pandas
+  - pint
+  - pint-pandas
+  - tabulate
+  # simbio (and hence poincare) with io extras
+  - pip
+  - pip:
+    - simbio[io]
