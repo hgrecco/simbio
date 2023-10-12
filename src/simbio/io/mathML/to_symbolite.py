@@ -1,9 +1,15 @@
+from functools import partial, reduce
 from xml.etree import ElementTree
 
 from symbolite import scalar
 from symbolite.abstract import symbol
 
 from .symbol import MathMLSpecialSymbol, MathMLSymbol
+
+
+def star_reduce(func, *args):
+    return reduce(func, args)
+
 
 tags = {
     "cn": MathMLSymbol,
@@ -21,10 +27,10 @@ tags = {
     "lt": symbol.lt,
     "geq": symbol.ge,
     "leq": symbol.le,
-    "plus": symbol.add,
-    "minus": symbol.sub,
-    "times": symbol.mul,
-    "divide": symbol.truediv,
+    "plus": partial(star_reduce, symbol.add),
+    "minus": partial(star_reduce, symbol.sub),
+    "times": partial(star_reduce, symbol.mul),
+    "divide": partial(star_reduce, symbol.truediv),
     "power": symbol.pow,
     "root": NotImplemented,
     "abs": scalar.abs,
@@ -38,8 +44,8 @@ tags = {
     "max": NotImplemented,
     "min": NotImplemented,
     "rem": symbol.mod,
-    "and": symbol.and_,
-    "or": symbol.or_,
+    "and": partial(star_reduce, symbol.and_),
+    "or": partial(star_reduce, symbol.or_),
     "xor": symbol.xor,
     "not": symbol.invert,
     "implies": NotImplemented,
