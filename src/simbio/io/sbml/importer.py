@@ -199,7 +199,7 @@ class SBMLImporter:
 
     @add.register
     def add_parameter(self, p: types.Parameter):
-        if p.id in self.initials:
+        if p.id in self.initials or p.id in self.assignment_rules:
             default = None  # add assignment later
         else:
             default = nan_to_none(p.value)
@@ -224,6 +224,10 @@ class SBMLImporter:
             # Parameter
             value = Parameter(default=None)  # AssignmentRule is set later
             self.simbio.add(s.id, value)
+            return
+
+        if s.id in self.initials:
+            self.simbio.add(s.id, initial(default=None))  # value set later
             return
 
         match [nan_to_none(s.initial_amount), nan_to_none(s.initial_concentration)]:
