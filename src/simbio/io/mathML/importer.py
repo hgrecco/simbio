@@ -1,6 +1,5 @@
 import functools
 import keyword
-import warnings
 from collections import ChainMap
 
 import libsbml
@@ -229,9 +228,7 @@ class mathMLImporter:
     def convert(self, node: libsbml.ASTNode):
         func = self.mapper[node.getType()]
         if isinstance(func, str):
-            warnings.warn(func)
-            return 0
-            # raise NotImplementedError(func)
+            raise NotImplementedError(func)
         elif isinstance(func, dict):
             func = func[node.getName()]
 
