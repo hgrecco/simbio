@@ -1,10 +1,29 @@
+from __future__ import annotations
+
 from functools import partial, reduce
-from xml.etree import ElementTree
+from typing import Iterator, Protocol
 
 from symbolite import scalar
 from symbolite.abstract import symbol
 
 from .symbol import MathMLSpecialSymbol, MathMLSymbol
+
+
+class Element(Protocol):
+    @property
+    def tag(self) -> str:
+        ...
+
+    @property
+    def attrib(self) -> dict[str, str]:
+        ...
+
+    @property
+    def text(self) -> str:
+        ...
+
+    def __iter__(self) -> Iterator[Element]:
+        ...
 
 
 def star_reduce(func, *args):
@@ -91,12 +110,7 @@ tags = {
 ns_map = {"http://www.w3.org/1998/Math/MathML": tags}
 
 
-def from_string(xml: str):
-    element = ElementTree.fromstring(xml)
-    return from_element(element)
-
-
-def from_element(element: ElementTree.Element):
+def from_element(element: Element) -> symbol.Symbol:
     result = parse(element)
     if isinstance(result, list) and len(result) == 1:
         return result[0]
@@ -111,7 +125,7 @@ def _namespace_and_tag(x: str) -> tuple[str, str]:
         return "", x
 
 
-def parse(element: ElementTree.Element):
+def parse(element: Element):
     ns, tag = _namespace_and_tag(element.tag)
     cls = ns_map[ns][tag]
 
@@ -126,28 +140,3 @@ def parse(element: ElementTree.Element):
         return cls(text.strip())
     else:
         return cls
-
-
-if __name__ == "__main__":
-    example = """<math xmlns="http://www.w3.org/1998/Math/MathML">
-            <apply>
-              <times/>
-              <ci> comp1 </ci>
-              <apply>
-                <minus/>
-                <apply>
-                  <times/>
-                  <ci> kf_0 </ci>
-                  <ci> B </ci>
-                </apply>
-                <apply>
-                  <times/>
-                  <ci> kr_0 </ci>
-                  <ci> BL </ci>
-                </apply>
-              </apply>
-            </apply>
-          </math>"""
-    expected = "kf_0 * B - kr_0 * BL"
-    parsed = from_string(example)
-    print(parsed)
