@@ -3,19 +3,24 @@ from __future__ import annotations
 import inspect
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Mapping, Sequence
 
 import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike
 from poincare import Constant, Parameter, Variable
 from poincare._node import Node, NodeMapper, T, _ClassInfo
 from poincare._utils import class_and_instance_method
-from poincare.simulator import Backend
+from poincare.simulator import Backend, Components
 from poincare.simulator import Simulator as _Simulator
 from poincare.types import Equation, EquationGroup, Initial, System, assign
 from symbolite import Scalar, Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute
 from typing_extensions import Self, dataclass_transform
+
+if TYPE_CHECKING:
+    import ipywidgets
 
 
 def initial(*, default: Initial | None = None, init: bool = True) -> Species:
@@ -256,3 +261,22 @@ class Simulator(_Simulator):
             {species_to_variable(k): v for k, v in values.items()},
             t_span=t_span,
         )
+
+    def interact(
+        self,
+        values: Mapping[Components, tuple[float, ...] | ipywidgets.Widget]
+        | Sequence[Components] = {},
+        *,
+        t_span: tuple[float, float] = (0, np.inf),
+        save_at: ArrayLike,
+        func: Callable[[pd.DataFrame], Any] = lambda df: df.plot(),
+    ):
+        if isinstance(values, Sequence):
+            values = [v.variable if isinstance(v, Species) else v for v in values]
+        elif isinstance(values, Mapping):
+            values = {
+                k: v.variable if isinstance(v, Species) else v
+                for k, v in values.items()
+            }
+
+        return super().interact(values, t_span=t_span, save_at=save_at, func=func)
