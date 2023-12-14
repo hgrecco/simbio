@@ -282,7 +282,7 @@ class SBMLImporter:
         if len(kinetic_law.parameters) > 0:
             mapping = {}
             for p in kinetic_law.parameters:
-                new_id = f"{r.id}.{p.id}"
+                new_id = f"{r.id}__{p.id}"
                 self.add_parameter(replace(p, id=new_id))
                 mapping[p.id] = MathMLSymbol(new_id)
             formula = substitute_by_name(formula, **mapping)
@@ -365,7 +365,7 @@ class SBMLImporter:
 
         name = r.id
         if name is None or name == r.variable:
-            name = f"{r.variable}.rate_rule"
+            name = f"{r.variable}__rate_rule"
         self.simbio.add(name, eq)
 
     @add.register
