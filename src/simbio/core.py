@@ -164,7 +164,7 @@ class Reaction(EquationGroup):
         *,
         reactants: Sequence[Species],
         products: Sequence[Species],
-        rate_law: Callable | float | Symbol,
+        rate_law: float | Symbol,
     ):
         self.reactants = tuple(map(Species.from_mul, reactants))
         self.products = tuple(map(Species.from_mul, products))
@@ -180,10 +180,6 @@ class Reaction(EquationGroup):
         )
 
     def yield_equations(self) -> Iterator[Equation]:
-        if callable(self.rate_law):
-            rate = self.rate_law(*self.reactants)
-        else:
-            rate = self.rate_law
         species_stoich: dict[Variable, float] = defaultdict(float)
         for r in self.reactants:
             species_stoich[r.variable] -= r.stoichiometry
@@ -191,7 +187,7 @@ class Reaction(EquationGroup):
             species_stoich[p.variable] += p.stoichiometry
 
         for s, st in species_stoich.items():
-            yield s.derive() << st * rate
+            yield s.derive() << st * self.rate_law
 
 
 class MassAction(Reaction):
@@ -207,9 +203,10 @@ class MassAction(Reaction):
         self.rate = substitute(rate, SpeciesToVariable)
         self.equations = tuple(self.yield_equations())
 
-    def rate_law(self, *reactants: Species):
+    @property
+    def rate_law(self):
         rate = self.rate
-        for r in reactants:
+        for r in self.reactants:
             rate *= r.variable**r.stoichiometry
         return rate
 
