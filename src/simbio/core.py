@@ -226,7 +226,7 @@ def species_to_variable(x):
         return x
 
 
-class SpeciesToVariable:
+class SpeciesToVariable(dict):
     def get(self, key, default=None):
         return species_to_variable(key)
 
@@ -241,10 +241,10 @@ class Simulator(_Simulator):
         transform: Sequence[Symbol] | Mapping[str, Symbol] | None = None,
     ):
         if isinstance(transform, Sequence):
-            transform = [substitute(v, SpeciesToVariable) for v in transform]
+            transform = [substitute(v, SpeciesToVariable()) for v in transform]
         elif isinstance(transform, Mapping):
             transform = {
-                k: substitute(v, SpeciesToVariable) for k, v in transform.items()
+                k: substitute(v, SpeciesToVariable()) for k, v in transform.items()
             }
         super().__init__(system, backend=backend, transform=transform)
 
@@ -269,11 +269,8 @@ class Simulator(_Simulator):
         func: Callable[[pd.DataFrame], Any] = lambda df: df.plot(),
     ):
         if isinstance(values, Sequence):
-            values = [v.variable if isinstance(v, Species) else v for v in values]
+            values = [species_to_variable(v) for v in values]
         elif isinstance(values, Mapping):
-            values = {
-                k: v.variable if isinstance(v, Species) else v
-                for k, v in values.items()
-            }
+            values = {k: species_to_variable(v) for k, v in values.items()}
 
         return super().interact(values, t_span=t_span, save_at=save_at, func=func)
