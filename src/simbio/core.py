@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 
 def initial(*, default: Initial | None = None, init: bool = True) -> Species:
+    """Creates an Species with a default initial condition."""
     return Species(variable=default)
 
 
@@ -159,6 +160,21 @@ class Species(Node, Scalar):
 
 @dataclass
 class Reaction(EquationGroup):
+    """A Reaction contains a set of equations transforming
+    reactants into products with a given rate law.
+
+    Given:
+        - `x, y: Species`
+        - `k: float`
+
+    Then:
+        `Reaction(reactants=[2 * x], products=[y], rate_law=k)`
+
+    will contain two equations:
+        - `dx/dt = -2 * k`
+        - `dy/dt = +k`
+    """
+
     def __init__(
         self,
         *,
@@ -168,18 +184,18 @@ class Reaction(EquationGroup):
     ):
         self.reactants = tuple(map(Species.from_mul, reactants))
         self.products = tuple(map(Species.from_mul, products))
-        self.rate_law = substitute(rate_law, SpeciesToVariable)
-        self.equations = tuple(self.yield_equations())
+        self.rate_law = substitute(rate_law, _SpeciesToVariable)
+        self.equations = tuple(self._yield_equations())
 
     def _copy_from(self, parent: System):
         mapper = NodeMapper(parent)
         return self.__class__(
             reactants=[substitute(v, mapper) for v in self.reactants],
             products=[substitute(v, mapper) for v in self.products],
-            rate_law=substitute(substitute(self.rate_law, mapper), SpeciesToVariable),
+            rate_law=substitute(substitute(self.rate_law, mapper), _SpeciesToVariable),
         )
 
-    def yield_equations(self) -> Iterator[Equation]:
+    def _yield_equations(self) -> Iterator[Equation]:
         species_stoich: dict[Variable, float] = defaultdict(float)
         for r in self.reactants:
             species_stoich[r.variable] -= r.stoichiometry
@@ -191,6 +207,23 @@ class Reaction(EquationGroup):
 
 
 class MassAction(Reaction):
+    """A MassAction reaction contains a set of equations transforming
+    reactants into products with a given rate.
+    The reaction's rate law is the product of the rate
+    and the reactants raised to their stoichiometric coefficient.
+
+    Given:
+        - `x, y: Species`
+        - `k: float`
+
+    Then:
+        `Reaction(reactants=[2 * x], products=[y], rate_law=k)`
+
+    will contain two equations:
+        - `dx/dt = -2 * k * x**2`
+        - `dy/dt = +k * x**2`
+    """
+
     def __init__(
         self,
         *,
@@ -200,8 +233,8 @@ class MassAction(Reaction):
     ):
         self.reactants = tuple(map(Species.from_mul, reactants))
         self.products = tuple(map(Species.from_mul, products))
-        self.rate = substitute(rate, SpeciesToVariable)
-        self.equations = tuple(self.yield_equations())
+        self.rate = substitute(rate, _SpeciesToVariable)
+        self.equations = tuple(self._yield_equations())
 
     @property
     def rate_law(self):
@@ -215,20 +248,20 @@ class MassAction(Reaction):
         return self.__class__(
             reactants=[substitute(v, mapper) for v in self.reactants],
             products=[substitute(v, mapper) for v in self.products],
-            rate=substitute(substitute(self.rate, mapper), SpeciesToVariable),
+            rate=substitute(substitute(self.rate, mapper), _SpeciesToVariable),
         )
 
 
-def species_to_variable(x):
+def _species_to_variable(x):
     if isinstance(x, Species):
         return x.variable
     else:
         return x
 
 
-class SpeciesToVariable(dict):
+class _SpeciesToVariable(dict):
     def get(self, key, default=None):
-        return species_to_variable(key)
+        return _species_to_variable(key)
 
 
 class Simulator(_Simulator):
@@ -241,10 +274,10 @@ class Simulator(_Simulator):
         transform: Sequence[Symbol] | Mapping[str, Symbol] | None = None,
     ):
         if isinstance(transform, Sequence):
-            transform = [substitute(v, SpeciesToVariable()) for v in transform]
+            transform = [substitute(v, _SpeciesToVariable()) for v in transform]
         elif isinstance(transform, Mapping):
             transform = {
-                k: substitute(v, SpeciesToVariable()) for k, v in transform.items()
+                k: substitute(v, _SpeciesToVariable()) for k, v in transform.items()
             }
         super().__init__(system, backend=backend, transform=transform)
 
@@ -255,7 +288,7 @@ class Simulator(_Simulator):
         t_span: tuple[float, float] = (0, np.inf),
     ):
         return super().create_problem(
-            {species_to_variable(k): v for k, v in values.items()},
+            {_species_to_variable(k): v for k, v in values.items()},
             t_span=t_span,
         )
 
@@ -269,8 +302,8 @@ class Simulator(_Simulator):
         func: Callable[[pd.DataFrame], Any] = lambda df: df.plot(),
     ):
         if isinstance(values, Sequence):
-            values = [species_to_variable(v) for v in values]
+            values = [_species_to_variable(v) for v in values]
         elif isinstance(values, Mapping):
-            values = {k: species_to_variable(v) for k, v in values.items()}
+            values = {k: _species_to_variable(v) for k, v in values.items()}
 
         return super().interact(values, t_span=t_span, save_at=save_at, func=func)
