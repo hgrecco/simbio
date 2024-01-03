@@ -1,50 +1,134 @@
+![Package](https://img.shields.io/pypi/v/simbio?label=simbio)
+![CodeStyle](https://img.shields.io/badge/code%20style-black-000000.svg)
+![License](https://img.shields.io/pypi/l/simbio?label=license)
+![PyVersion](https://img.shields.io/pypi/pyversions/simbio?label=python)
+[![CI](https://github.com/hgrecco/simbio/actions/workflows/ci.yml/badge.svg)](https://github.com/hgrecco/simbio/actions/workflows/ci.yml)
+
 # SimBio
 
-`simbio` is a Python-based library of biological systems simulation.
-As a comparison with other libraries we can enumerate:
+`simbio` is a Python-based package for simulation of Chemical Reaction Networks (CRNs).
+It extends [`poincare`](https://github.com/maurosilber/poincare),
+a package for modelling dynamical systems,
+to add functionality for CRNs.
 
-- Models are composables,
-  so you can create bigger models using smaller ones
-- Models are python classes,
-  so it is easier to understand the inners
-  and easy to compose into bigger models
-- Posibility to do `numba` JIT compilation
-- Small footprint library,
-  can be imported on a bigger application without fuzz
+## Usage
+
+To create a system with two species $A$ and $B$
+and a reaction converting $2A \\rightarrow B$ with rate 1:
+
+```python
+>>> from simbio import Compartment, Species, Reaction, initial
+>>> class Model(Compartment):
+...    A: Species = initial(default=1)
+...    B: Species = initial(default=0)
+...    r = Reaction(
+...        reactants=[2 * A],
+...        products=[B],
+...        rate_law=1,
+...    )
+```
+
+This corresponds to the following system of equations
+
+$$
+\\begin{cases}
+\\frac{dA}{dt} = -2 \\
+\\frac{dB}{dt} = +1
+\\end{cases}
+$$
+
+with initial conditions
+
+$$
+\\begin{cases}
+A(0) = 1 \\
+B(0) = 0
+\\end{cases}
+$$
+
+In CRNs,
+we usually deal with [mass-action](https://en.wikipedia.org/wiki/Law_of_mass_action) reactions.
+Using `MassAction` instead of `Reaction` automatically adds the reactants to the rate law:
+
+```python
+>>> from simbio import MassAction
+>>> class MassActionModel(Compartment):
+...    A: Species = initial(default=1)
+...    B: Species = initial(default=0)
+...    r = MassAction(
+...        reactants=[2 * A],
+...        products=[B],
+...        rate=1,
+...    )
+```
+
+generating the following equations:
+
+$$
+\\begin{cases}
+\\frac{dA}{dt} = -2 A^2 \\
+\\frac{dB}{dt} = +1 A^2
+\\end{cases}
+$$
+
+To simulate the system,
+use the `Simulator.solve` which outputs a `pandas.DataFrame`:
+
+```python
+>>> from simbio import Simulator
+>>> Simulator(MassActionModel).solve(save_at=range(5))
+             A         B
+time
+0     1.000000  0.000000
+1     0.333266  0.333367
+2     0.199937  0.400032
+3     0.142798  0.428601
+4     0.111061  0.444470
+```
+
+For more details into SimBio's capabilities,
+we recommend reading [poincaré's README](https://github.com/maurosilber/poincare).
+
+## SBML
+
+SimBio can import models from Systems Biology Markup Language (SBML) files:
+
+```python
+>>> from simbio.io import sbml
+>>> sbml.load("repressilator.sbml")
+Elowitz2000 - Repressilator
+-----------------------------------------------------------------------------------
+type          total  names
+----------  -------  --------------------------------------------------------------
+variables         6  PX, PY, PZ, X, Y, Z
+parameters       17  cell, beta, alpha0, alpha, eff, n, KM, tau_mRNA, tau_prot, ...
+equations        12  Reaction1, Reaction2, Reaction3, Reaction4, Reaction5, ...
+```
+
+or download them from the [BioModels](https://www.ebi.ac.uk/biomodels/) repository:
+
+```python
+>>> from simbio.io import biomodels
+>>> biomodels.load_model("BIOMD12")
+Elowitz2000 - Repressilator
+-----------------------------------------------------------------------------------
+type          total  names
+----------  -------  --------------------------------------------------------------
+variables         6  PX, PY, PZ, X, Y, Z
+parameters       17  cell, beta, alpha0, alpha, eff, n, KM, tau_mRNA, tau_prot, ...
+equations        12  Reaction1, Reaction2, Reaction3, Reaction4, Reaction5, ...
+```
 
 ## Installation
 
-If you are using pip,
-it can be installed directly from PyPI:
+It can be installed from [PyPI](https://pypi.org/p/simbio) with `pip`:
 
 ```
 pip install simbio
 ```
 
-or the latest version from GitHub:
+Or, to additionally install the SBML importer:
 
 ```
-pip install git+https://github.com/hgrecco/simbio
+pip install simbio[io]
 ```
-
-## Examples
-
-On the folder `src/simbio/tests/examples`,
-we included some examples for the library usage.
-
-## Development
-
-We are using pytest for testing,
-and pre-commit hooks to format and lint the codebase.
-
-To easily set-up a development environment,
-run the following commands:
-
-```
-git clone https://github.com/hgrecco/simbio
-cd simbio
-conda env create --file environment-dev.yml
-pre-commit install
-```
-
-which assume you have git and conda preinstalled.

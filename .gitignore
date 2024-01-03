@@ -15,6 +15,10 @@ dist/
 MANIFEST
 *.egg-info
 
+# test files
+repressilator.sbml
+test_readme.txt
+
 # Sphinx documentation
 docs/_build/
 docs/**/*.ipynb
