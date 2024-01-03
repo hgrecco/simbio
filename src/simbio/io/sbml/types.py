@@ -95,6 +95,7 @@ class LocalParameter(Base):
 @dataclass(kw_only=True)
 class InitialAssignment(Base):
     "Mathematical expression used to determine the initial conditions of a model."
+
     symbol: ID
     math: Math
 

@@ -1,5 +1,5 @@
-simbio[test]
 jupyter-book
 jupytext
 numba
 simbio-corbat2018
+simbio[test]

@@ -1,2 +1,2 @@
-simbio[io]
 pytest
+simbio[io]

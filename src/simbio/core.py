@@ -143,12 +143,14 @@ class Species(Node, Scalar):
                 expression=symbol.Expression(
                     func=symbol.mul,
                     args=(
-                        int(st2) | float(st2),
+                        int(st2)
+                        | float(st2),
                         Species(variable=var, stoichiometry=st),
                     )
                     | (
                         Species(variable=var, stoichiometry=st),
-                        int(st2) | float(st2),
+                        int(st2)
+                        | float(st2),
                     ),
                 )
             ):
