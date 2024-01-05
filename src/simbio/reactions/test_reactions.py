@@ -1,7 +1,7 @@
 import numpy as np
 from pytest import mark
 
-from ..core import Compartment, Parameter, Reaction, Simulator, Species, assign, initial
+from ..core import Compartment, Parameter, RateLaw, Simulator, Species, assign, initial
 from ..reactions import compound, enzymatic, single
 
 reactions = []
@@ -23,7 +23,7 @@ def test_reaction_with_species():
     class Model(Compartment):
         s: Species = initial(default=0)
         k: Parameter = assign(default=0)
-        r_with_species = Reaction(reactants=[s], products=[], rate_law=k * s)
-        r_with_variable = Reaction(reactants=[s], products=[], rate_law=k * s.variable)
+        r_with_species = RateLaw(reactants=[s], products=[], rate_law=k * s)
+        r_with_variable = RateLaw(reactants=[s], products=[], rate_law=k * s.variable)
 
     assert Model.r_with_species.rate_law == Model.r_with_variable.rate_law

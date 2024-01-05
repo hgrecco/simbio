@@ -17,11 +17,11 @@ To create a system with two species $A$ and $B$
 and a reaction converting $2A \\rightarrow B$ with rate 1:
 
 ```python
->>> from simbio import Compartment, Species, Reaction, initial
+>>> from simbio import Compartment, Species, RateLaw, initial
 >>> class Model(Compartment):
 ...    A: Species = initial(default=1)
 ...    B: Species = initial(default=0)
-...    r = Reaction(
+...    r = RateLaw(
 ...        reactants=[2 * A],
 ...        products=[B],
 ...        rate_law=1,

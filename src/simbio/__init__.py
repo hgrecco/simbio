@@ -1,6 +1,6 @@
 from poincare import Constant, Independent, Parameter, assign
 
-from .core import Compartment, MassAction, Reaction, Simulator, Species, initial
+from .core import Compartment, MassAction, RateLaw, Simulator, Species, initial
 
 __all__ = [
     "Constant",
@@ -11,7 +11,7 @@ __all__ = [
 __all__ += [
     "Compartment",
     "MassAction",
-    "Reaction",
+    "RateLaw",
     "Species",
     "initial",
     "Simulator",

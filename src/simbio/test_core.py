@@ -8,7 +8,7 @@ from . import (
     Constant,
     MassAction,
     Parameter,
-    Reaction,
+    RateLaw,
     Simulator,
     Species,
     assign,
@@ -123,9 +123,9 @@ def test_reaction(f):
     class Model(Compartment):
         x: Species = initial(default=0)
         c: Constant = assign(default=0, constant=True)
-        eq1 = Reaction(reactants=[x], products=[], rate_law=c)
-        eq2 = Reaction(reactants=[], products=[x], rate_law=c)
-        eq3 = Reaction(reactants=[2 * x], products=[3 * x], rate_law=c)
+        eq1 = RateLaw(reactants=[x], products=[], rate_law=c)
+        eq2 = RateLaw(reactants=[], products=[x], rate_law=c)
+        eq3 = RateLaw(reactants=[2 * x], products=[3 * x], rate_law=c)
 
     model: Model = f(Model)
     assert model.x.variable.equation_order == 1

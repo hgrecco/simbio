@@ -17,7 +17,7 @@ from ... import (
     Constant,
     Independent,
     Parameter,
-    Reaction,
+    RateLaw,
     Species,
     initial,
 )
@@ -290,7 +290,7 @@ class SBMLImporter:
 
         self.simbio.add(
             r.id,
-            Reaction(reactants=reactants, products=products, rate_law=formula),
+            RateLaw(reactants=reactants, products=products, rate_law=formula),
         )
         return
 
@@ -298,7 +298,7 @@ class SBMLImporter:
         if not r.reversible:
             self.simbio.add(
                 r.id,
-                Reaction(reactants=reactants, products=products, rate_law=formula),
+                RateLaw(reactants=reactants, products=products, rate_law=formula),
             )
             return
 
@@ -334,7 +334,7 @@ class SBMLImporter:
                 # Cannot split formula into forward and reverse
                 self.simbio.add(
                     r.id,
-                    Reaction(reactants=reactants, products=products, rate_law=formula),
+                    RateLaw(reactants=reactants, products=products, rate_law=formula),
                 )
                 return
 

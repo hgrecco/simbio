@@ -1,4 +1,4 @@
-from ..core import Compartment, Parameter, Reaction, Species, assign, initial
+from ..core import Compartment, Parameter, RateLaw, Species, assign, initial
 from .compound import Dissociation, ReversibleSynthesis
 
 
@@ -55,7 +55,7 @@ class MichaelisMentenEqApprox(Compartment):
     P: Species = initial()
     maximum_velocity: Parameter = assign()
     dissociation_constant: Parameter = assign()
-    reaction = Reaction(
+    reaction = RateLaw(
         reactants=[S],
         products=[P],
         rate_law=maximum_velocity * S / (dissociation_constant + S),
@@ -67,7 +67,7 @@ class MichaelisMentenQuasiSSAprox(Compartment):
     P: Species = initial()
     maximum_velocity: Parameter = assign()
     michaelis_constant: Parameter = assign()
-    reaction = Reaction(
+    reaction = RateLaw(
         reactants=[S],
         products=[P],
         rate_law=maximum_velocity * S / (michaelis_constant + S),

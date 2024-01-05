@@ -161,8 +161,8 @@ class Species(Node, Scalar):
 
 
 @dataclass
-class Reaction(EquationGroup):
-    """A Reaction contains a set of equations transforming
+class RateLaw(EquationGroup):
+    """A RateLaw reaction contains a set of equations transforming
     reactants into products with a given rate law.
 
     Given:
@@ -208,7 +208,7 @@ class Reaction(EquationGroup):
             yield s.derive() << st * self.rate_law
 
 
-class MassAction(Reaction):
+class MassAction(RateLaw):
     """A MassAction reaction contains a set of equations transforming
     reactants into products with a given rate.
     The reaction's rate law is the product of the rate
