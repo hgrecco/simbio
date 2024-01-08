@@ -132,3 +132,11 @@ Or, to additionally install the SBML importer:
 ```
 pip install simbio[io]
 ```
+
+While `poincaré` is installed automatically as a dependency,
+if you are using conda/mamba,
+you might prefer to install it from conda-forge:
+
+```
+conda install --channel conda-forge poincare
+```
