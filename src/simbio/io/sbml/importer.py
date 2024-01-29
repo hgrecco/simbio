@@ -129,6 +129,9 @@ class SBMLImporter:
         identity_mapper: Callable[[str], str] = lambda x: x,
         units: bool = False,
     ):
+        if model.conversion_factor is not None:
+            raise NotImplementedError("global conversion factor")
+
         self.model = model
         self.simbio = DynamicCompartment(name_mapper=_extra_check(identity_mapper))
 
