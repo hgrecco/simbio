@@ -237,15 +237,6 @@ class SBMLImporter:
         # has_only_substance_units: bool
         if s.conversion_factor is not None:
             raise NotImplementedError("conversion_factor in species")
-        if s.id in self.assignment_rules:
-            # Parameter
-            value = Parameter(default=None)  # AssignmentRule is set later
-            self.simbio.add(s.id, value)
-            return
-
-        if s.id in self.initials:
-            self.simbio.add(s.id, initial(default=None))  # value set later
-            return
 
         match [nan_to_none(s.initial_amount), nan_to_none(s.initial_concentration)]:
             case [None, None]:
@@ -260,7 +251,10 @@ class SBMLImporter:
                     f"both amount an concentration specified for Species {s.id}"
                 )
 
-        value = initial(default=default)
+        if s.id in self.assignment_rules:
+            value = Parameter(default=default)
+        else:
+            value = initial(default=default)
         self.simbio.add(s.id, value)
 
     def get_symbol(self, name: str, expected_type: type[T] = object) -> T:
@@ -367,6 +361,8 @@ class SBMLImporter:
             # TODO: this does not check for Species
             raise NotImplementedError("initial conditions must by constant")
 
+        if value is None:
+            return
         if isinstance(component, Species):
             component.variable.initial = value
         elif isinstance(component, Constant | Parameter):
@@ -380,12 +376,16 @@ class SBMLImporter:
     def add_assignment_rule(self, r: types.AssignmentRule):
         component = self.get_symbol(r.variable, Parameter)
         value = substitute(r.math, GetAsVariable(self.get))
+        if value is None:
+            return
         component.default = value
 
     @add.register
     def add_rate_rule(self, r: types.RateRule):
         species = self.get_symbol(r.variable, Species)
         value: Symbol = substitute(r.math, GetAsVariable(self.get))
+        if value is None:
+            return
         eq = species.variable.derive() << value
 
         name = r.id
