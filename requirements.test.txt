@@ -1,2 +1,3 @@
+pooch
 pytest
 simbio[io]
