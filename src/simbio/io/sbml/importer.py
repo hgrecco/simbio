@@ -212,6 +212,9 @@ class SBMLImporter:
         if self.use_units and c.units is not None and size is not None:
             size *= self.units[c.units]
 
+        if size != 1:
+            raise NotImplementedError(f"compartment with size = {size} != 1.")
+
         self.simbio.add(c.id, Parameter(default=size))
 
     @add.register
@@ -375,6 +378,9 @@ class SBMLImporter:
     @add.register
     def add_assignment_rule(self, r: types.AssignmentRule):
         component = self.get_symbol(r.variable, Parameter)
+        if any(r.variable == c.id for c in self.model.compartments):
+            raise NotImplementedError("assignment rules for compartments")
+
         value = substitute(r.math, GetAsVariable(self.get))
         if value is None:
             return

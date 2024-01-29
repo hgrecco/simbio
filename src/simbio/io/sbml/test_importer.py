@@ -1,6 +1,6 @@
 import math
 
-from pytest import mark, raises
+from pytest import mark, param, raises
 
 from ...core import Parameter, Species
 from . import types
@@ -79,7 +79,15 @@ def test_species(
 
 
 @mark.parametrize("spatial_dimensions", [None, 3])
-@mark.parametrize("size", [None, math.nan, 1])
+@mark.parametrize(
+    "size",
+    [
+        param(None, marks=mark.xfail(reason="compartment size must be 1")),
+        param(math.nan, marks=mark.xfail(reason="compartment size must be 1")),
+        1,
+        param(1.5, marks=mark.xfail(reason="compartment size must be 1")),
+    ],
+)
 @mark.parametrize("units", [None])
 @mark.parametrize("constant", [False, True])
 def test_compartment(spatial_dimensions, size, units, constant):
