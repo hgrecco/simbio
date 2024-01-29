@@ -255,11 +255,18 @@ class Converter:
 
     @convert.register
     def SpeciesReference(self, x: libsbml.SpeciesReference) -> types.SpeciesReference:
+        if x.isSetStoichiometry():
+            stoichiometry = x.getStoichiometry()
+        elif x.isSetStoichiometryMath():
+            raise NotImplementedError("math stoichiometry")
+        else:
+            stoichiometry = None
+
         # x.isSetConstant()
         return types.SpeciesReference(
             **asdict(self.Base(x)),
             species=types.ID(x.getSpecies()),
-            stoichiometry=x.getStoichiometry() if x.isSetStoichiometry() else None,
+            stoichiometry=stoichiometry,
             constant=x.getConstant(),
         )
 
