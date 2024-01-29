@@ -135,6 +135,7 @@ class Constraint(Base):
 class Reaction(Base):
     id: ID
     reversible: bool
+    fast: bool
     compartment: ID | None = None
     reactants: Sequence[SpeciesReference]
     products: Sequence[SpeciesReference]

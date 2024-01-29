@@ -262,6 +262,9 @@ class SBMLImporter:
 
     @add.register
     def add_reaction(self, r: types.Reaction):
+        if r.fast:
+            raise NotImplementedError("fast reactions")
+
         # r.compartment
         def yield_species(references: Sequence[types.SimpleSpeciesReference]):
             for r in references:

@@ -225,6 +225,7 @@ class Converter:
         return types.Reaction(
             **asdict(self.Base(x)),
             reversible=x.getReversible(),
+            fast=x.getFast(),
             compartment=x.getCompartment() if x.isSetCompartment() else None,
             reactants=self.convert(x.getListOfReactants()),
             products=self.convert(x.getListOfProducts()),
