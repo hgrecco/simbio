@@ -8,6 +8,7 @@ from typing import Callable, Mapping, Sequence, TypeVar
 
 import libsbml
 import pint
+from poincare.compile import depends_on_at_least_one_variable_or_time
 from symbolite import Symbol
 from symbolite.abstract import symbol
 from symbolite.core import substitute, substitute_by_name
@@ -361,6 +362,11 @@ class SBMLImporter:
     def add_initial_assignment(self, a: types.InitialAssignment):
         component = self.get_symbol(a.symbol)
         value = substitute(a.math, GetAsVariable(self.get))
+
+        if depends_on_at_least_one_variable_or_time(value):
+            # TODO: this does not check for Species
+            raise NotImplementedError("initial conditions must by constant")
+
         if isinstance(component, Species):
             component.variable.initial = value
         elif isinstance(component, Constant | Parameter):
