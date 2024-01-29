@@ -27,6 +27,12 @@ from . import from_libsbml, types
 T = TypeVar("T")
 
 
+class _Namespaces:
+    SUPPORTED = {""}
+    IGNORED = {"layout", "render"}
+    UNSUPPORTED = {"comp", "fbc", "groups", "multi", "qual"}
+
+
 def nan_to_none(x):
     if x is None or math.isnan(x):
         return None
@@ -78,6 +84,13 @@ def loads(
     document: libsbml.SBMLDocument = libsbml.readSBMLFromString(sbml)
     if document.getNumErrors() != 0:
         raise RuntimeError("error reading the SBML file")
+
+    ns: libsbml.XMLNamespaces = document.getSBMLNamespaces().getNamespaces()
+    namespaces: set[str] = {ns.getPrefix(i) for i in range(ns.getLength())}
+    namespaces.difference_update(_Namespaces.IGNORED)
+    namespaces.difference_update(_Namespaces.SUPPORTED)
+    if len(namespaces) > 0:
+        raise NotImplementedError(f"Unsupported SBML namespaces: {namespaces}")
 
     model: libsbml.Model = document.getModel()
     converted_model: types.Model = from_libsbml.Converter().convert(model)
