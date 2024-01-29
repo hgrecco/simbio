@@ -378,7 +378,10 @@ class SBMLImporter:
         value = substitute(r.math, GetAsVariable(self.get))
         if value is None:
             return
-        component.default = value
+        elif isinstance(value, RateLaw):
+            raise NotImplementedError("RateRule in AssignmentRule")
+        else:
+            component.default = value
 
     @add.register
     def add_rate_rule(self, r: types.RateRule):
@@ -386,7 +389,10 @@ class SBMLImporter:
         value: Symbol = substitute(r.math, GetAsVariable(self.get))
         if value is None:
             return
-        eq = species.variable.derive() << value
+        elif isinstance(value, RateLaw):
+            raise NotImplementedError("RateRule in AssignmentRule")
+        else:
+            eq = species.variable.derive() << value
 
         name = r.id
         if name is None or name == r.variable:
