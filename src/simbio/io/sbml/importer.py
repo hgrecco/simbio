@@ -81,6 +81,7 @@ def loads(
     *,
     name: str | None = None,
     identity_mapper: Callable[[str], str] = lambda x: x,
+    ignore_namespaces: Sequence[str] = [],
 ):
     document: libsbml.SBMLDocument = libsbml.readSBMLFromString(sbml)
     if document.getNumErrors() != 0:
@@ -90,6 +91,7 @@ def loads(
     namespaces: set[str] = {ns.getPrefix(i) for i in range(ns.getLength())}
     namespaces.difference_update(_Namespaces.IGNORED)
     namespaces.difference_update(_Namespaces.SUPPORTED)
+    namespaces.difference_update(ignore_namespaces)
     if len(namespaces) > 0:
         raise NotImplementedError(f"Unsupported SBML namespaces: {namespaces}")
 
