@@ -5,7 +5,7 @@ import biomodels
 from .sbml import loads
 
 
-def load_model(
+def load(
     model_id: str,
     *,
     name: str | None = None,
@@ -19,7 +19,3 @@ def load_model(
         ignore_namespaces=ignore_namespaces,
     )
     return model
-
-
-if __name__ == "__main__":
-    model = load_model("BIOMD12")

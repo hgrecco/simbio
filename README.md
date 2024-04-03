@@ -109,7 +109,7 @@ or download them from the [BioModels](https://www.ebi.ac.uk/biomodels/) reposito
 
 ```python
 >>> from simbio.io import biomodels
->>> biomodels.load_model("BIOMD12")
+>>> biomodels.load("BIOMD12")
 Elowitz2000 - Repressilator
 -----------------------------------------------------------------------------------
 type          total  names
