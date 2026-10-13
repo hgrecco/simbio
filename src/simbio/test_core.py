@@ -291,7 +291,8 @@ def test_nested_compartments():
     sim = Simulator(Model)
     sim.solve(save_at=np.linspace(0, 10, 10))
 
-    assert Model.A and Model.nested.A in sim.compiled.variables
+    assert Model.A in sim.compiled.variables
+    assert Model.nested.A in sim.compiled.variables
     assert Model._simbio_volume == Model.V
     assert Model.nested._simbio_volume == Model.nested.V
 
